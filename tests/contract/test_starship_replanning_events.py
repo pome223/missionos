@@ -9,7 +9,7 @@ from src.runtime.starship_replanning_events import EventMonitor, verify_events
 
 def envelope():
     return {
-        "event_supervision": {"maximum_coast_body_rate_rad_s": 0.02},
+        "event_supervision": {"maximum_coast_body_rate_rad_s": 0.02, "deadline_margin_s": 60.0},
         "batch_timeout_s": 100.0,
         "decision_timeout_s": 10.0,
     }
@@ -212,7 +212,27 @@ def test_health_inhibit_cannot_be_ignored_at_dispatch():
     s["dispatch"] = {"time_s": 104.0}
     assert "supervision_dispatch_after_health_inhibit" in verify_events(s, e)
     s["dispatch"] = None
-    assert verify_events(s, e) == []  # Recorded unresolved coast is allowed, not safe contact.
+    assert "supervision_event_unhandled" in verify_events(s, e)
+    # Only an explicitly recorded immediate terminal disposition may consume
+    # the urgent event without a model decision or physical recovery claim.
+    s["supervision_observations"] = m.observations[:1]
+    s["supervision_events"] = m.events[:1]
+    s["execution"]["final_state"]["time_s"] = 100.0
+    s["execution"]["outcome"] = {
+        "termination": "health_inhibited_unresolved",
+        "contact_receipt": None,
+    }
+    s["execution"]["events"] = [
+        {"event": "m1_urgent_return_inhibited", "time_s": 100.0},
+        {
+            "event": "m1_supervision_terminated",
+            "time_s": 100.0,
+            "event_ids": ["event-1"],
+            "termination": "health_inhibited_unresolved",
+            "reason": "observed_health_outside_delegated_domain",
+        },
+    ]
+    assert verify_events(s, e) == []
 
 
 def test_unhandled_notice_event_cannot_be_followed_by_dispatch():

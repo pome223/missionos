@@ -91,7 +91,8 @@ def contract(mode, case=None):
             "scope": "post_deployment_orbital_coast_only",
             "maximum_coast_body_rate_rad_s": 0.02,
             "deadline_margin_s": 60.0,
-            "urgent_response": "inhibit_return_and_record_bounded_unresolved_coast",
+            "urgent_response": "inhibit_return_and_record_unresolved_stop",
+            "commitment_response": "preserve_currently_admissible_booking_without_model_wait",
             "objective": "Compare estimated recovery-service completion time and waiting resources; preserve the original plan when an update does not change that tradeoff. Service forecasts are uncertain estimates, never area clearance.",
         }
     return result

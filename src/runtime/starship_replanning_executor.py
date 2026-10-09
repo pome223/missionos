@@ -26,7 +26,7 @@ from .starship_replanning import (
     resources,
     source_hashes,
 )
-from .starship_replanning_verifier import admit, metrics, wait_reasons
+from .starship_replanning_verifier import admit, metrics, wait_reasons, fresh_match
 from .starship_mission_director import publish
 from .starship_artifacts import write_verified_input
 
@@ -268,14 +268,31 @@ class ReplanningExecutor:
 
     def choose(self, stage, allowed):
         budget_exhausted = (
-            sum(r["request_disposition"] != "budget_exhausted" for r in self.decisions)
+            sum(
+                r["request_disposition"] in ("submitted", "synthetic_outage")
+                for r in self.decisions
+            )
             >= self.envelope["maximum_jev_calls"]
         )
         notice = notices(self.case, self.s.time_s)
         triggers = self.monitor.drain() if getattr(self, "monitor", None) else []
         checks = self.checks(notice)
+        # Preserve a still-admissible booking inside its commitment interval.
+        # The fresh notice can revoke it; an unrelated update cannot consume the
+        # remaining burn window waiting for another model response.
+        coast_dt = self.p["integration"]["coast_dt_s"]
+        horizon = self.envelope["decision_timeout_s"] + coast_dt
+        deadline_fallback = bool(
+            getattr(self, "monitor", None) is not None
+            and self.envelope["event_supervision"].get("commitment_response")
+            == "preserve_currently_admissible_booking_without_model_wait"
+            and self.selected in checks
+            and checks[self.selected]["accepted"]
+            and -min(coast_dt, 2.001) <= self.times[self.selected] - self.s.time_s <= horizon
+        )
         public = {
             name: {
+                "candidate_sha256": digest(c),
                 "return_time_s": c["return_time_s"],
                 "predicted_contacts": [metrics(t) for t in c["trials"]],
                 "constraint_rejections": checks[name]["reasons"],
@@ -297,6 +314,13 @@ class ReplanningExecutor:
             "selected": self.selected,
             "allowed_actions": allowed,
         }
+        if deadline_fallback:
+            request["commitment_guard"] = {
+                "candidate_id": self.selected,
+                "candidate_sha256": digest(self.candidates[self.selected]),
+                "return_time_s": self.times[self.selected],
+                "guard_horizon_s": horizon,
+            }
         if getattr(self, "monitor", None) is not None:
             request.update(
                 context_generation=self.monitor.generation,
@@ -307,7 +331,7 @@ class ReplanningExecutor:
         ):
             self.service_failed = True
         timeout_injected = self.service_failed
-        if self.mailbox and not timeout_injected and not budget_exhausted:
+        if self.mailbox and not timeout_injected and not budget_exhausted and not deadline_fallback:
             publish(self.mailbox / "request.json", request)
 
         def poll():
@@ -327,7 +351,11 @@ class ReplanningExecutor:
                 pass
             return None
 
-        if budget_exhausted:
+        if deadline_fallback:
+            # This is an immediate checked fallback, not a model request or a
+            # later measurement. Physical execution and its observations follow.
+            response = None
+        elif budget_exhausted:
             # A fresh decision identity binds the fallback even when no model
             # call is available. Never reuse the preceding accepted decision.
             self.step()
@@ -351,13 +379,15 @@ class ReplanningExecutor:
             "later_observation": self.observation(),
             "synthetic_timeout_injected": timeout_injected,
             "request_disposition": (
-                "budget_exhausted"
+                "deadline_fallback"
+                if deadline_fallback
+                else "budget_exhausted"
                 if budget_exhausted
                 else "synthetic_outage"
                 if timeout_injected
                 else "submitted"
             ),
-            "fallback": action is None,
+            "fallback": action is None and not stale,
         }
         if getattr(self, "monitor", None) is not None:
             record.update(later_generation=self.monitor.generation, interrupted_by_events=stale)
@@ -602,13 +632,19 @@ class ReplanningExecutor:
         """
         stage = "normal_monitoring"
         initial = True
-        while self.s.time_s < self.times["next_orbit"] - 40.0:
+        margin = self.envelope["event_supervision"]["deadline_margin_s"]
+        while self.s.time_s < self.times["next_orbit"] - 40.0 or (
+            self.selected in self.times
+            and self.s.time_s
+            <= self.times[self.selected] + min(self.p["integration"]["coast_dt_s"], 2.001)
+        ):
             if self.monitor.inhibited:
                 self.event(
                     "m1_urgent_return_inhibited",
                     "observed health outside delegated domain; no model wait",
                 )
                 self.termination = "health_inhibited_unresolved"
+                self.stop_reason = "observed_health_outside_delegated_domain"
                 break
             notice = notices(self.case, self.s.time_s)
             checked = self.checks(notice)
@@ -622,13 +658,13 @@ class ReplanningExecutor:
                 > self.s.time_s
                 + self.envelope["batch_timeout_s"]
                 + self.envelope["decision_timeout_s"]
-                + 60.0
+                + margin
             ]
             need = [
                 n
                 for n in future
                 if n not in self.candidates
-                or self.candidates[n]["notice_sequence"] != notice["sequence"]
+                or fresh_match(self.candidates[n], self.observation(), self.envelope)
             ]
             can_compute = bool(
                 need and self.forecast_count + 4 * len(need) <= self.envelope["maximum_forecasts"]
@@ -649,6 +685,7 @@ class ReplanningExecutor:
                 initial = False
                 names = ["nominal"] if action in (None, "keep_plan") else need
                 if not self.calculate(names) and not self.monitor.pending:
+                    self.stop_reason = "forecast_unavailable"
                     break
                 stage = "updated_return_options"
                 continue
@@ -670,6 +707,7 @@ class ReplanningExecutor:
                     action = "wait_for_update"
             if action == "evaluate_returns":
                 if not self.calculate(need) and not self.monitor.pending:
+                    self.stop_reason = "forecast_unavailable"
                     break
                 stage = "updated_return_options"
                 continue
@@ -686,7 +724,7 @@ class ReplanningExecutor:
                 self.selected = None
             if self.selected:
                 when = self.times[self.selected]
-                if self.s.time_s >= when - 60.0:
+                if self.s.time_s >= when - margin:
                     self.coast_to(when)
                     if self.monitor.pending:
                         stage = "orbital_event"
@@ -716,15 +754,15 @@ class ReplanningExecutor:
                     else:
                         self.event("m1_dispatch_rejected", reasons=check["reasons"])
                     break
-                due = min(self.s.time_s + self.envelope["monitor_interval_s"], when - 60.0)
+                due = min(self.s.time_s + self.envelope["monitor_interval_s"], when - margin)
             else:
                 due = min(
                     self.s.time_s + self.envelope["monitor_interval_s"],
-                    self.times["next_orbit"] - 60.0,
+                    self.times["next_orbit"] - margin,
                     notice["expires_at_s"],
                 )
                 if due <= self.s.time_s:
-                    due = min(self.s.time_s + 60.0, self.times["next_orbit"] - 60.0)
+                    due = min(self.s.time_s + 60.0, self.times["next_orbit"] - margin)
             if wait_reasons(self.envelope, due, self.scheduled) or due <= self.s.time_s:
                 break
             self.coast_to(due)
@@ -732,9 +770,21 @@ class ReplanningExecutor:
         return self.finish()
 
     def finish(self):
+        if getattr(self, "monitor", None) and self.monitor.pending and not self.dispatch:
+            reason = getattr(self, "stop_reason", None)
+            if reason is None and self.s.time_s >= self.times["next_orbit"] - 40.0:
+                reason = "return_decision_deadline_elapsed"
+            if reason:
+                self.event(
+                    "m1_supervision_terminated",
+                    event_ids=[e["id"] for e in self.monitor.pending],
+                    termination=self.termination,
+                    reason=reason,
+                )
         self.samples.append(_sample(self.s, self.v, self.controller.phase))
         return {
             "schema": "missionos.starship_m1_study.v1",
+            "run_id": self.run_id,
             "case": self.case,
             "envelope": self.envelope,
             "source_sha256": self.sources,

@@ -56,7 +56,10 @@ class EventMonitor:
 
     def __init__(self, envelope, times):
         self.maximum_rate = envelope["event_supervision"]["maximum_coast_body_rate_rad_s"]
-        self.lead_s = envelope["batch_timeout_s"] + envelope["decision_timeout_s"] + 60.0
+        margin = envelope["event_supervision"].get("deadline_margin_s")
+        if not _number(margin) or margin < 0:
+            raise ValueError("invalid_supervision_deadline_margin")
+        self.lead_s = envelope["batch_timeout_s"] + envelope["decision_timeout_s"] + margin
         if (
             not _number(self.maximum_rate)
             or self.maximum_rate <= 0
@@ -140,11 +143,12 @@ class EventMonitor:
         return result
 
 
-def verify_events(study, envelope):
+def verify_events(study, envelope, *, expected_case=None):
     """Replay published-input transitions without calling EventMonitor.
 
-    This checks completeness relative to the recorded observed stream, not the
-    fidelity of a real spacecraft sensor or external notification service.
+    Production verification also supplies expected_case, binding every delivered
+    notice to the registered synthetic scenario at the observed time. This does
+    not establish fidelity of real sensors or an external notification service.
     """
     issues = []
     try:
@@ -152,7 +156,17 @@ def verify_events(study, envelope):
         recorded_events = study["supervision_events"]
         times = study["opportunities"]
         maximum_rate = envelope["event_supervision"]["maximum_coast_body_rate_rad_s"]
-        lead = envelope["batch_timeout_s"] + envelope["decision_timeout_s"] + 60.0
+        margin = envelope["event_supervision"].get("deadline_margin_s")
+        if not _number(margin) or margin < 0:
+            return ["supervision_deadline_margin_invalid"]
+        lead = envelope["batch_timeout_s"] + envelope["decision_timeout_s"] + margin
+        registered_notices = None
+        if expected_case is not None:
+            from .starship_replanning import SCENARIOS, notices
+
+            if expected_case not in SCENARIOS.values():
+                return ["supervision_unknown_registered_case"]
+            registered_notices = notices
         maximum_gap = study["profile"]["integration"]["coast_dt_s"] + 1e-6
         if (
             not observations
@@ -209,6 +223,10 @@ def verify_events(study, envelope):
                 issues.append("supervision_notice_evidence")
                 return sorted(set(issues))
             notice_hash = row["notice_sha256"]
+            if registered_notices is not None and notice_hash != _digest(
+                registered_notices(expected_case, now)
+            ):
+                issues.append("supervision_registered_notice_mismatch")
             too_fast = sum(x * x for x in rate) > maximum_rate * maximum_rate
             health = (tuple(engines), too_fast)
             invalid_health = not all(engines) or too_fast
@@ -280,6 +298,10 @@ def verify_events(study, envelope):
                 <= request_time
                 <= later_time
                 <= observations[-1]["time_s"]
+                or (
+                    request_time == later_time
+                    and record.get("request_disposition") != "deadline_fallback"
+                )
                 or type(request["context_generation"]) is not int
                 or request["context_generation"] != current
                 or type(record["later_generation"]) is not int
@@ -310,14 +332,83 @@ def verify_events(study, envelope):
             ):
                 issues.append("supervision_stale_response_accepted")
             previous_request_time = request_time
+        undrained = [e["id"] for e in expected_events if e["id"] not in drained]
+        terminal_dispositions = [
+            e
+            for e in study["execution"].get("events", [])
+            if e.get("event") == "m1_supervision_terminated"
+        ]
         if dispatch:
             if health_inhibited_at is not None and health_inhibited_at <= dispatch["time_s"]:
                 issues.append("supervision_dispatch_after_health_inhibit")
-            if any(
-                e["detected_at_s"] <= dispatch["time_s"] and e["id"] not in drained
-                for e in expected_events
-            ):
+            if undrained:
                 issues.append("supervision_dispatch_with_pending_event")
+            if terminal_dispositions:
+                issues.append("supervision_termination_disposition_invalid")
+        elif undrained:
+            # A no-dispatch flag alone cannot silently dispose of pending input.
+            # Require an explicit terminal disposition tied to the actual outcome.
+            outcome = study["execution"].get("outcome", {})
+            terminal = terminal_dispositions[0] if len(terminal_dispositions) == 1 else {}
+            termination = outcome.get("termination")
+            reason = terminal.get("reason")
+            valid = (
+                type(termination) is str
+                and termination.endswith("_unresolved")
+                and outcome.get("contact_receipt") is None
+                and terminal.get("time_s") == end_time
+                and terminal.get("event_ids") == undrained
+                and terminal.get("termination") == termination
+                and type(reason) is str
+                and bool(reason.strip())
+            )
+            if health_inhibited_at is not None:
+                urgent_evidence = [
+                    e
+                    for e in study["execution"].get("events", [])
+                    if e.get("event") == "m1_urgent_return_inhibited"
+                    and e.get("time_s") == end_time
+                ]
+                valid = (
+                    valid
+                    and termination == "health_inhibited_unresolved"
+                    and reason == "observed_health_outside_delegated_domain"
+                    and len(urgent_evidence) == 1
+                    and end_time - health_inhibited_at <= maximum_gap
+                )
+            elif reason == "return_decision_deadline_elapsed":
+                valid = (
+                    valid
+                    and termination == "return_unresolved"
+                    and end_time >= max(times.values()) - 40.0
+                )
+            elif reason == "forecast_unavailable":
+                failed_tools = [
+                    event
+                    for event in study["execution"].get("events", [])
+                    if event.get("event") == "m1_tool_expired" and event.get("time_s") == end_time
+                ]
+                failed_operations = [
+                    operation
+                    for operation in study.get("pending_operations", [])
+                    if operation.get("operation") == "return_forecasts"
+                    and operation.get("expired") is True
+                    and operation.get("end_time_s") == end_time
+                    and _number(operation.get("start_time_s"))
+                    and operation["start_time_s"] <= end_time
+                ]
+                valid = (
+                    valid
+                    and termination == "return_unresolved"
+                    and len(failed_tools) == 1
+                    and len(failed_operations) == 1
+                )
+            else:
+                valid = False
+            if not valid:
+                issues.append("supervision_event_unhandled")
+        elif terminal_dispositions:
+            issues.append("supervision_termination_disposition_invalid")
         return sorted(set(issues))
     except (KeyError, TypeError, ValueError, OverflowError, IndexError):
         return ["invalid_supervision_record"]

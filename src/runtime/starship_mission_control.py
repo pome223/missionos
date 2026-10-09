@@ -1049,7 +1049,8 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                         or plan["source_sha256"] != _sources(plan["scenario"])):
                     raise StarshipMissionError("m1_execution_input_binding_mismatch")
                 verdict = verify(study, expected_envelope=plan["mission_envelope"],
-                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"])
+                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"],
+                    expected_run_id=run_id)
                 _write(output/"verification.json", verdict)
                 manifest = _read(output/"manifest.json")
                 manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()

@@ -105,7 +105,7 @@ def main():
     envelope, sources = contract(args.mode, args.case), source_hashes()
     write_verified_input(
         args.output_dir / "inputs.json",
-        {"case": args.case, "envelope": envelope, "source_sha256": sources},
+        {"case": args.case, "run_id": args.run_id, "envelope": envelope, "source_sha256": sources},
     )
     for name in sources:
         target = args.output_dir / "source" / name
@@ -127,7 +127,11 @@ def main():
         study["runtime_failure"] = type(error).__name__ + ":" + str(error)
     study = write_verified_input(args.output_dir / "study.json", study)
     verdict = verify(
-        study, expected_envelope=envelope, expected_case=args.case, expected_sources=sources
+        study,
+        expected_envelope=envelope,
+        expected_case=args.case,
+        expected_sources=sources,
+        expected_run_id=args.run_id,
     )
     if sources != source_hashes() or "runtime_failure" in study:
         verdict["passed"] = False

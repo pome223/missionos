@@ -99,7 +99,10 @@ def make_candidate(actor, name):
         "origin": observation,
         "final_state": {"omega_body_rad_s": [0.0, 0.0, 0.0]},
         "outcome": {"contact_receipt": receipt},
-        "coast": [deepcopy(observation["state"])],
+        "coast": [
+            {**deepcopy(observation["state"]), "time_s": t}
+            for t in range(int(actor.s.time_s), int(actor.times[name]) + 5, 2)
+        ],
         "wall_time_s": 1.0,
     }
     return {
@@ -157,6 +160,7 @@ def test_fast_response_still_advances_plant_and_rejects_notice_stale_action(monk
     record = actor.decisions[-1]
     assert record["response"]["action"] == "keep_plan"
     assert record["interrupted_by_events"] is True
+    assert record["fallback"] is False
     assert record["later_generation"] > record["request"]["context_generation"]
     assert actor.monitor.pending[0]["kind"] == "notice_updated"
     assert actor.pending[-1]["end_time_s"] > actor.pending[-1]["start_time_s"]
@@ -237,27 +241,14 @@ def test_benign_notice_event_preserves_nominal_dispatch_with_bounded_decisions(
         actor.candidates.update({n: make_candidate(actor, n) for n in names})
         return True
 
-    def checked(notice):
-        # Forecast doubles stand in for physical trajectories; actual scalar
-        # admission is covered independently above using contact measurements.
-        return {
-            n: {
-                "accepted": c["notice_sequence"] == notice["sequence"],
-                "reasons": []
-                if c["notice_sequence"] == notice["sequence"]
-                else ["forecast_notice_binding"],
-                "areas": ["east" if n == "nominal" else "west"],
-            }
-            for n, c in actor.candidates.items()
-        }
-
-    actor.calculate, actor.checks = calculated, checked
+    actor.calculate = calculated
     result = actor.run_event_supervision()
     assert result["candidate_id"] == "nominal"
     assert result["time_s"] == actor.times["nominal"]
     assert actor.contact == {"contact": True}
     assert 2 <= len(actor.decisions) <= 8
-    assert actor.forecast_count <= actor.envelope["maximum_forecasts"]
+    assert actor.forecast_count == 8
+    assert len(actor.revisions) == 1
     assert all(r["candidate_id"] == "nominal" for r in actor.revisions)
     events = actor.monitor.events
     updated = next(e for e in events if e["kind"] == "notice_updated")
@@ -278,3 +269,71 @@ def test_fast_forecast_result_is_discarded_if_confirmation_step_observes_new_not
     assert pools[0].closed
     assert actor.s.time_s == 1450.0
     assert any(e["kind"] == "notice_updated" for e in actor.monitor.pending)
+
+
+@pytest.mark.parametrize(
+    "update_times", [(1600.0,), (2250.0,), (1440.0, 1600.0, 2230.0, 2250.0, 2278.0)]
+)
+def test_late_benign_updates_never_discard_booking_or_spend_forecasts(
+    monkeypatch, tmp_path, update_times
+):
+    actor, _ = actor_harness(monkeypatch, tmp_path, now=1000.0)
+    provider = notices
+
+    def changed_notice(case, now):
+        row = deepcopy(provider(case, 1000.0))
+        delivered = [t for t in update_times if t <= now]
+        row.update(sequence=1 + len(delivered), issued_at_s=delivered[-1] if delivered else 0.0)
+        row["update_label"] = str(len(delivered))
+        return row
+
+    monkeypatch.setattr(runtime, "notices", changed_notice)
+    monkeypatch.setitem(globals(), "notices", changed_notice)
+    actor.monitor = EventMonitor(actor.envelope, actor.times)
+    actor.monitor.poll(actor.observation(), changed_notice(actor.case, 1000.0), None)
+
+    def calculated(names):
+        actor.forecast_count += 4 * len(names)
+        actor.step()
+        actor.candidates.update({n: make_candidate(actor, n) for n in names})
+        return True
+
+    actor.calculate = calculated
+    result = actor.run_event_supervision()
+    assert result["candidate_id"] == "nominal"
+    assert result["time_s"] == 2280.0
+    assert actor.forecast_count == 8 and len(actor.revisions) == 1
+    assert actor.candidates["nominal"]["notice_sequence"] == 1
+    if 2250.0 in update_times:
+        guarded = [r for r in actor.decisions if r["request_disposition"] == "deadline_fallback"]
+        assert guarded
+        assert all(
+            r["response"] is None and r["accepted_action"] is None and r["fallback"]
+            for r in guarded
+        )
+        assert all(r["later_time_s"] == r["request"]["time_s"] for r in guarded)
+        assert all(r["request"]["commitment_guard"]["candidate_id"] == "nominal" for r in guarded)
+
+
+def test_late_revoked_clearance_never_uses_booking_deadline_fallback(monkeypatch, tmp_path):
+    actor, _ = actor_harness(monkeypatch, tmp_path, now=2250.0)
+    actor.candidates["nominal"] = make_candidate(actor, "nominal")
+    actor.selected = "nominal"
+    row = notices(actor.case, actor.s.time_s)
+    row["areas"] = {}
+    monkeypatch.setattr(runtime, "notices", lambda *_: row)
+    actor.choose("orbital_event", ["wait_for_update"])
+    assert actor.decisions[-1]["request_disposition"] != "deadline_fallback"
+    assert actor.checks(row)["nominal"]["accepted"] is False
+    assert actor.s.time_s > 2250.0
+
+
+def test_deadline_fallback_does_not_publish_or_wait_on_a_model(monkeypatch, tmp_path):
+    actor, _ = actor_harness(monkeypatch, tmp_path, now=2250.0)
+    actor.candidates["nominal"] = make_candidate(actor, "nominal")
+    actor.selected, actor.mailbox = "nominal", tmp_path
+    actor.wait = lambda *_: pytest.fail("must not wait for model inside commitment interval")
+    monkeypatch.setattr(runtime, "publish", lambda *_: pytest.fail("must not publish request"))
+    assert actor.choose("orbital_event", ["keep_plan"]) is None
+    assert actor.s.time_s == 2250.0
+    assert actor.decisions[-1]["request_disposition"] == "deadline_fallback"
