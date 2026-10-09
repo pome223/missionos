@@ -94,7 +94,7 @@ def map_clearance(start, end, features, frame, radius):
     return float(clearance)
 
 
-def verify(root):
+def verify(root, *, recovery_prefix=False):
     root = Path(root).resolve()
     checks, reasons, details = {}, [], []
     native = False
@@ -103,10 +103,18 @@ def verify(root):
         config, result = read(root / "config.json"), read(root / "result.json")
         policy = feedback_policy(config)
         require(policy is not None, "endpoint_feedback_policy_missing")
-        live = config.get("endpoint_adapter_trial") is not None
-        if live:
+        live = config.get("endpoint_adapter_trial") is not None or config.get("delivery_trial") is not None
+        if config.get("delivery_trial"):
+            from scripts.yokohama_delivery_contract import validate_config
+            validate_config(config)
+        elif live:
             from scripts.yokohama_native_endpoint_contract import validate_config
             validate_config(config)
+        if recovery_prefix:
+            require(config.get("delivery_trial") is not None
+                    and config.get("delivery_scenario") in {"candidate_rejected", "timeout"}
+                    and result.get("observed", {}).get("status") == "failed_recovered",
+                    "prefix_requires_explicit_delivery_recovery")
         native = config["decisions"]["backend"] == "native"
         require(config["decisions"]["backend"] in {"fixture", "native"}, "unknown_model_backend")
         require(result.get("config_sha256") == digest(config), "result_config_binding")
@@ -136,7 +144,7 @@ def verify(root):
                           if read(path).get("operation") == "start"]
         require(len(start_requests) == 1, "feedback_start_request_count")
         session_begin = start_requests[0]["observation"]["wall_s"]
-        session_end = one("city_endpoint_feedback_completed")["wall_s"]
+        session_end = one("candidate_rejected" if recovery_prefix else "city_endpoint_feedback_completed")["wall_s"]
         all_observed = {digest(row): row for row in rows}
         rows = [row for row in rows if session_begin <= row["wall_s"] <= session_end]
         require(bool(rows), "feedback_observations_missing")
@@ -187,6 +195,8 @@ def verify(root):
         requests = []
         for path in sorted((root / "decisions").glob("*-request.json")):
             request = read(path)
+            if recovery_prefix and request["cycle"] != 1 and request["operation"] != "stop":
+                continue
             response = read(path.with_name(path.name.replace("-request", "-response")))
             require(response["request_sha256"] == digest(request)
                     and response["operation"] == request["operation"]
@@ -214,8 +224,12 @@ def verify(root):
         operations = [r[1]["operation"] for r in requests]
         expected = ["start", "vla", "wam", "authorize", "activate",
                     "vla", "wam", "authorize", "activate", "stop"]
+        if recovery_prefix:
+            expected = ["start", "vla", "wam", "authorize", "activate", "stop"]
         require(operations == expected, "feedback_request_count_or_order")
-        require([r[1]["sequence"] for r in requests] == list(range(1, 11)), "mailbox_sequence_replayed")
+        sequences = [r[1]["sequence"] for r in requests]
+        require((sequences[:5] == list(range(1, 6)) and sequences[-1] == 7)
+                if recovery_prefix else sequences == list(range(1, 11)), "mailbox_sequence_replayed")
         require(requests[-1][4]["wall_s"] - requests[0][3]["wall_s"] <= policy["total_timeout_s"],
                 "feedback_total_time_budget")
         identity = requests[0][2]["value"]
@@ -235,7 +249,7 @@ def verify(root):
         checks["finite_request_budget"] = True
         dispatches = [e for e in events if e["event"] == "city_segment_dispatched"]
         arrivals = [e for e in events if e["event"] == "city_segment_arrived"]
-        require(len(dispatches) == len(arrivals) == 2, "feedback_action_count")
+        require(len(dispatches) == len(arrivals) == (1 if recovery_prefix else 2), "feedback_action_count")
         if not native and not live:
             activations = [e for e in events if e["event"] == "fixture_executor_activated"]
             uploads = [e for e in events if e["event"] == "fixture_upload_observed"]
@@ -244,7 +258,7 @@ def verify(root):
                     and len({e["upload_name"] for e in uploads}) == 2,
                     "fixture_executor_or_upload_count")
         previous = None
-        for cycle in (1, 2):
+        for cycle in ((1,) if recovery_prefix else (1, 2)):
             group = {r[1]["operation"]: r for r in requests if r[1]["cycle"] == cycle}
             vpath, vr, vs, v_sent, _ = group["vla"]
             wpath, wr, ws, w_sent, _ = group["wam"]
@@ -394,7 +408,7 @@ def verify(root):
                     and tail[-1] == arrival_row and tail[-1]["sim_s"] - tail[0]["sim_s"] >= 2,
                     "stable_arrival_not_observed")
             claimed_previous = (next(r[1]["previous_segment"] for r in requests if r[1]["cycle"] == 2
-                                     and "previous_segment" in r[1]) if cycle == 1 else None)
+                                     and "previous_segment" in r[1]) if cycle == 1 and not recovery_prefix else None)
             if claimed_previous:
                 require(claimed_previous["permit"] == permit and claimed_previous["arrival"] == arrival_row
                         and type(claimed_previous["stable_samples"]) is int
@@ -406,7 +420,7 @@ def verify(root):
             if cycle == 1:
                 require(permit.get("connector_name") is None and permit.get("connector_sha256") is None,
                         "intermediate_connector_authority")
-                next_sent = next(r[3]["wall_s"] for r in requests if r[1]["cycle"] == 2 and r[1]["operation"] == "vla")
+                next_sent = one("city_request", operation="vla", cycle=2)["wall_s"]
                 require(not any(e["event"] in {"upload_receipt", "city_segment_dispatched"}
                                 and arrived["wall_s"] < e["wall_s"] < next_sent for e in events),
                         "connector_or_dispatch_between_decisions")
@@ -418,6 +432,10 @@ def verify(root):
                             "arrival_sim_s": arrival_row["sim_s"], "stable_samples": len(tail),
                             "goal_distance_m": math.dist(arrival_row["vehicle"]["xyz"], goal)})
         checks["model_and_permit_chain"] = True
+        if recovery_prefix:
+            checks["one_observed_prior_feedback_leg"] = True
+            return dict(status="passed", checks=checks, cycles=details,
+                        qualification="First raw/adapted/WAM/permit/command/observed leg only; no goal claim")
         checks["two_observed_feedback_legs"] = True
         finished, revoked = one("city_endpoint_feedback_completed"), one("city_session_revoked")
         stop = requests[-1]

@@ -46,6 +46,12 @@ def feedback_policy(config):
     """Validate the entire narrow policy, or preserve the legacy path if absent."""
     if not isinstance(config, dict) or not isinstance(config.get("decisions", {}), dict):
         raise ValueError("Invalid feedback configuration")
+    if config.get("delivery_trial") is not None:
+        if __package__:
+            from .yokohama_delivery_contract import validate_config
+        else:
+            from yokohama_delivery_contract import validate_config
+        return validate_config(config)
     decisions = config.get("decisions", {})
     if decisions.get("goal_distance_adapter") is not None:
         if __package__:

@@ -232,6 +232,10 @@ def verify(root, bundle):
             from scripts.yokohama_native_endpoint_contract import validate_config
             validate_config(config)
             expected_hold_count = 2
+        if config.get("delivery_trial") is not None:
+            from scripts.yokohama_delivery_contract import validate_config, STAGES
+            validate_config(config)
+            expected_hold_count = len(STAGES)
         checks["all_authored_holds"] = (
             len(holds) == expected_hold_count
             and [h["point"] for h in holds] == expected_stops

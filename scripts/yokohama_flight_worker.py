@@ -196,6 +196,9 @@ def execute_model_segments(
         if config.get("endpoint_adapter_trial"):
             # Preserve the fixed 220-second return reserve, with a 5-second trigger margin.
             deadline = min(deadline, config["timeout_s"] - 10 - 220 - 5)
+        if config.get("delivery_trial"):
+            deadline = min(deadline, config["timeout_s"] - 10
+                           - config["delivery_trial"]["recovery_timeout_s"] - 5)
         decisions.endpoint_deadline = deadline
 
     def check_deadline():
@@ -347,7 +350,7 @@ def ap_exit_connector(config, permit):
     This preserves its altitude, yaw and transport identity instead of replacing
     it with the city's differently named dynamic connector.
     """
-    if config.get("endpoint_adapter_trial") is not None:
+    if config.get("endpoint_adapter_trial") is not None or config.get("delivery_trial") is not None:
         feedback_policy(config)  # exact separate approval and fixed route contract
         return None
     return permit["connector_name"]
@@ -551,13 +554,19 @@ def flight_trial(config, obs, run, field):
                     diagnostic_file.write(json.dumps(diagnostic) + "\n")
                 last_diagnostic_sim_s = row["sim_s"]
         if recovery_state:
-            if __package__:
+            if config.get("delivery_trial"):
+                if __package__:
+                    from .yokohama_delivery_recovery import validate_sample
+                else:
+                    from yokohama_delivery_recovery import validate_sample
+            elif __package__:
                 from .yokohama_candidate_recovery import validate_sample
             else:
                 from yokohama_candidate_recovery import validate_sample
             if time.monotonic() - started >= recovery_state["deadline"]:
                 raise TimeoutError("Recovery observation deadline exceeded")
-            validate_sample(config, row, recovery_state["anchor"], landing=phase == "recovery_land")
+            validate_sample(config, row, recovery_state["anchor"],
+                            landing=phase in {"recovery_land", "delivery_recovery_land"})
         trajectory.write(json.dumps(row) + "\n")
         if pad_queue:
             pad_queue.guard(row)
@@ -1076,9 +1085,16 @@ def flight_trial(config, obs, run, field):
                         else None,
                     )
                 except Exception as rejection:
-                    if not config.get("candidate_recovery"):
+                    if not (config.get("candidate_recovery") or config.get("delivery_trial")):
                         raise
-                    if __package__:
+                    extra = {}
+                    if config.get("delivery_trial"):
+                        if __package__:
+                            from .yokohama_delivery_recovery import recover
+                        else:
+                            from yokohama_delivery_recovery import recover
+                        extra["set_speed"] = lambda speed: run([BIN + "param", "set", "MPC_XY_CRUISE", str(speed)])
+                    elif __package__:
                         from .yokohama_candidate_recovery import recover
                     else:
                         from yokohama_candidate_recovery import recover
@@ -1092,7 +1108,7 @@ def flight_trial(config, obs, run, field):
                         activate=activate, wait_for=wait_for,
                         land=lambda: run([BIN + "commander", "land"]),
                         contacts=lambda: obs.contacts, event=event,
-                        clock=lambda: time.monotonic() - started, set_phase=recovery_phase,
+                        clock=lambda: time.monotonic() - started, set_phase=recovery_phase, **extra,
                     )
                 candidate = permit["candidate"]
                 import hashlib

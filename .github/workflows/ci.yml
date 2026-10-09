@@ -55,6 +55,16 @@ jobs:
             scripts/yokohama_local_preflight.py \
             scripts/yokohama_native_trial.py \
             scripts/yokohama_sitl.py \
+            scripts/yokohama_delivery_contract.py \
+            scripts/yokohama_delivery_recovery.py \
+            scripts/verify_yokohama_delivery_trial.py \
+            scripts/verify_yokohama_endpoint_feedback.py \
+            scripts/yokohama_goal_distance_adapter.py \
+            scripts/yokohama_native_endpoint_trial.py \
+            tests/test_yokohama_delivery_trial.py \
+            tests/test_yokohama_candidate_recovery.py \
+            tests/test_yokohama_goal_distance_adapter.py \
+            tests/test_yokohama_native_endpoint.py \
             tests/test_yokohama_capacity_retry.py \
             tests/test_yokohama_cloud_lifecycle.py \
             tests/test_yokohama_docker_cleanup_opt_in.py \

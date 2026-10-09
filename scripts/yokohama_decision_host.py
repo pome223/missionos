@@ -477,7 +477,7 @@ class DecisionHost:
             rejected_fixture = self.config.get("fixture_reject_second_candidate") and message["cycle"] == 2
             if rejected_fixture:
                 forward_bin = 58
-            elif self.config.get("endpoint_adapter_trial"):
+            elif self.config.get("endpoint_adapter_trial") or self.config.get("delivery_trial"):
                 # The dedicated CPU double uses immutable actions, including a
                 # second overshoot that must pass through the explicit adapter.
                 # It does not choose bins from the known remaining goal distance.
@@ -496,6 +496,11 @@ class DecisionHost:
                 # though only about one metre remains. The valid level action
                 # overshoots the goal and fails unchanged progress Rules.
                 response["generated_text"] = "58 49 49"
+        if (self.backend == "fixture" and self.config.get("delivery_trial")
+                and self.config.get("delivery_scenario") == "candidate_rejected"
+                and message["cycle"] == 2):
+            # A raw five-metre action is inadmissible before any shortening.
+            response["generated_text"] = "98 49 49"
         (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
         candidate = vla_candidate(response["generated_text"], row)
         try:
@@ -968,6 +973,10 @@ class DecisionHost:
                         if operation != "start" and self.revoked(message):
                             raise ValueError("Decision attempt revoked before processing")
                     delay = self.config["decisions"].get("fixture_delay_s", {}).get(operation, 0)
+                    if (self.backend == "fixture" and self.config.get("delivery_trial")
+                            and self.config.get("delivery_scenario") == "timeout"
+                            and operation == "vla" and message["cycle"] == 2):
+                        delay = 80  # Exercise the unchanged 75-second response limit.
                     if self.backend == "fixture" and delay:
                         time.sleep(delay)
                     if operation in {"start", "stop"}:

@@ -393,6 +393,8 @@ def main(argv=None):
         type=float,
         help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
     )
+    parser.add_argument("--delivery-trial", choices=["delivery", "wait", "candidate_rejected", "timeout"],
+                        help="Separately approved full ship/cargo/return simulation with bounded D1 feedback")
     args = parser.parse_args(argv)
     if args.endpoint_adapter_trial and (
         not args.endpoint_feedback or not args.goal_distance_adapter or args.plan_only
@@ -401,7 +403,7 @@ def main(argv=None):
         or args.timeout_seconds != 900
     ):
         parser.error("Adapted endpoint trial requires a fresh exact approval, fixed image and 900-second limit")
-    if args.goal_distance_adapter and (not args.endpoint_feedback or not (args.plan_only or args.endpoint_adapter_trial)):
+    if args.goal_distance_adapter and not args.delivery_trial and (not args.endpoint_feedback or not (args.plan_only or args.endpoint_adapter_trial)):
         parser.error("Goal-distance adaptation requires endpoint planning; a fresh native runtime approval is still required")
     if args.fixture_reject_second_candidate and not args.candidate_recovery:
         parser.error("Fault injection requires candidate recovery")
@@ -519,6 +521,21 @@ def main(argv=None):
             parser.error(str(exc))
     admitted_service_bytes = None
     admitted_approval_bytes = None
+    if args.delivery_trial:
+        from scripts.yokohama_delivery_contract import admit, arguments
+        if not args.approve_sitl or not args.approval_manifest or not args.local_image_id:
+            parser.error("Delivery trial requires exact approval and fixed image")
+        if args.native_service_config:
+            args.native_service_config = args.native_service_config.resolve()
+        expected = arguments(args.decision_backend, args.local_image_id, args.delivery_trial, args.native_service_config)
+        canonical = parser.parse_args(expected + ["--approve-sitl", "--approval-manifest",
+                                      str(args.approval_manifest), "--output-dir", str(args.output_dir)])
+        if vars(args) != vars(canonical):
+            parser.error("Delivery arguments differ from the exact approved catalog")
+        admitted_approval_bytes = args.approval_manifest.read_bytes()
+        _, admitted_service_bytes = admit(admitted_approval_bytes, REPO, expected)
+        with (args.approval_manifest.parent / "flight-attempt-claimed.json").open("x") as stream:
+            json.dump({"approval": __import__("hashlib").sha256(admitted_approval_bytes).hexdigest(), "flight_attempt": 1}, stream)
     if args.endpoint_adapter_trial:
         from scripts.yokohama_native_endpoint_contract import admit, arguments
         if args.native_service_config:
@@ -685,8 +702,8 @@ def main(argv=None):
         if args.approval_manifest:
             import hashlib
 
-            manifest = admitted_approval_bytes if args.endpoint_adapter_trial else args.approval_manifest.read_bytes()
-            if args.endpoint_adapter_trial and args.approval_manifest.read_bytes() != manifest:
+            manifest = admitted_approval_bytes if (args.endpoint_adapter_trial or args.delivery_trial) else args.approval_manifest.read_bytes()
+            if (args.endpoint_adapter_trial or args.delivery_trial) and args.approval_manifest.read_bytes() != manifest:
                 raise ValueError("Endpoint approval changed after admission")
             approval = json.loads(manifest)["approval"]
             config["operator_approval"] = (
@@ -868,6 +885,19 @@ def main(argv=None):
                     reuse_mavlink_session=index > 0,
                     runtime_items_path="/mission/" + name + "-altitude-items.json",
                     prepared_binding_path="/mission/" + name + "-upload-binding.json"))
+        if args.delivery_trial:
+            from scripts.yokohama_delivery_contract import build_config
+            config = build_config(config, args.delivery_trial)
+            from scripts.yokohama_delivery_contract import qualify_return_map
+            config["delivery_recovery_map_qualification"] = qualify_return_map(
+                config, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson")
+            shutil.copy2(REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson",
+                         root / "collision-footprints.geojson")
+            from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
+            exit_stage = next(s for s in config["flight_stages"] if s["name"] == "01-FEEDBACK-EXIT")
+            (root / (exit_stage["name"] + "-upload.py")).write_text(_inner_upload_script(
+                reuse_mavlink_session=True, runtime_items_path="/mission/01-FEEDBACK-EXIT-altitude-items.json",
+                prepared_binding_path="/mission/01-FEEDBACK-EXIT-upload-binding.json"))
         if args.recover_city_hold:
             from src.runtime.yokohama_native import recovery_envelopes
 
@@ -909,6 +939,12 @@ def main(argv=None):
                 ])
             if args.altitude_diagnostics:
                 sources.append(REPO / "scripts/yokohama_altitude.py")
+        if args.delivery_trial:
+            sources.extend([REPO / "scripts/yokohama_delivery_contract.py",
+                            REPO / "scripts/yokohama_delivery_recovery.py",
+                            REPO / "scripts/verify_yokohama_delivery_trial.py",
+                            REPO / "scripts/verify_yokohama_endpoint_feedback.py",
+                            REPO / "scripts/verify_yokohama_candidate_recovery.py"])
         if args.occupied_pad:
             sources.extend(
                 [
@@ -978,7 +1014,7 @@ def main(argv=None):
         if args.decision_backend:
             from scripts.yokohama_decision_host import DecisionHost
 
-            service_bytes = (admitted_service_bytes if args.endpoint_adapter_trial
+            service_bytes = (admitted_service_bytes if (args.endpoint_adapter_trial or args.delivery_trial)
                              else args.native_service_config.read_bytes() if args.native_service_config else None)
             service = json.loads(service_bytes) if service_bytes is not None else None
             if service_bytes is not None:
@@ -1096,8 +1132,8 @@ def main(argv=None):
             if worker.returncode == 0 and result.get("observed", {}).get("status") == "passed"
             else "failed"
         )
-        if args.candidate_recovery or args.endpoint_adapter_trial:
-            result["mission_outcome"] = "passed" if args.endpoint_adapter_trial and result["status"] == "passed" else "failed"
+        if args.candidate_recovery or args.endpoint_adapter_trial or args.delivery_trial:
+            result["mission_outcome"] = "passed" if (args.endpoint_adapter_trial or args.delivery_trial) and result["status"] == "passed" else "failed"
             result["recovery_outcome"] = result.get("observed", {}).get(
                 "recovery_outcome", "unverified")
     except Exception as exc:
