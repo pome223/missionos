@@ -1,0 +1,2003 @@
+{
+  "schema": "missionos.starship_orbit_event_evidence.v1",
+  "same_source_all_cases": true,
+  "source_sha256": {
+    "src/runtime/starship_sixdof_catalog.py": "a31d9e2d630e0304d932d0c27fefdf45c6ceb64a2076e3bbbc0dba311b343641",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "720271c8216c9be7b5fadf303875b92185406f0406b59f128550f86b8d919345",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "f01dcaf2378605b65863651b697edda5c67efaeb5f5f9faefab128da145ec7cd",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "71481d531a12569f6fedd590e3be43f0391c0afe6335ca660526ece4fbd26b52",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src/runtime/starship_return_feasibility_verifier.py": "8041cc485f902621e72e09162d3d3a0fa2bbd973d93a039e52740712b43435b4",
+    "docs/assets/starship-state-return-qualification/qualification.json": "15082a7d0d4cdd503548a40ee1303844fe742fb28b0bfdf51bb22b9ac708647d",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+    "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "91190abc56f6cc2deb7b692a478eb6c006a0666e7a58698b53c63b748922179e",
+    "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "799f6af522dc32eaaf7014db611e8ea8f2ccb24be13d32dec75dc26ed45496c7",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+    "src/gateway/starship_chat.py": "67dc3e6f72aee5b29edb1f08c5b9497a22dbe4b6b13160a0c0674c9db786c29b",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_replanning.py": "e70ca83f50dd23fd61f94a2efc3c7d5d7cc98e506dc452758e11420a24d89c5c",
+    "src/runtime/starship_replanning_executor.py": "af98aed11140229fde916b803f31aa5d3928a4f8ebf1ceda9c65d1c0ef09ac7f",
+    "src/runtime/starship_replanning_events.py": "aeda4d37751a7a72b94370997c147803c385355e45348526d2799f5a9caa9f9f",
+    "src/runtime/starship_replanning_verifier.py": "2a6425de210b387601e2ee7ef7cfda85fb89e2aff62187e80686eb029701f96b",
+    "src/intelligence/starship_replanning.py": "a23e1a423ddb5a7a8a1d1cbc038e6912c232cd3126ce883d382e1dbbe1dbbdbe",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "d3e025f829d52f2c15d8bb61b6157526ade6ed05a258f959fdeed2bab97e3a36",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110"
+  },
+  "source_mismatch_preserved_by_case": {},
+  "final_three_present": true,
+  "all_selected_case_gates_passed": true,
+  "cases": [
+    {
+      "label": "normal-live",
+      "case": "event_normal",
+      "mode": "live",
+      "record_sha256": "ead72b5f93d40513e1d9004f9f22ee058177101a94f5910900740a28cae64cbd",
+      "verification_sha256": "ec8bc332694f989dd87e4c36b7d8bfbd977cf802bbd708a3dee42a50d119ab20",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "saved_verification_recomputed": true,
+      "source_files_match_current_checkout": true,
+      "authority": {
+        "status": "verified",
+        "test_operator": true,
+        "authenticated_human_identity_verified": false,
+        "worker_receipt_verified": true,
+        "simulator_provider_credentials_present": false,
+        "plan_sha256": "3c4d08f21f6d7b878977a6b1c217f890804b1500859d7d2b2cd5d543ef582cc3",
+        "approval_observed": true,
+        "approval_scope": "local_simulation_and_bounded_return_replanning",
+        "approval_signature_independently_reverified": false,
+        "explanation": "Gateway receipt and approved plan were observed; this reducer verifies exported artifact hashes, not the private approval signing key."
+      },
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 2280.7000000000407,
+      "candidate_id": "nominal",
+      "return_delay_s": 0.0,
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "checked_areas": [
+        "east"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed_or_started": 12,
+      "jev_calls": 5,
+      "deepseek_calls": 0,
+      "invocation_counts_basis": "observed_response_receipts_only",
+      "submitted_requests_without_observed_response": 0,
+      "provider_call_total_confirmed_by_these_records": true,
+      "invocation_receipt_counts": {
+        "jev": {
+          "call_attempted": 5,
+          "call_succeeded": 5,
+          "model_inference_invoked": 5
+        },
+        "deepseek": {
+          "call_attempted": 0,
+          "call_succeeded": 0,
+          "model_inference_invoked": 0
+        }
+      },
+      "decisions": [
+        {
+          "index": 0,
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "keep_plan",
+            "evaluate_returns"
+          ],
+          "accepted_action": "keep_plan",
+          "later_time_s": 1001.2000000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.5,
+          "deadline_s": 1035.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {},
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "626aafc4c661bda5042fc617729c81d8dd5e0508d00f4d521f74ede7b16778a6",
+            "response_sha256": "1c5cfc360adc9a20dba131c503913ffe735d9f67ed06f7e0f2ed49d04fcbe4b9",
+            "latency_ms": 231.957
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 1,
+          "time_s": 1155.7000000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "select_nominal",
+          "later_time_s": 1156.2000000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.5,
+          "deadline_s": 1190.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "1dbd2644543ff80cf6b3da2fe7f46ad0b5fc74a05ffc03eb8a6511606760d760",
+            "response_sha256": "640f190577a46977b5d4c77c7b2305a2d631c3ebf3007858089b2c900bd48824",
+            "latency_ms": 241.002
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 2,
+          "time_s": 1450.2000000000407,
+          "stage": "orbital_event",
+          "notice_sequence": 2,
+          "context_generation": 1,
+          "trigger_event_ids": [
+            "event-1"
+          ],
+          "allowed_actions": [
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 1450.4500000000407,
+          "later_generation": 1,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1485.2000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "forecast_notice_binding"
+              ],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "826a681ac1166ec6c7d4326a2ec365d1ed0aeae5661494140bc7fdeef0acb2c7",
+            "response_sha256": "92a94e23396aabff65bd9626df09dc53f47592fdd23b0e1d7c70cfe9b835ad89",
+            "latency_ms": 212.283
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 3,
+          "time_s": 1855.9500000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [
+            "event-2"
+          ],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "select_nominal",
+          "later_time_s": 1856.2000000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1890.9500000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "552436796ef03c8d1d917239670c2b31d2d66ab415a9e8d4a16ba77842a1de9e",
+            "response_sha256": "48bdceaf69c4df85e2494cb01f283bc84f500f3b6052df07d78a484285e12ce9",
+            "latency_ms": 196.886
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 4,
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "keep_plan",
+            "refresh_observation"
+          ],
+          "accepted_action": "keep_plan",
+          "later_time_s": 2221.2000000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 0.5,
+          "deadline_s": 2255.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "1e19acb766fce4a3bc1ea010385b67a2e2784d4bc32ed2670e3d0599eb658836",
+            "response_sha256": "507cd6cdca691a892899bc3b5887f86c333353cc61e0fb885d3e7d5c68fd880f",
+            "latency_ms": 301.802
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 1156.2000000000407,
+          "candidate_id": "nominal",
+          "basis": "ai",
+          "decision_index": 1,
+          "notice_sequence": 1,
+          "selected_candidate_sha256": "7142bd9e67418401bbc28983c705e6e78722d02e54ae1d0548229d72a3b9f54f",
+          "selected_admission_recomputed": true,
+          "both_returns_admissible_at_selection": null,
+          "selection_checks": {
+            "nominal": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": null
+          },
+          "predicted_servicing_not_measured": {
+            "nominal": {
+              "estimated_completion_interval_s": [
+                5529.834599444306,
+                6140.350174519763
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            }
+          }
+        },
+        {
+          "revision": 2,
+          "time_s": 1856.2000000000407,
+          "candidate_id": "nominal",
+          "basis": "ai",
+          "decision_index": 3,
+          "notice_sequence": 2,
+          "selected_candidate_sha256": "7016e5d82909f82a70a6bd00a7933ac0de19a1774ff821facfe0b7a081d7c1f5",
+          "selected_admission_recomputed": true,
+          "both_returns_admissible_at_selection": true,
+          "selection_checks": {
+            "nominal": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "predicted_servicing_not_measured": {
+            "nominal": {
+              "estimated_completion_interval_s": [
+                5529.814808604157,
+                6140.329288676724
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            },
+            "next_orbit": {
+              "estimated_completion_interval_s": [
+                11578.59895573589,
+                12789.090199290624
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "event-1",
+          "kind": "notice_updated",
+          "detected_at_s": 1450.2000000000407,
+          "generation": 1,
+          "urgent": false,
+          "notice_issued_at_s": 1450.0,
+          "notice_sequence": 2,
+          "issue_to_detection_sim_s": 0.20000000004074536,
+          "decision_index": 2,
+          "detection_to_request_sim_s": 0.0,
+          "detection_to_result_sim_s": 0.25,
+          "accepted_action": "evaluate_returns"
+        },
+        {
+          "id": "event-2",
+          "kind": "candidate_deadline",
+          "detected_at_s": 1585.7000000000407,
+          "generation": 2,
+          "urgent": false,
+          "candidate_id": "nominal",
+          "due_s": 1585.7000000000407,
+          "decision_index": 3,
+          "detection_to_request_sim_s": 270.25,
+          "detection_to_result_sim_s": 270.5,
+          "accepted_action": "select_nominal"
+        }
+      ],
+      "stale_model_contexts": 0,
+      "stale_model_contexts_accepted": 0,
+      "expired_forecast_batches": 0,
+      "expired_forecast_batches_overlapping_new_facts": 0,
+      "executed_checked_fallback": false,
+      "both_returns_admissible_at_executed_selection": true,
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1001.2000000000407,
+          "wall_time_s": 0.25694762499188073,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1001.2000000000407,
+          "end_time_s": 1155.7000000000407,
+          "wall_time_s": 154.41633012500824,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1155.7000000000407,
+          "end_time_s": 1156.2000000000407,
+          "wall_time_s": 0.25914374997955747,
+          "expired": false
+        },
+        {
+          "operation": "model:orbital_event",
+          "start_time_s": 1450.2000000000407,
+          "end_time_s": 1450.4500000000407,
+          "wall_time_s": 0.23156562499934807,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1450.4500000000407,
+          "end_time_s": 1855.9500000000407,
+          "wall_time_s": 405.426077000011,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1855.9500000000407,
+          "end_time_s": 1856.2000000000407,
+          "wall_time_s": 0.23301504200208,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 2220.7000000000407,
+          "end_time_s": 2221.2000000000407,
+          "wall_time_s": 0.3378990830096882,
+          "expired": false
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 0.0,
+            "energy_remaining_kwh": 30.0,
+            "temperature_upper_k": 295.0,
+            "propellant_loss_upper_kg": 0.0,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "d8729375d665c3634ec02332ce00a481d755f6f0a6d498c5b0d7dd92f96ee51e",
+              "wall_time_s": 55.57814587501343,
+              "contact": {
+                "time_s": 4929.814808604157,
+                "speed_mps": 4.614883743250993,
+                "tilt_deg": 2.394128170218024,
+                "body_rate_rad_s": 0.0030099135305164696,
+                "reserve_kg": 62413.09538107963,
+                "latitude_deg": 4.881660776623517,
+                "longitude_deg": 165.2760226807051
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "0a7286f7acb8ba6364d23ddd9276f8c3d71d8db4bd331d39520a67a5fe21dbf3",
+              "wall_time_s": 55.72576349999872,
+              "contact": {
+                "time_s": 4930.30374278132,
+                "speed_mps": 4.610058288835978,
+                "tilt_deg": 2.3785429836266085,
+                "body_rate_rad_s": 0.0030392273307421587,
+                "reserve_kg": 62298.734847362444,
+                "latitude_deg": 4.892395775333058,
+                "longitude_deg": 165.29863186268324
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "d8b873850bc0839c70c957dc32aa4fb59acc86ca47280b2266248281f8170e21",
+              "wall_time_s": 54.246235333994264,
+              "contact": {
+                "time_s": 4930.467418536582,
+                "speed_mps": 4.607455233254346,
+                "tilt_deg": 2.371817590898007,
+                "body_rate_rad_s": 0.0030401219035146826,
+                "reserve_kg": 62458.572864471724,
+                "latitude_deg": 4.902022211182558,
+                "longitude_deg": 165.31441924029428
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "fa0f0dc7e8c553500a22a9a275e9ee3adfa4cf25edc1866b089e74ee41a2a8a7",
+              "wall_time_s": 89.91089308302617,
+              "contact": {
+                "time_s": 4940.329288676724,
+                "speed_mps": 4.594463692350138,
+                "tilt_deg": 2.341753556749405,
+                "body_rate_rad_s": 0.0030225690645807454,
+                "reserve_kg": 62520.25894729901,
+                "latitude_deg": 5.1966101146405155,
+                "longitude_deg": 165.89707319995387
+              }
+            }
+          ]
+        },
+        "next_orbit": {
+          "return_time_s": 7731.351388986685,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 5450.651388986645,
+            "energy_remaining_kwh": 23.943720678903727,
+            "temperature_upper_k": 300.45065138898667,
+            "propellant_loss_upper_kg": 109.0130277797329,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "a301f6c64af850fd353b3a7b5da6f2e6b71b04d6086e14e412bfbac81b5ada4f",
+              "wall_time_s": 94.33018424999318,
+              "contact": {
+                "time_s": 10378.59895573589,
+                "speed_mps": 4.609465785700016,
+                "tilt_deg": 2.3782559870816993,
+                "body_rate_rad_s": 0.003027134020946772,
+                "reserve_kg": 62391.66748668203,
+                "latitude_deg": 5.339444605802144,
+                "longitude_deg": 143.0010200210474
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "15bd6b474cd7c42adab4b565058777d830ed32845b3752fdb01e7d856d2b9f48",
+              "wall_time_s": 95.04221804102417,
+              "contact": {
+                "time_s": 10379.075695637193,
+                "speed_mps": 4.614719921598317,
+                "tilt_deg": 2.3987821744154623,
+                "body_rate_rad_s": 0.0030381861895496885,
+                "reserve_kg": 62337.0485596475,
+                "latitude_deg": 5.350310827967388,
+                "longitude_deg": 143.02403965200662
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "9ed2ea4c26da4f527496793f7946fbdff83f49c881867e040292bb7c2ba4868d",
+              "wall_time_s": 98.61700550001115,
+              "contact": {
+                "time_s": 10379.239973619906,
+                "speed_mps": 4.633343850708369,
+                "tilt_deg": 2.4205662467866333,
+                "body_rate_rad_s": 0.0029977798940725065,
+                "reserve_kg": 62497.033865723286,
+                "latitude_deg": 5.35967117816458,
+                "longitude_deg": 143.0393371801512
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "3d64d6521a50cda5a51610c31e71b76a52a8218b1ac5a65385c2440631707a7c",
+              "wall_time_s": 160.25338679199922,
+              "contact": {
+                "time_s": 10389.090199290624,
+                "speed_mps": 4.596555465278974,
+                "tilt_deg": 2.347905542805506,
+                "body_rate_rad_s": 0.003015383102689946,
+                "reserve_kg": 62525.067014068234,
+                "latitude_deg": 5.65275866611806,
+                "longitude_deg": 143.6220956368192
+              }
+            }
+          ]
+        }
+      },
+      "actual_servicing_completion_observed": false,
+      "actual_servicing_completion_time_s": null
+    },
+    {
+      "label": "tradeoff-live",
+      "case": "event_tradeoff",
+      "mode": "live",
+      "record_sha256": "59a35730341d1afab93a6483350c0a0d3d6e2ab01fedfe3ab0f8dce0b5a3eb13",
+      "verification_sha256": "ec8bc332694f989dd87e4c36b7d8bfbd977cf802bbd708a3dee42a50d119ab20",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "saved_verification_recomputed": true,
+      "source_files_match_current_checkout": true,
+      "authority": {
+        "status": "verified",
+        "test_operator": true,
+        "authenticated_human_identity_verified": false,
+        "worker_receipt_verified": true,
+        "simulator_provider_credentials_present": false,
+        "plan_sha256": "5596dedc0c54f3c219da1b15f630f765703ad896fbe116d8a0e72d7644cf08fa",
+        "approval_observed": true,
+        "approval_scope": "local_simulation_and_bounded_return_replanning",
+        "approval_signature_independently_reverified": false,
+        "explanation": "Gateway receipt and approved plan were observed; this reducer verifies exported artifact hashes, not the private approval signing key."
+      },
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 2280.7000000000407,
+      "candidate_id": "nominal",
+      "return_delay_s": 0.0,
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "checked_areas": [
+        "east"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed_or_started": 12,
+      "jev_calls": 5,
+      "deepseek_calls": 0,
+      "invocation_counts_basis": "observed_response_receipts_only",
+      "submitted_requests_without_observed_response": 0,
+      "provider_call_total_confirmed_by_these_records": true,
+      "invocation_receipt_counts": {
+        "jev": {
+          "call_attempted": 5,
+          "call_succeeded": 5,
+          "model_inference_invoked": 5
+        },
+        "deepseek": {
+          "call_attempted": 0,
+          "call_succeeded": 0,
+          "model_inference_invoked": 0
+        }
+      },
+      "decisions": [
+        {
+          "index": 0,
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "keep_plan",
+            "evaluate_returns"
+          ],
+          "accepted_action": "keep_plan",
+          "later_time_s": 1001.2000000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.5,
+          "deadline_s": 1035.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {},
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "626aafc4c661bda5042fc617729c81d8dd5e0508d00f4d521f74ede7b16778a6",
+            "response_sha256": "f1d907ac8961a6f2fcc656c037496510402afcb8e3396bd9a9af786f7391c4c5",
+            "latency_ms": 210.302
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 1,
+          "time_s": 1165.9500000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "select_nominal",
+          "later_time_s": 1166.2000000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1200.9500000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "35c2d55109dfa018ed564967a607dbe6f36562091bc95ffa1fc4ce8242c7c759",
+            "response_sha256": "22c9e7f82ad9909af572a4e8dee692bd74d5903185698fd1fc9f7992e9089556",
+            "latency_ms": 184.001
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 2,
+          "time_s": 1450.2000000000407,
+          "stage": "orbital_event",
+          "notice_sequence": 2,
+          "context_generation": 1,
+          "trigger_event_ids": [
+            "event-1"
+          ],
+          "allowed_actions": [
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 1450.4500000000407,
+          "later_generation": 1,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1485.2000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "forecast_notice_binding"
+              ],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "8984185e6096cdab37b9061d915f65253f7a8e0fd2201d174fade5bb2c8a17a5",
+            "response_sha256": "d7ade497f308208a227b52c418e022205ce726d1ac32d44dd2ac019aa072d329",
+            "latency_ms": 226.026
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 3,
+          "time_s": 1913.9500000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [
+            "event-2"
+          ],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "select_nominal",
+          "later_time_s": 1914.4500000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 0.5,
+          "deadline_s": 1948.9500000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "f42d29fad51a70b8bb62334e537284ea2db102aa23e02714349a442a0a6dfa4c",
+            "response_sha256": "91b53c359cc8372b01750edde3d21d687b8038227c030013d7d623903d1dffc6",
+            "latency_ms": 232.129
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "index": 4,
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "keep_plan",
+            "refresh_observation"
+          ],
+          "accepted_action": "keep_plan",
+          "later_time_s": 2220.9500000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 2255.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": true,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "0ca18ab850af6cf006832278cf22732eeb31e100f9caafec33b17879860692fe",
+            "response_sha256": "6cfdbfe98f4bcf7c9b4025644952a973e7c78903fbc57e56a890b1bee3776b1f",
+            "latency_ms": 190.934
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 1166.2000000000407,
+          "candidate_id": "nominal",
+          "basis": "ai",
+          "decision_index": 1,
+          "notice_sequence": 1,
+          "selected_candidate_sha256": "c7edde33b9f00d678c655046c1a10227a7f7c6442b90e2a019a64e7e9b23a71c",
+          "selected_admission_recomputed": true,
+          "both_returns_admissible_at_selection": null,
+          "selection_checks": {
+            "nominal": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": null
+          },
+          "predicted_servicing_not_measured": {
+            "nominal": {
+              "estimated_completion_interval_s": [
+                5529.834599444306,
+                6140.350174519763
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            }
+          }
+        },
+        {
+          "revision": 2,
+          "time_s": 1914.4500000000407,
+          "candidate_id": "nominal",
+          "basis": "ai",
+          "decision_index": 3,
+          "notice_sequence": 2,
+          "selected_candidate_sha256": "9d621763d908f90edc66fca87932fda246200838c4522c4cde9884588d85a19a",
+          "selected_admission_recomputed": true,
+          "both_returns_admissible_at_selection": true,
+          "selection_checks": {
+            "nominal": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "predicted_servicing_not_measured": {
+            "nominal": {
+              "estimated_completion_interval_s": [
+                12129.814808604158,
+                19340.329288676723
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            },
+            "next_orbit": {
+              "estimated_completion_interval_s": [
+                11578.59895573589,
+                12789.090199290624
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "event-1",
+          "kind": "notice_updated",
+          "detected_at_s": 1450.2000000000407,
+          "generation": 1,
+          "urgent": false,
+          "notice_issued_at_s": 1450.0,
+          "notice_sequence": 2,
+          "issue_to_detection_sim_s": 0.20000000004074536,
+          "decision_index": 2,
+          "detection_to_request_sim_s": 0.0,
+          "detection_to_result_sim_s": 0.25,
+          "accepted_action": "evaluate_returns"
+        },
+        {
+          "id": "event-2",
+          "kind": "candidate_deadline",
+          "detected_at_s": 1585.7000000000407,
+          "generation": 2,
+          "urgent": false,
+          "candidate_id": "nominal",
+          "due_s": 1585.7000000000407,
+          "decision_index": 3,
+          "detection_to_request_sim_s": 328.25,
+          "detection_to_result_sim_s": 328.75,
+          "accepted_action": "select_nominal"
+        }
+      ],
+      "stale_model_contexts": 0,
+      "stale_model_contexts_accepted": 0,
+      "expired_forecast_batches": 0,
+      "expired_forecast_batches_overlapping_new_facts": 0,
+      "executed_checked_fallback": false,
+      "both_returns_admissible_at_executed_selection": true,
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1001.2000000000407,
+          "wall_time_s": 0.2542450829932932,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1001.2000000000407,
+          "end_time_s": 1165.9500000000407,
+          "wall_time_s": 164.52194687500014,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1165.9500000000407,
+          "end_time_s": 1166.2000000000407,
+          "wall_time_s": 0.19486950000282377,
+          "expired": false
+        },
+        {
+          "operation": "model:orbital_event",
+          "start_time_s": 1450.2000000000407,
+          "end_time_s": 1450.4500000000407,
+          "wall_time_s": 0.2487175419810228,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1450.4500000000407,
+          "end_time_s": 1913.9500000000407,
+          "wall_time_s": 463.3250755830086,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1913.9500000000407,
+          "end_time_s": 1914.4500000000407,
+          "wall_time_s": 0.26203504198929295,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 2220.7000000000407,
+          "end_time_s": 2220.9500000000407,
+          "wall_time_s": 0.20514395899954252,
+          "expired": false
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 0.0,
+            "energy_remaining_kwh": 30.0,
+            "temperature_upper_k": 295.0,
+            "propellant_loss_upper_kg": 0.0,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "ced5f0657591def909ea711e58c26bd86041f754b60e2f4688063af9db97ab2b",
+              "wall_time_s": 69.34655237497645,
+              "contact": {
+                "time_s": 4929.814808604157,
+                "speed_mps": 4.614883743250993,
+                "tilt_deg": 2.394128170218024,
+                "body_rate_rad_s": 0.0030099135305164696,
+                "reserve_kg": 62413.09538107963,
+                "latitude_deg": 4.881660776623517,
+                "longitude_deg": 165.2760226807051
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "b1f342c864541db666f6975cb70e73977c17a0fc59138041590a0b602cf4e3f9",
+              "wall_time_s": 69.45469212500029,
+              "contact": {
+                "time_s": 4930.30374278132,
+                "speed_mps": 4.610058288835978,
+                "tilt_deg": 2.3785429836266085,
+                "body_rate_rad_s": 0.0030392273307421587,
+                "reserve_kg": 62298.734847362444,
+                "latitude_deg": 4.892395775333058,
+                "longitude_deg": 165.29863186268324
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "362dec456072cfbdd8c39d5fb7c1f9ad954f0454e1280247237e28d4e98a027e",
+              "wall_time_s": 66.64883645798545,
+              "contact": {
+                "time_s": 4930.467418536582,
+                "speed_mps": 4.607455233254346,
+                "tilt_deg": 2.371817590898007,
+                "body_rate_rad_s": 0.0030401219035146826,
+                "reserve_kg": 62458.572864471724,
+                "latitude_deg": 4.902022211182558,
+                "longitude_deg": 165.31441924029428
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "3db3d9c6cdcadf20127e8de5f3890063467636dde6958636ecacd966b84248b5",
+              "wall_time_s": 105.07099345800816,
+              "contact": {
+                "time_s": 4940.329288676724,
+                "speed_mps": 4.594463692350138,
+                "tilt_deg": 2.341753556749405,
+                "body_rate_rad_s": 0.0030225690645807454,
+                "reserve_kg": 62520.25894729901,
+                "latitude_deg": 5.1966101146405155,
+                "longitude_deg": 165.89707319995387
+              }
+            }
+          ]
+        },
+        "next_orbit": {
+          "return_time_s": 7731.351388986685,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 5450.651388986645,
+            "energy_remaining_kwh": 23.943720678903727,
+            "temperature_upper_k": 300.45065138898667,
+            "propellant_loss_upper_kg": 109.0130277797329,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "58ca17871da514e3d9019e0258281fb5303731342e5cb8518b0e1fc1026d9ffc",
+              "wall_time_s": 104.74230858398369,
+              "contact": {
+                "time_s": 10378.59895573589,
+                "speed_mps": 4.609465785700016,
+                "tilt_deg": 2.3782559870816993,
+                "body_rate_rad_s": 0.003027134020946772,
+                "reserve_kg": 62391.66748668203,
+                "latitude_deg": 5.339444605802144,
+                "longitude_deg": 143.0010200210474
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "cd97393387992f4f0566a3405614e60599be72cdac295a00772686dbd08a3ad7",
+              "wall_time_s": 107.081888833025,
+              "contact": {
+                "time_s": 10379.075695637193,
+                "speed_mps": 4.614719921598317,
+                "tilt_deg": 2.3987821744154623,
+                "body_rate_rad_s": 0.0030381861895496885,
+                "reserve_kg": 62337.0485596475,
+                "latitude_deg": 5.350310827967388,
+                "longitude_deg": 143.02403965200662
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "0041fc6af9c9df167b7e36ffaa1c0b950d2440b77733fbb062f32d9856ce689b",
+              "wall_time_s": 113.43697466701269,
+              "contact": {
+                "time_s": 10379.239973619906,
+                "speed_mps": 4.633343850708369,
+                "tilt_deg": 2.4205662467866333,
+                "body_rate_rad_s": 0.0029977798940725065,
+                "reserve_kg": 62497.033865723286,
+                "latitude_deg": 5.35967117816458,
+                "longitude_deg": 143.0393371801512
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "35155d96a0ae62713671bbeff05e5a17f89eb9476e1773bfdc76219823387ba2",
+              "wall_time_s": 176.66843012499157,
+              "contact": {
+                "time_s": 10389.090199290624,
+                "speed_mps": 4.596555465278974,
+                "tilt_deg": 2.347905542805506,
+                "body_rate_rad_s": 0.003015383102689946,
+                "reserve_kg": 62525.067014068234,
+                "latitude_deg": 5.65275866611806,
+                "longitude_deg": 143.6220956368192
+              }
+            }
+          ]
+        }
+      },
+      "actual_servicing_completion_observed": false,
+      "actual_servicing_completion_time_s": null
+    },
+    {
+      "label": "timeout-fixture",
+      "case": "event_timeout",
+      "mode": "fixture",
+      "record_sha256": "89255e07ace474dd4fdc2a6003e2c3d3c675cbe8399b6a078dec215e7a84e582",
+      "verification_sha256": "ec8bc332694f989dd87e4c36b7d8bfbd977cf802bbd708a3dee42a50d119ab20",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "saved_verification_recomputed": true,
+      "source_files_match_current_checkout": true,
+      "authority": {
+        "status": "verified",
+        "test_operator": true,
+        "authenticated_human_identity_verified": false,
+        "worker_receipt_verified": true,
+        "simulator_provider_credentials_present": false,
+        "plan_sha256": "89d37439b3a6b601ed11fa3b9bcb29d15019295321d600cda46ba7bd1a105765",
+        "approval_observed": true,
+        "approval_scope": "local_simulation_and_bounded_return_replanning",
+        "approval_signature_independently_reverified": false,
+        "explanation": "Gateway receipt and approved plan were observed; this reducer verifies exported artifact hashes, not the private approval signing key."
+      },
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 2280.7000000000407,
+      "candidate_id": "nominal",
+      "return_delay_s": 0.0,
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "checked_areas": [
+        "east"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed_or_started": 16,
+      "jev_calls": 0,
+      "deepseek_calls": 0,
+      "invocation_counts_basis": "observed_response_receipts_only",
+      "submitted_requests_without_observed_response": 0,
+      "provider_call_total_confirmed_by_these_records": true,
+      "invocation_receipt_counts": {
+        "jev": {
+          "call_attempted": 0,
+          "call_succeeded": 0,
+          "model_inference_invoked": 0
+        },
+        "deepseek": {
+          "call_attempted": 0,
+          "call_succeeded": 0,
+          "model_inference_invoked": 0
+        }
+      },
+      "decisions": [
+        {
+          "index": 0,
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "keep_plan",
+            "evaluate_returns"
+          ],
+          "accepted_action": "keep_plan",
+          "later_time_s": 1000.9500000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1035.7000000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": false,
+          "response_observed": true,
+          "candidate_constraints": {},
+          "both_returns_admissible_at_request": false,
+          "jev": null,
+          "deepseek": null
+        },
+        {
+          "index": 1,
+          "time_s": 1186.4500000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 1,
+          "context_generation": 0,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 1186.7000000000407,
+          "later_generation": 0,
+          "response_observation_latency_sim_s": 0.25,
+          "deadline_s": 1221.4500000000407,
+          "within_decision_deadline": true,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "interrupted_by_events": false,
+          "model_inference_invoked": false,
+          "response_observed": true,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": null,
+          "deepseek": null
+        },
+        {
+          "index": 2,
+          "time_s": 1450.2000000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "context_generation": 1,
+          "trigger_event_ids": [
+            "event-1"
+          ],
+          "allowed_actions": [
+            "evaluate_returns",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": null,
+          "later_time_s": 1485.4500000000407,
+          "later_generation": 1,
+          "response_observation_latency_sim_s": 35.25,
+          "deadline_s": 1485.2000000000407,
+          "within_decision_deadline": false,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "interrupted_by_events": false,
+          "model_inference_invoked": false,
+          "response_observed": false,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "forecast_notice_binding"
+              ],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": false,
+          "jev": null,
+          "deepseek": null
+        },
+        {
+          "index": 3,
+          "time_s": 1889.7000000000407,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [
+            "event-2"
+          ],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "wait_for_update",
+            "refresh_observation"
+          ],
+          "accepted_action": null,
+          "later_time_s": 1924.9500000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 35.25,
+          "deadline_s": 1924.7000000000407,
+          "within_decision_deadline": false,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "interrupted_by_events": false,
+          "model_inference_invoked": false,
+          "response_observed": false,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": null,
+          "deepseek": null
+        },
+        {
+          "index": 4,
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "context_generation": 2,
+          "trigger_event_ids": [],
+          "allowed_actions": [
+            "select_nominal",
+            "select_next_orbit",
+            "keep_plan",
+            "refresh_observation"
+          ],
+          "accepted_action": null,
+          "later_time_s": 2255.9500000000407,
+          "later_generation": 2,
+          "response_observation_latency_sim_s": 35.25,
+          "deadline_s": 2255.7000000000407,
+          "within_decision_deadline": false,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "interrupted_by_events": false,
+          "model_inference_invoked": false,
+          "response_observed": false,
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "both_returns_admissible_at_request": true,
+          "jev": null,
+          "deepseek": null
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 1924.9500000000407,
+          "candidate_id": "nominal",
+          "basis": "checked_fallback",
+          "decision_index": 3,
+          "notice_sequence": 2,
+          "selected_candidate_sha256": "66c78e60c6417fe1cb051038941427302f75d4dddc76282183eb801f0165b7ed",
+          "selected_admission_recomputed": true,
+          "both_returns_admissible_at_selection": true,
+          "selection_checks": {
+            "nominal": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "east"
+              ]
+            },
+            "next_orbit": {
+              "accepted": true,
+              "reasons": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "predicted_servicing_not_measured": {
+            "nominal": {
+              "estimated_completion_interval_s": [
+                12129.820351406968,
+                19340.335477343546
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            },
+            "next_orbit": {
+              "estimated_completion_interval_s": [
+                11578.604599467246,
+                12789.096004127374
+              ],
+              "basis": "published_synthetic_service_forecast_plus_predicted_contact_range",
+              "completion_observed": false
+            }
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "event-1",
+          "kind": "notice_updated",
+          "detected_at_s": 1450.2000000000407,
+          "generation": 1,
+          "urgent": false,
+          "notice_issued_at_s": 1450.0,
+          "notice_sequence": 2,
+          "issue_to_detection_sim_s": 0.20000000004074536,
+          "decision_index": 2,
+          "detection_to_request_sim_s": 0.0,
+          "detection_to_result_sim_s": 35.25,
+          "accepted_action": null
+        },
+        {
+          "id": "event-2",
+          "kind": "candidate_deadline",
+          "detected_at_s": 1585.7000000000407,
+          "generation": 2,
+          "urgent": false,
+          "candidate_id": "nominal",
+          "due_s": 1585.7000000000407,
+          "decision_index": 3,
+          "detection_to_request_sim_s": 304.0,
+          "detection_to_result_sim_s": 339.25,
+          "accepted_action": null
+        }
+      ],
+      "stale_model_contexts": 0,
+      "stale_model_contexts_accepted": 0,
+      "expired_forecast_batches": 1,
+      "expired_forecast_batches_overlapping_new_facts": 1,
+      "executed_checked_fallback": true,
+      "both_returns_admissible_at_executed_selection": true,
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1000.9500000000407,
+          "wall_time_s": 0.01584975002333522,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1000.9500000000407,
+          "end_time_s": 1186.4500000000407,
+          "wall_time_s": 185.44489062498906,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1186.4500000000407,
+          "end_time_s": 1186.7000000000407,
+          "wall_time_s": 0.0425372919999063,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1186.7000000000407,
+          "end_time_s": 1450.2000000000407,
+          "wall_time_s": 263.25889874997665,
+          "expired": true
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1450.2000000000407,
+          "end_time_s": 1485.4500000000407,
+          "wall_time_s": 35.01698629101156,
+          "expired": true
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1485.4500000000407,
+          "end_time_s": 1889.7000000000407,
+          "wall_time_s": 404.06716458298615,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 1889.7000000000407,
+          "end_time_s": 1924.9500000000407,
+          "wall_time_s": 35.0114033340069,
+          "expired": true
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 2220.7000000000407,
+          "end_time_s": 2255.9500000000407,
+          "wall_time_s": 35.0151632920024,
+          "expired": true
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 0.0,
+            "energy_remaining_kwh": 30.0,
+            "temperature_upper_k": 295.0,
+            "propellant_loss_upper_kg": 0.0,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "0f73d2d55d68351df26f86c7b25498b8ab4131f4610d4ce86a9c8d37e790c1de",
+              "wall_time_s": 55.2639667080075,
+              "contact": {
+                "time_s": 4929.820351406967,
+                "speed_mps": 4.614158524697354,
+                "tilt_deg": 2.391709401777346,
+                "body_rate_rad_s": 0.0030126602928509643,
+                "reserve_kg": 62410.14165922552,
+                "latitude_deg": 4.88178978749435,
+                "longitude_deg": 165.27628160719576
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "40116fdb617ea3ac1c0985f0a2fd77215451152bc47580c127d2d42b1f85ecb1",
+              "wall_time_s": 55.390230292017804,
+              "contact": {
+                "time_s": 4930.312321677842,
+                "speed_mps": 4.608660539568206,
+                "tilt_deg": 2.374266193462318,
+                "body_rate_rad_s": 0.0030438889027991824,
+                "reserve_kg": 62294.00908176544,
+                "latitude_deg": 4.892603099051407,
+                "longitude_deg": 165.29904392758607
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "712de135740e2a5132d5cabf4ccdc7428ef341754e807738014b1cda5c3dcd18",
+              "wall_time_s": 53.11740020799334,
+              "contact": {
+                "time_s": 4930.469595548549,
+                "speed_mps": 4.607182529451538,
+                "tilt_deg": 2.370796836038582,
+                "body_rate_rad_s": 0.0030413110228138286,
+                "reserve_kg": 62457.42717930991,
+                "latitude_deg": 4.902072197242367,
+                "longitude_deg": 165.3145236848306
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "639f72edd843692b8307e632fd0c48929cad5dc8b000c14d37a49257a21b3576",
+              "wall_time_s": 89.04629520801245,
+              "contact": {
+                "time_s": 4940.335477343545,
+                "speed_mps": 4.604379362031018,
+                "tilt_deg": 2.352917402484167,
+                "body_rate_rad_s": 0.0030062291973417467,
+                "reserve_kg": 62517.04496369888,
+                "latitude_deg": 5.196747484811054,
+                "longitude_deg": 165.89733300942618
+              }
+            }
+          ]
+        },
+        "next_orbit": {
+          "return_time_s": 7731.351388986685,
+          "notice_sequence": 2,
+          "waiting_accounting": {
+            "elapsed_wait_s": 5450.651388986645,
+            "energy_remaining_kwh": 23.943720678903727,
+            "temperature_upper_k": 300.45065138898667,
+            "propellant_loss_upper_kg": 109.0130277797329,
+            "valid_until_s": 8280.70000000004
+          },
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "17c3a5ea8577e887987ecccee036ae584bb1671ab14fe4d58183fe21049145e1",
+              "wall_time_s": 97.86167374998331,
+              "contact": {
+                "time_s": 10378.604599467246,
+                "speed_mps": 4.608358602247097,
+                "tilt_deg": 2.375331774655858,
+                "body_rate_rad_s": 0.003030467182384133,
+                "reserve_kg": 62388.588521520105,
+                "latitude_deg": 5.339560229586007,
+                "longitude_deg": 143.00125116305466
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "41d98fb98febfbfb1c659d923be942f2290935739c9e55afb68a96ff6e3c367f",
+              "wall_time_s": 98.63104983398807,
+              "contact": {
+                "time_s": 10379.0861763868,
+                "speed_mps": 4.634319391730026,
+                "tilt_deg": 2.4221151062894695,
+                "body_rate_rad_s": 0.003002971885072542,
+                "reserve_kg": 62331.92835268098,
+                "latitude_deg": 5.350510603620294,
+                "longitude_deg": 143.0244018334468
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "53dd06c209ec157569a35b151a14a8891a1ff9c0335a2985187acb58298ae96d",
+              "wall_time_s": 98.0707814579946,
+              "contact": {
+                "time_s": 10379.242320308416,
+                "speed_mps": 4.632959721465577,
+                "tilt_deg": 2.4194508781249473,
+                "body_rate_rad_s": 0.0029990204628412643,
+                "reserve_kg": 62495.78911160355,
+                "latitude_deg": 5.359715160508415,
+                "longitude_deg": 143.03942879454735
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "99db4c3b6892fe06ee5a4eb801a599ccab644aba9e905425d50f42d867e3d37b",
+              "wall_time_s": 156.31899858399993,
+              "contact": {
+                "time_s": 10389.096004127374,
+                "speed_mps": 4.595620332048273,
+                "tilt_deg": 2.3452357923946727,
+                "body_rate_rad_s": 0.003018319019547053,
+                "reserve_kg": 62521.92538848575,
+                "latitude_deg": 5.652876033639379,
+                "longitude_deg": 143.6223310768962
+              }
+            }
+          ]
+        }
+      },
+      "actual_servicing_completion_observed": false,
+      "actual_servicing_completion_time_s": null
+    }
+  ],
+  "limitations": [
+    "This is a compact projection of saved development runs; full raw records are required to rerun verification.",
+    "No simulation, model, external notification or hardware execution is started by this reducer.",
+    "Timing deltas are simulator seconds. Provider latency is separately recorded in receipt milliseconds.",
+    "Missing submitted responses may hide late provider calls; receipt counts are not automatically total billing counts.",
+    "Recovery service completion intervals are forecasts only; actual servicing and recovery are not simulated or observed.",
+    "Engineering target areas, waiting-resource assumptions, four forecast checks and two fixed opportunities do not establish real ocean clearance, numerical convergence or SpaceX accuracy.",
+    "Matching fallback outcomes do not invalidate executed AI control, and outcome divergence alone does not prove AI superiority."
+  ],
+  "live_vs_fallback_observed": {
+    "same_execution_origin": true,
+    "same_opportunities": true,
+    "same_contact_receipt": true,
+    "same_final_state": true,
+    "same_selected_candidate": true,
+    "actual_servicing_outcome_comparison_available": false
+  },
+  "historical_normal_comparison": {
+    "reference": "M1 reviewed normal live flight",
+    "reference_record_sha256": "c46d8929161dd4bba4637fa9a32abb5e9c56889a0e2f786c141645139d1dac86",
+    "same_execution_origin": true,
+    "same_final_state": true,
+    "same_contact_outcome": true,
+    "new_fixed_baseline_flight_executed": false
+  },
+  "development_run_accounting": {
+    "initial_normal_fixture": {
+      "record_sha256": "489038c8f0ffe55aeece6298d8869e11595c142e3bf23a43e350c023318dd85a",
+      "case_accepted": true,
+      "source_is_final": false,
+      "forecasts_started": 16,
+      "model_calls": 0,
+      "change_after_run": "Unchanged-booking reaffirmation became idempotent; no physics change."
+    },
+    "additional_next_orbit_counterfactual": {
+      "status": "running",
+      "purpose": "Exercise the long-coast path and a distinct permitted return; not another AI attempt."
+    },
+    "automatic_retries": 0
+  },
+  "verification_checks": {
+    "starship_regression": {
+      "passed": 3383,
+      "skipped": 5,
+      "dependency_deprecation_warnings": 2
+    },
+    "focused_event_and_m1_tests_passed": 61,
+    "ruff_changed_files": "passed"
+  }
+}

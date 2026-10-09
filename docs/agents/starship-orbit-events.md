@@ -78,8 +78,30 @@ accuracy, physical splashdown success, or held-out operational reliability.
 
 ## Runtime evidence
 
-Pending the new event runs. Earlier M1's three successful flights are retained
-as historical evidence, not silently relabeled as event-driven flights.
+The three HTTP runs passed record verification and their declared case gates.
+
+| Flight | Executed plan | Observed Jev / DeepSeek calls | Contact |
+| --- | --- | --- | --- |
+| Normal | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
+| Corrected servicing forecast | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
+| Persistent outage after correction | nominal | 0 / 0 | 4.608 m/s; 2.375°; 62.394 t |
+
+Both live flights detected the T+1450 s notice after 0.2 simulated seconds and
+requested reassessment at the same observed step. Both received two admissible
+returns after the update and selected nominal return. The corrected flight did
+not produce a different selected return or final state from the outage fallback.
+This result is retained without another live attempt or prompt tuning.
+
+Normal final state and contact exactly match the historical M1 normal flight.
+All three release 26 generic rigid payloads and use zero inflight human commands.
+The outage uses no model calls; its checked fallback preserves nominal return.
+These are test-operator approvals, not authenticated human identity.
+
+A separate scripted next-orbit counterfactual is pending to exercise the long
+coast and alternative dispatch. It is not an AI-selected alternative or part of
+the three live/outage case gates.
+
+Starship regression: 3383 passed, 5 skipped. Focused M1/event checks: 61 passed.
 
 Run through `scripts/start_starship_gateway.py` and
 `scripts/smoke_starship_chat_gateway.py` with the selected catalog case. Use
