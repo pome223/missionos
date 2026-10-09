@@ -1,0 +1,153 @@
+{
+  "schema": "missionos.ship_return_candidate_screen_summary.v1",
+  "source_sha256": {
+    "scripts/run_starship_return_qualification.py": "53f08dfb600cc0afc879b5b8f0f25797505145df6751fcf4adeaa6244498d6c7",
+    "src/runtime/starship_sixdof_mission.py": "ad97aed9cdc14e48c1fde113dd41bb2033b0eb20a77c51b5f07488831a494ac2",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "fc6dca48da343d941a7eeeae38377990b1c2e00c8c51c1dce949d57c9a0a6de4",
+    "src/runtime/starship_return_feasibility_verifier.py": "7c45a036761872fc191a418c18a7170ff9acd4278ddb76aa2e52e9d35b64a914",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_sixdof_booster.py": "71481d531a12569f6fedd590e3be43f0391c0afe6335ca660526ece4fbd26b52",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "src/runtime/starship_return_prediction.py": "26f8c8f8c642c8faf2cb30f80a0ae9105b81747fd307fa0117d4e2321bfbc16b",
+    "src/runtime/starship_return_prediction_verifier.py": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e",
+    "scripts/study_starship_return_candidates.py": "67039739d7d9b72f7be9d6f1f3e543c691263adfca76a0ef7f61debeceed0427",
+    "scripts/verify_starship_return_delay.py": "a3e1f47b0d9727a984e8c16315d682bb41309617b127d2eb59010bdca2aee38e",
+    "scripts/probe_starship_return_delay.py": "d16ad761f0a210bc39caf183f3bf286e84b198f83d2847d45ba9f9016fbe4780"
+  },
+  "backend": {
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  },
+  "source_revision_base": "4436b25457447ff84e5325789b6b73850edbfb3c",
+  "executed_source_matches_published_files": true,
+  "cases": [
+    {
+      "delay_s": 0,
+      "origin_time_s": 2190.7000000000407,
+      "origin_sha256": "aa27a2f81ce4c9068372f8020ed84d6cb4fb1458004543e46016558365c36f4c",
+      "requested_return_time_s": 2280.7000000000407,
+      "actual_return_time_s": [
+        2280.7000000000407
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "reproduction_checks_passed": true,
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "wall_time_s": 44.585433917003684,
+      "prediction_sha256": "285bae446379e6a793d7f5c57fa8697e7c246c42be36532ea94dae5e945027bf",
+      "verification": {
+        "passed": true,
+        "checks": {
+          "origin_unchanged": true,
+          "first_state_matches_origin": true,
+          "candidate_time_bound": true,
+          "suffix_sample_coverage": true,
+          "shared_physical_samples_exact": true,
+          "final_state_exact": true,
+          "contact_receipt_exact": true,
+          "contact_kinematics_consistent": true,
+          "phase_event_times_exact": true,
+          "termination_matches": true,
+          "time_advanced": true,
+          "fuel_nonincreasing": true,
+          "no_execution_or_admission_claim": true
+        },
+        "matched_sample_count": 1377,
+        "prediction_sample_count": 1377,
+        "same_model_reproduction_only": true,
+        "runtime_admission": false,
+        "independent_physics_validation": false
+      }
+    },
+    {
+      "delay_s": 60,
+      "origin_time_s": 2190.7000000000407,
+      "origin_sha256": "aa27a2f81ce4c9068372f8020ed84d6cb4fb1458004543e46016558365c36f4c",
+      "requested_return_time_s": 2340.7000000000407,
+      "actual_return_time_s": [
+        2340.7000000000407
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 4970.591479233129,
+        "speed_mps": 4.610282524309427,
+        "tilt_deg": 2.3811905095541888,
+        "body_rate_rad_s": 0.0030232284145807965,
+        "reserve_kg": 62394.20342496561,
+        "latitude_deg": 6.019157801623628,
+        "longitude_deg": 167.51984413506779
+      },
+      "reproduction_checks_passed": true,
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "wall_time_s": 44.733086833002744,
+      "prediction_sha256": "0ac8a4369de52dc3e12bff64c3767094e66639f05aa954d6efd9c4525c37862c",
+      "verification": {
+        "passed": true,
+        "checks": {
+          "origin_unchanged": true,
+          "first_state_matches_origin": true,
+          "candidate_time_bound": true,
+          "suffix_sample_coverage": true,
+          "shared_physical_samples_exact": true,
+          "final_state_exact": true,
+          "contact_receipt_exact": true,
+          "contact_kinematics_consistent": true,
+          "phase_event_times_exact": true,
+          "termination_matches": true,
+          "time_advanced": true,
+          "fuel_nonincreasing": true,
+          "no_execution_or_admission_claim": true
+        },
+        "matched_sample_count": 1397,
+        "prediction_sample_count": 1397,
+        "same_model_reproduction_only": true,
+        "runtime_admission": false,
+        "independent_physics_validation": false
+      }
+    }
+  ],
+  "common_origin": true,
+  "scope": "two zero-retained saved-plant-state return forecasts, not a live estimator or flight grant",
+  "counts": {
+    "input_validation_failures": 2,
+    "initial_forecasts_failed_sampling_coverage": 2,
+    "forecasts_after_logging_fix_passed": 2,
+    "total_integrated_forecasts": 4,
+    "new_full_flights": 0,
+    "model_calls": 0
+  },
+  "preserved_failures": {
+    "input_check": "3-vector norm used on 4-component quaternion; stopped before integration; fixed without changing 1e-8 limit",
+    "first_integrated_pair": "contact/final state/event times exact, but 93/1372 and 123/1393 shared samples; 95 percent coverage gate failed; missing attitude-driven logging condition repaired"
+  },
+  "claims": {
+    "prediction_is_execution": false,
+    "runtime_admission": false,
+    "observation_uncertainty_qualified": false,
+    "independent_physics_validation": false,
+    "recovery_area_qualified": false,
+    "waiting_endurance_qualified": false,
+    "milestone_complete": false
+  }
+}
