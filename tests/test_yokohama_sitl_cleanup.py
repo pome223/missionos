@@ -177,6 +177,7 @@ def test_main_finally_boundary_with_mock_transport(tmp_path, monkeypatch, capsys
     # No Docker/Gazebo process is invoked. main still constructs the real config,
     # copies its runtime sources and executes its production finally boundary.
     monkeypatch.setattr(runner, "command", command)
+    monkeypatch.setattr(runner, "prepare_models", lambda *a, **k: None)
     monkeypatch.setattr(runner, "build_world", lambda *a, **k: {"phase": "contacts"})
     monkeypatch.setattr(runner.subprocess, "Popen", lambda *a, **k: worker)
     write = Path.write_text

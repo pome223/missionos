@@ -17,6 +17,7 @@ from typing import Any
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from src.runtime.yokohama_scene import build_world, sha256  # noqa: E402
+from scripts.yokohama_local_preflight import image_id, prepare_models  # noqa: E402
 
 
 def command(args, timeout=60, check=True):
@@ -109,7 +110,7 @@ def capture_diagnostics(root: Path, result: dict[str, Any], container: str) -> N
         cleanup_error(result, "process_diagnostic_error", exc)
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--goal-plan", type=Path, help="Approved pre-departure map goal manifest")
     parser.add_argument("--phase", choices=["contacts", "flight"], required=True)
@@ -119,6 +120,7 @@ def main():
     parser.add_argument("--altitude-diagnostics", action="store_true")
     parser.add_argument("--decision-backend", choices=["fixture", "native"])
     parser.add_argument("--native-service-config", type=Path)
+    parser.add_argument("--local-image-id", type=image_id)
     parser.add_argument(
         "--capture-paired-views",
         action="store_true",
@@ -212,7 +214,7 @@ def main():
         type=float,
         help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.pad_state_advisory and not args.occupied_pad:
         parser.error("Pad-state advisory requires --occupied-pad")
     if args.occupied_pad and (
@@ -347,27 +349,10 @@ def main():
     payload_receiver = None
     pad_supervisor = None
     try:
-        image = command(
+        image = args.local_image_id or command(
             ["docker", "image", "inspect", "px4io/px4-sitl-gazebo:latest", "--format", "{{.Id}}"]
         ).stdout.strip()
-        command(
-            [
-                "docker",
-                "run",
-                "--rm",
-                "--network",
-                "none",
-                "--entrypoint",
-                "sh",
-                "-v",
-                str(root) + ":/mission",
-                image,
-                "-c",
-                "mkdir -p /mission/models/worlds; cp /opt/px4-gazebo/share/gz/worlds/default.sdf /mission/models/worlds/; "
-                "for model in x500 x500_base; do mkdir -p /mission/models/$model; cp /opt/px4-gazebo/share/gz/models/$model/model.* /mission/models/$model/; "
-                "if [ -d /opt/px4-gazebo/share/gz/models/$model/meshes ]; then ln -s /opt/px4-gazebo/share/gz/models/$model/meshes /mission/models/$model/meshes; fi; done",
-            ]
-        )
+        prepare_models(root, image)
         world = build_world(
             root,
             REPO / "docs/examples/yokohama-urban-scene",
@@ -708,11 +693,12 @@ def main():
         if args.decision_backend:
             from scripts.yokohama_decision_host import DecisionHost
 
-            service = (
-                json.loads(args.native_service_config.read_text())
-                if args.native_service_config
-                else None
-            )
+            service_bytes = args.native_service_config.read_bytes() if args.native_service_config else None
+            service = json.loads(service_bytes) if service_bytes is not None else None
+            if service_bytes is not None:
+                import hashlib
+
+                result["native_service_config_sha256"] = hashlib.sha256(service_bytes).hexdigest()
             decision_host = DecisionHost(
                 root,
                 config,
