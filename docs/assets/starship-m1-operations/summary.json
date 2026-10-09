@@ -1,0 +1,2237 @@
+{
+  "fixed_timeline_contact_rescored_under_changed_notice": {
+    "contact": {
+      "time_s": 4929.856429758704,
+      "speed_mps": 4.608259493361677,
+      "tilt_deg": 2.374862690722787,
+      "body_rate_rad_s": 0.003031432577058173,
+      "reserve_kg": 62394.30546504836,
+      "latitude_deg": 4.882801542375486,
+      "longitude_deg": 165.2781946210071
+    },
+    "available_area_and_time_met": false,
+    "assessment_only_no_extra_flight": true
+  },
+  "schema": "missionos.starship_m1_completion_evidence.v1",
+  "source_sha256": {
+    "src/runtime/starship_sixdof_catalog.py": "a31d9e2d630e0304d932d0c27fefdf45c6ceb64a2076e3bbbc0dba311b343641",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "720271c8216c9be7b5fadf303875b92185406f0406b59f128550f86b8d919345",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "f01dcaf2378605b65863651b697edda5c67efaeb5f5f9faefab128da145ec7cd",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "71481d531a12569f6fedd590e3be43f0391c0afe6335ca660526ece4fbd26b52",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src/runtime/starship_return_feasibility_verifier.py": "8041cc485f902621e72e09162d3d3a0fa2bbd973d93a039e52740712b43435b4",
+    "docs/assets/starship-state-return-qualification/qualification.json": "15082a7d0d4cdd503548a40ee1303844fe742fb28b0bfdf51bb22b9ac708647d",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "5895442e8ae0e96f0985b231ce2351aa45de1a6302ba29a540a7cf62884e4b4e",
+    "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "0f61b4a9afa9e5c62ff10dbe4f0225a72c21864dc51a58566e076cc1cf96c26b",
+    "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "799f6af522dc32eaaf7014db611e8ea8f2ccb24be13d32dec75dc26ed45496c7",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+    "src/gateway/starship_chat.py": "55132c472457ec2b526c028f15575237821c7cea8d00e97c5199eef1c306d2be",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_replanning.py": "98e5e5f74867ca458a9678425f816ec29ca2d003d726e3362c6cdc2bd0882cad",
+    "src/runtime/starship_replanning_executor.py": "666dc55b922d71427a7e00aed273644a4209918d9b29daac87c30958f73cca73",
+    "src/runtime/starship_replanning_verifier.py": "d631cd9ae7f625a880dd5114210b860c671c5cc51dd4c37c4f2153ee4076197a",
+    "src/intelligence/starship_replanning.py": "138b42f3f174734a93b6237d1216608061bea13b13de111eb9d03981509542eb",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "ac22c3c47050163a2610d82a3cea67a5369e6748f221057e12827c8cd582a24b",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110"
+  },
+  "cases": [
+    {
+      "case": "normal",
+      "mode": "live",
+      "record_sha256": "c46d8929161dd4bba4637fa9a32abb5e9c56889a0e2f786c141645139d1dac86",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "gateway_status": "verified",
+      "test_operator": true,
+      "authenticated_human_identity_verified": false,
+      "worker_receipt_verified": true,
+      "simulator_provider_credentials_present": false,
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 2280.7000000000407,
+      "candidate_id": "nominal",
+      "return_delay_s": 0.0,
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "checked_areas": [
+        "east"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed": 4,
+      "jev_calls": 3,
+      "deepseek_calls": 0,
+      "single_choice_model_calls": 0,
+      "multiple_choice_model_calls": 3,
+      "decisions": [
+        {
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "evaluate_returns",
+            "keep_plan"
+          ],
+          "candidate_constraints": {},
+          "accepted_action": "keep_plan",
+          "later_time_s": 1000.9500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "818ecd6eb7af3fe17be4e17b0c3c999c1f1439830bcf27d8c4b8b317378d2130",
+            "response_sha256": "6a2ba72bfecfa344f9e3bfdb005e3d03707c3ed5493647029a0e5c9c71a04727",
+            "latency_ms": 218.641
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 1155.4500000000407,
+          "stage": "return_options",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "select_nominal",
+            "evaluate_returns",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "accepted_action": "select_nominal",
+          "later_time_s": 1155.7000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "7e4224d8ffbf3f444ccdc1dfd5859ae0dce0a642261d7ab4bb25aa675e461deb",
+            "response_sha256": "1373cae5bb42b019ee474104d2045d7505cc942e855a89ac3cd6df26ead6107c",
+            "latency_ms": 203.203
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [],
+              "areas": [
+                "east"
+              ]
+            }
+          },
+          "accepted_action": "keep_plan",
+          "later_time_s": 2220.9500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "b2501e94e8ce08a3b76c0fac9feedcfacd532df767e8ffad123ba8c2d15edb0a",
+            "response_sha256": "b90d005d7551cc9b37f7665ec58266c19f96d479e7c0b0c93be5da64a812d135",
+            "latency_ms": 186.793
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 1155.7000000000407,
+          "candidate_id": "nominal",
+          "basis": "ai"
+        }
+      ],
+      "ground_status_retrievals": [],
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1000.9500000000407,
+          "wall_time_s": 0.23114379099570215,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1000.9500000000407,
+          "end_time_s": 1155.4500000000407,
+          "wall_time_s": 154.4518251249974,
+          "expired": false
+        },
+        {
+          "operation": "model:return_options",
+          "start_time_s": 1155.4500000000407,
+          "end_time_s": 1155.7000000000407,
+          "wall_time_s": 0.23971854100818746,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 2220.7000000000407,
+          "end_time_s": 2220.9500000000407,
+          "wall_time_s": 0.22755387501092628,
+          "expired": false
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 1,
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "11bb0e1ea71f32f32fb41ba8db1ae239be148e5a2f3bfea45e89794ee88175d9",
+              "wall_time_s": 57.142708583007334,
+              "contact": {
+                "time_s": 4929.828887888825,
+                "speed_mps": 4.612764337417037,
+                "tilt_deg": 2.387917326892682,
+                "body_rate_rad_s": 0.0030168720088619224,
+                "reserve_kg": 62405.52336432892,
+                "latitude_deg": 4.881996301368013,
+                "longitude_deg": 165.27668084549057
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "e8643a4f70d451057ff6094071fc267880a4a27dbc1057bce04afabfd39af13f",
+              "wall_time_s": 57.25574237501132,
+              "contact": {
+                "time_s": 4930.289933493772,
+                "speed_mps": 4.612548712781505,
+                "tilt_deg": 2.385330314849587,
+                "body_rate_rad_s": 0.0030317670977721136,
+                "reserve_kg": 62306.155519408276,
+                "latitude_deg": 4.892093941648174,
+                "longitude_deg": 165.29804954574772
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "e36db6427c877c0bc0c580c144f982e372ec38a0d40a6c9755d9c3c05f596a57",
+              "wall_time_s": 57.85892312502256,
+              "contact": {
+                "time_s": 4930.496545508542,
+                "speed_mps": 4.632628929848031,
+                "tilt_deg": 2.418021774044538,
+                "body_rate_rad_s": 0.003001073223650873,
+                "reserve_kg": 62496.59818178222,
+                "latitude_deg": 4.903001850808009,
+                "longitude_deg": 165.3163321972114
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "2df991c90798d31bb7f78b6396016d3870078fe9153a1a47f4a72f75454afd6c",
+              "wall_time_s": 95.38010124998982,
+              "contact": {
+                "time_s": 4940.344308522686,
+                "speed_mps": 4.603144192297678,
+                "tilt_deg": 2.3494679912211716,
+                "body_rate_rad_s": 0.0030100791372371454,
+                "reserve_kg": 62512.67921216466,
+                "latitude_deg": 5.196955814101847,
+                "longitude_deg": 165.8977405160887
+              }
+            }
+          ]
+        }
+      },
+      "fixed_timeline_regression": {
+        "final_state_exactly_equal": true,
+        "contact_receipt_exactly_equal": true,
+        "baseline_study_sha256": "02cd2d6d17fd90436a1265cc87c6cedee66557496f4cb850dfd419249f27d663"
+      }
+    },
+    {
+      "case": "recovery_update",
+      "mode": "live",
+      "record_sha256": "80bb279db81c0dc331b7af315438252a8c76eb9b12a5450f5974d2f45a3c6b3d",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "gateway_status": "verified",
+      "test_operator": true,
+      "authenticated_human_identity_verified": false,
+      "worker_receipt_verified": true,
+      "simulator_provider_credentials_present": false,
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 7731.450000000041,
+      "candidate_id": "next_orbit",
+      "return_delay_s": 5450.75,
+      "contact": {
+        "time_s": 10378.626705202787,
+        "speed_mps": 4.613326129759819,
+        "tilt_deg": 2.396269455067431,
+        "body_rate_rad_s": 0.00302824699790695,
+        "reserve_kg": 62433.93195734164,
+        "latitude_deg": 5.340555349536351,
+        "longitude_deg": 143.00317594363955
+      },
+      "checked_areas": [
+        "west"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed": 12,
+      "jev_calls": 10,
+      "deepseek_calls": 0,
+      "single_choice_model_calls": 3,
+      "multiple_choice_model_calls": 7,
+      "decisions": [
+        {
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "evaluate_returns",
+            "keep_plan"
+          ],
+          "candidate_constraints": {},
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 1001.2000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "e14da7d29a04002adb5f955e27125bc548f9aff7769917bbf53348df6278370a",
+            "response_sha256": "996eb4d461ddb7d1ae1a8fb74697c07f020775aebf626bfae8a182075f030014",
+            "latency_ms": 217.753
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 1419.7000000000407,
+          "stage": "return_options",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "refresh_observation",
+          "later_time_s": 1420.2000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "4ce5ad5dabc5c1e99bbd28caee96ef168308b25b25130bebfd117d6880011599",
+            "response_sha256": "3b30dbc2eae8642af035a4f2641c319ca797b42f0cb1dba23e2569c9cfc19850",
+            "latency_ms": 238.038
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 1420.4500000000407,
+          "stage": "after_ground_observation",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 1420.7000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "d2496dbe71101fe353154513d26a3cfa0db4dd598f8294b6accbeba6c3affd71",
+            "response_sha256": "68b6049704c4c414451ba05f06018f71b1d057c110c214ae5c07b29b7b00d168",
+            "latency_ms": 199.975
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 2620.7000000000407,
+          "stage": "coast_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 2621.2000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "b0befc5024ab6b5e10f59fac7c38921bf47f86160b8f920623189c1a7f7bb87f",
+            "response_sha256": "e46a27c7012c336ab0c4b047f34c7d03e63c6ad417295237248b5d50c9ff0814",
+            "latency_ms": 395.845
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 3821.2000000000407,
+          "stage": "coast_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 3821.7000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "eac06c759abac79b4cc2091bce38769cbfe9738f21448d25f45ce059c4d09fd1",
+            "response_sha256": "74194b30cee03bd99661974a23c10dcd6487cfc17e4b733553e33478eb252afc",
+            "latency_ms": 231.591
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 4800.200000000041,
+          "stage": "updated_recovery_status",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "evaluate_returns",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "forecast_notice_binding"
+              ],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 4800.700000000041,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "92cbdc89d51f70b55475dfbd4cf3deb1cb60afeb039270e58c3ec66370733f22",
+            "response_sha256": "c6dc0d9192b8ba0d825aac99e2a1841b3afd0adbac837332428ce73d181b406f",
+            "latency_ms": 211.925
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 4984.950000000041,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "select_next_orbit",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": "select_next_orbit",
+          "later_time_s": 4985.450000000041,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "3d732850b1a07bbc6180db8fda09680917385be717431ccf947c9479983994a3",
+            "response_sha256": "c9d64f29a449ba864b64fc0685fd7663120ca98d7327b816ce8990ffbedaed3b",
+            "latency_ms": 292.174
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 6185.450000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": "keep_plan",
+          "later_time_s": 6185.950000000041,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "9b3a78ef1689be861f59241ad66f616c71bdd3f72a63a0c33e864687b6cd8c1a",
+            "response_sha256": "86cf2a3ab437b4174afb361750db7ffe7cc3c4f962b6a39efe4608c6798989a7",
+            "latency_ms": 229.233
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 7385.950000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": "keep_plan",
+          "later_time_s": 7386.450000000041,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "8697eacbf7f3dd8b4060f917da76699e943164cfa388283870996a8c3810be8b",
+            "response_sha256": "a83a18cf74efae6ac0a2c1ef853ad87e6aeba9ebeedcfbf193ad978664ddd627",
+            "latency_ms": 213.535
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        },
+        {
+          "time_s": 7671.450000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": "keep_plan",
+          "later_time_s": 7671.700000000041,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": true,
+          "jev": {
+            "status": "succeeded",
+            "model_id": "jev-1.13.0",
+            "call_attempted": true,
+            "response_received": true,
+            "call_succeeded": true,
+            "model_inference_invoked": true,
+            "request_sha256": "bd63f926b3c102ea13ffe2eed16a92288e75b7e8389c6ab744f929366407313c",
+            "response_sha256": "7779ae8705cfc1ca748b5a182ca8e985c0a60c4907bb1dd0cdd3b68ec7bc48fa",
+            "latency_ms": 206.586
+          },
+          "deepseek": {
+            "status": "not_invoked",
+            "model_id": null,
+            "call_attempted": false,
+            "response_received": false,
+            "call_succeeded": false,
+            "model_inference_invoked": false,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": 0.0
+          }
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 4985.450000000041,
+          "candidate_id": "next_orbit",
+          "basis": "ai"
+        }
+      ],
+      "ground_status_retrievals": [
+        {
+          "requested_s": 1420.2000000000407,
+          "received_s": 1420.4500000000407,
+          "notice": {
+            "sequence": 1,
+            "issued_at_s": 950.0,
+            "expires_at_s": 4800.0,
+            "text": "Recovery coordinator: eastern recovery area withdrawn because support assets are unavailable. Western backup staffing remains unconfirmed. Obtain an updated status before committing to that area. No clearance is granted by this notice.",
+            "areas": {}
+          },
+          "information_changed": false,
+          "channel": "published_recovery_coordinator_status"
+        }
+      ],
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1001.2000000000407,
+          "wall_time_s": 0.254912083997624,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1001.2000000000407,
+          "end_time_s": 1419.7000000000407,
+          "wall_time_s": 418.3522002910031,
+          "expired": false
+        },
+        {
+          "operation": "model:return_options",
+          "start_time_s": 1419.7000000000407,
+          "end_time_s": 1420.2000000000407,
+          "wall_time_s": 0.2542147079948336,
+          "expired": false
+        },
+        {
+          "operation": "model:after_ground_observation",
+          "start_time_s": 1420.4500000000407,
+          "end_time_s": 1420.7000000000407,
+          "wall_time_s": 0.22624950000317767,
+          "expired": false
+        },
+        {
+          "operation": "model:coast_monitoring",
+          "start_time_s": 2620.7000000000407,
+          "end_time_s": 2621.2000000000407,
+          "wall_time_s": 0.431953291001264,
+          "expired": false
+        },
+        {
+          "operation": "model:coast_monitoring",
+          "start_time_s": 3821.2000000000407,
+          "end_time_s": 3821.7000000000407,
+          "wall_time_s": 0.2653478330175858,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_recovery_status",
+          "start_time_s": 4800.200000000041,
+          "end_time_s": 4800.700000000041,
+          "wall_time_s": 0.2539252499991562,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 4800.700000000041,
+          "end_time_s": 4984.950000000041,
+          "wall_time_s": 184.08987658302067,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 4984.950000000041,
+          "end_time_s": 4985.450000000041,
+          "wall_time_s": 0.3025446250103414,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 6185.450000000041,
+          "end_time_s": 6185.950000000041,
+          "wall_time_s": 0.2634178750158753,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 7385.950000000041,
+          "end_time_s": 7386.450000000041,
+          "wall_time_s": 0.2649542089784518,
+          "expired": false
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 7671.450000000041,
+          "end_time_s": 7671.700000000041,
+          "wall_time_s": 0.23653558400110342,
+          "expired": false
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 1,
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "22157d82a19adbb327c321a4b367501db3675aca5f619a9422f704f8f5255b03",
+              "wall_time_s": 59.087863499997184,
+              "contact": {
+                "time_s": 4929.834599444306,
+                "speed_mps": 4.611902152876981,
+                "tilt_deg": 2.3853013431008487,
+                "body_rate_rad_s": 0.0030197686987260184,
+                "reserve_kg": 62402.434244060656,
+                "latitude_deg": 4.882127422493558,
+                "longitude_deg": 165.27694699252916
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "484746d078a6cb91c6ceebd6421b44250d33066fe00e0df7273e6c26994c59c3",
+              "wall_time_s": 58.809466915990924,
+              "contact": {
+                "time_s": 4930.295651206413,
+                "speed_mps": 4.611521071245985,
+                "tilt_deg": 2.3826231104976867,
+                "body_rate_rad_s": 0.003034632275842229,
+                "reserve_kg": 62303.03541032512,
+                "latitude_deg": 4.892225142636487,
+                "longitude_deg": 165.29831599923455
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "a401983bbe999af166d5d8a7feba098d2abd2d41d3f36fe35d66a67739b61a91",
+              "wall_time_s": 57.56144383302308,
+              "contact": {
+                "time_s": 4930.502302715221,
+                "speed_mps": 4.6177608720552605,
+                "tilt_deg": 2.401658954203733,
+                "body_rate_rad_s": 0.003007233622626457,
+                "reserve_kg": 62493.508760315985,
+                "latitude_deg": 4.903128844762216,
+                "longitude_deg": 165.3165992321645
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "202a848400b0c090fba7c78c97d9fed5cc94d561e44e4eeafac3bb8f7cf7a673",
+              "wall_time_s": 94.80100058400421,
+              "contact": {
+                "time_s": 4940.350174519763,
+                "speed_mps": 4.602198209703442,
+                "tilt_deg": 2.3468169035666158,
+                "body_rate_rad_s": 0.003012988111227483,
+                "reserve_kg": 62509.46545324593,
+                "latitude_deg": 5.197088725504996,
+                "longitude_deg": 165.89801103420484
+              }
+            }
+          ]
+        },
+        "next_orbit": {
+          "return_time_s": 7731.351388986685,
+          "notice_sequence": 2,
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "7a60aa5b7ce9da73d8fe4ae1df9363229dcc6c946108f2d5f482311224150655",
+              "wall_time_s": 69.56744237500243,
+              "contact": {
+                "time_s": 10378.615140071837,
+                "speed_mps": 4.606625731459887,
+                "tilt_deg": 2.3703448129522457,
+                "body_rate_rad_s": 0.0030359417957887213,
+                "reserve_kg": 62383.36990109069,
+                "latitude_deg": 5.339803401809954,
+                "longitude_deg": 143.0017191099893
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "25933fd7e5b384eb0cdc5ec0ff394736afec4c4f49a93328bf1488c91612bcc1",
+              "wall_time_s": 69.42801520900684,
+              "contact": {
+                "time_s": 10379.124983528582,
+                "speed_mps": 4.612965751045211,
+                "tilt_deg": 2.389320534865465,
+                "body_rate_rad_s": 0.0030144614340206232,
+                "reserve_kg": 62313.856188582984,
+                "latitude_deg": 5.351334366453918,
+                "longitude_deg": 143.02613552074652
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "b0cc9b479029f63631913847b05f13c339851722af34cb15648b604976df46f5",
+              "wall_time_s": 68.41175979201216,
+              "contact": {
+                "time_s": 10379.24038945171,
+                "speed_mps": 4.625134695378071,
+                "tilt_deg": 2.3895663317325857,
+                "body_rate_rad_s": 0.0030107702058266295,
+                "reserve_kg": 62443.83076367567,
+                "latitude_deg": 5.359321931051288,
+                "longitude_deg": 143.0386061437576
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "fa5c62e01b084ebaff68c80f2b3087edc4a184f694be9a5677fa61c6574b0ece",
+              "wall_time_s": 112.11266579199582,
+              "contact": {
+                "time_s": 10389.107638024201,
+                "speed_mps": 4.604626766558062,
+                "tilt_deg": 2.3538166224294867,
+                "body_rate_rad_s": 0.0030047985223694484,
+                "reserve_kg": 62516.17255188853,
+                "latitude_deg": 5.653134237521579,
+                "longitude_deg": 143.62281385032884
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "decision_timeout",
+      "mode": "fixture",
+      "record_sha256": "dadb11a995b49188360b3a964212d52919270a982f0dd4794f96182dc22db998",
+      "verification": {
+        "passed": true,
+        "issues": [],
+        "outcome": "contact_and_recovery_area_met",
+        "case_accepted": true,
+        "case_issues": [],
+        "mission_completed": false,
+        "physical_execution": false,
+        "independent_physics_validation": false
+      },
+      "gateway_status": "verified",
+      "test_operator": true,
+      "authenticated_human_identity_verified": false,
+      "worker_receipt_verified": true,
+      "simulator_provider_credentials_present": false,
+      "payload_released_count": 26,
+      "scheduled_return_s": 2280.7000000000407,
+      "dispatched_return_s": 7731.450000000041,
+      "candidate_id": "next_orbit",
+      "return_delay_s": 5450.75,
+      "contact": {
+        "time_s": 10378.626705202787,
+        "speed_mps": 4.613326129759819,
+        "tilt_deg": 2.396269455067431,
+        "body_rate_rad_s": 0.00302824699790695,
+        "reserve_kg": 62433.93195734164,
+        "latitude_deg": 5.340555349536351,
+        "longitude_deg": 143.00317594363955
+      },
+      "checked_areas": [
+        "west"
+      ],
+      "human_inflight_commands": 0,
+      "forecasts_executed": 12,
+      "jev_calls": 0,
+      "deepseek_calls": 0,
+      "single_choice_model_calls": 0,
+      "multiple_choice_model_calls": 0,
+      "decisions": [
+        {
+          "time_s": 1000.7000000000407,
+          "stage": "normal_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "evaluate_returns",
+            "keep_plan"
+          ],
+          "candidate_constraints": {},
+          "accepted_action": "evaluate_returns",
+          "later_time_s": 1000.9500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 1417.2000000000407,
+          "stage": "return_options",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "refresh_observation",
+          "later_time_s": 1417.4500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 1417.7000000000407,
+          "stage": "after_ground_observation",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 1417.9500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 2617.9500000000407,
+          "stage": "coast_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 2618.2000000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 3818.2000000000407,
+          "stage": "coast_monitoring",
+          "notice_sequence": 1,
+          "allowed_actions": [
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "area_or_availability"
+              ],
+              "areas": []
+            }
+          },
+          "accepted_action": "wait_for_update",
+          "later_time_s": 3818.4500000000407,
+          "fallback": false,
+          "request_disposition": "submitted",
+          "synthetic_timeout_injected": false,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 4800.200000000041,
+          "stage": "updated_recovery_status",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "evaluate_returns",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [
+                "forecast_notice_binding"
+              ],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": null,
+          "later_time_s": 4835.450000000041,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 5025.950000000041,
+          "stage": "updated_return_options",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "select_next_orbit",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": null,
+          "later_time_s": 5061.200000000041,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 6261.200000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": null,
+          "later_time_s": 6296.450000000041,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 7496.450000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": null,
+          "later_time_s": 7531.700000000041,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        },
+        {
+          "time_s": 7671.450000000041,
+          "stage": "selected_plan_monitoring",
+          "notice_sequence": 2,
+          "allowed_actions": [
+            "keep_plan",
+            "refresh_observation",
+            "wait_for_update"
+          ],
+          "candidate_constraints": {
+            "nominal": {
+              "rejections": [
+                "area_or_availability",
+                "forecast_notice_binding",
+                "request_time",
+                "state_outside_prediction_time"
+              ],
+              "areas": []
+            },
+            "next_orbit": {
+              "rejections": [],
+              "areas": [
+                "west"
+              ]
+            }
+          },
+          "accepted_action": null,
+          "later_time_s": 7706.700000000041,
+          "fallback": true,
+          "request_disposition": "synthetic_outage",
+          "synthetic_timeout_injected": true,
+          "model_inference_invoked": false,
+          "jev": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          },
+          "deepseek": {
+            "status": null,
+            "model_id": null,
+            "call_attempted": null,
+            "response_received": null,
+            "call_succeeded": null,
+            "model_inference_invoked": null,
+            "request_sha256": null,
+            "response_sha256": null,
+            "latency_ms": null
+          }
+        }
+      ],
+      "revisions": [
+        {
+          "revision": 1,
+          "time_s": 5061.200000000041,
+          "candidate_id": "next_orbit",
+          "basis": "checked_fallback"
+        }
+      ],
+      "ground_status_retrievals": [
+        {
+          "requested_s": 1417.4500000000407,
+          "received_s": 1417.7000000000407,
+          "notice": {
+            "sequence": 1,
+            "issued_at_s": 950.0,
+            "expires_at_s": 4800.0,
+            "text": "Recovery coordinator: eastern recovery area withdrawn because support assets are unavailable. Western backup staffing remains unconfirmed. Obtain an updated status before committing to that area. No clearance is granted by this notice.",
+            "areas": {}
+          },
+          "information_changed": false,
+          "channel": "published_recovery_coordinator_status"
+        }
+      ],
+      "pending_operations": [
+        {
+          "operation": "model:normal_monitoring",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1000.9500000000407,
+          "wall_time_s": 0.017633750016102567,
+          "expired": false
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 1000.9500000000407,
+          "end_time_s": 1417.2000000000407,
+          "wall_time_s": 416.1795296659984,
+          "expired": false
+        },
+        {
+          "operation": "model:return_options",
+          "start_time_s": 1417.2000000000407,
+          "end_time_s": 1417.4500000000407,
+          "wall_time_s": 0.014758499979507178,
+          "expired": false
+        },
+        {
+          "operation": "model:after_ground_observation",
+          "start_time_s": 1417.7000000000407,
+          "end_time_s": 1417.9500000000407,
+          "wall_time_s": 0.016986083996016532,
+          "expired": false
+        },
+        {
+          "operation": "model:coast_monitoring",
+          "start_time_s": 2617.9500000000407,
+          "end_time_s": 2618.2000000000407,
+          "wall_time_s": 0.017473917017923668,
+          "expired": false
+        },
+        {
+          "operation": "model:coast_monitoring",
+          "start_time_s": 3818.2000000000407,
+          "end_time_s": 3818.4500000000407,
+          "wall_time_s": 0.01750883398926817,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_recovery_status",
+          "start_time_s": 4800.200000000041,
+          "end_time_s": 4835.450000000041,
+          "wall_time_s": 35.01089841598878,
+          "expired": true
+        },
+        {
+          "operation": "return_forecasts",
+          "start_time_s": 4835.450000000041,
+          "end_time_s": 5025.950000000041,
+          "wall_time_s": 190.34803049999755,
+          "expired": false
+        },
+        {
+          "operation": "model:updated_return_options",
+          "start_time_s": 5025.950000000041,
+          "end_time_s": 5061.200000000041,
+          "wall_time_s": 35.00291479099542,
+          "expired": true
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 6261.200000000041,
+          "end_time_s": 6296.450000000041,
+          "wall_time_s": 35.00655470901984,
+          "expired": true
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 7496.450000000041,
+          "end_time_s": 7531.700000000041,
+          "wall_time_s": 35.00774670901592,
+          "expired": true
+        },
+        {
+          "operation": "model:selected_plan_monitoring",
+          "start_time_s": 7671.450000000041,
+          "end_time_s": 7706.700000000041,
+          "wall_time_s": 35.01155683398247,
+          "expired": true
+        }
+      ],
+      "forecasts": {
+        "nominal": {
+          "return_time_s": 2280.7000000000407,
+          "notice_sequence": 1,
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "2c45752f68a0f42f887c347d0c695bafcc8ac7db65be3729cbfd080a785d5f5f",
+              "wall_time_s": 57.400755333015695,
+              "contact": {
+                "time_s": 4929.828887888825,
+                "speed_mps": 4.612764337417037,
+                "tilt_deg": 2.387917326892682,
+                "body_rate_rad_s": 0.0030168720088619224,
+                "reserve_kg": 62405.52336432892,
+                "latitude_deg": 4.881996301368013,
+                "longitude_deg": 165.27668084549057
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "0231c56febb28b7153a1619efbd20e0f0c67d17eda257a955fa8d5050c928062",
+              "wall_time_s": 57.2652119169943,
+              "contact": {
+                "time_s": 4930.289933493772,
+                "speed_mps": 4.612548712781505,
+                "tilt_deg": 2.385330314849587,
+                "body_rate_rad_s": 0.0030317670977721136,
+                "reserve_kg": 62306.155519408276,
+                "latitude_deg": 4.892093941648174,
+                "longitude_deg": 165.29804954574772
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "0b19bc8729f463bec07ea194c2ad07863405fabafd3265a330ee37d1076c9a2e",
+              "wall_time_s": 58.107792832975974,
+              "contact": {
+                "time_s": 4930.496545508542,
+                "speed_mps": 4.632628929848031,
+                "tilt_deg": 2.418021774044538,
+                "body_rate_rad_s": 0.003001073223650873,
+                "reserve_kg": 62496.59818178222,
+                "latitude_deg": 4.903001850808009,
+                "longitude_deg": 165.3163321972114
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "0d85c2a5b5caf53ab850d4c5c278b5530769338b043db159e9091a5d7708d175",
+              "wall_time_s": 95.63713116699364,
+              "contact": {
+                "time_s": 4940.344308522686,
+                "speed_mps": 4.603144192297678,
+                "tilt_deg": 2.3494679912211716,
+                "body_rate_rad_s": 0.0030100791372371454,
+                "reserve_kg": 62512.67921216466,
+                "latitude_deg": 5.196955814101847,
+                "longitude_deg": 165.8977405160887
+              }
+            }
+          ]
+        },
+        "next_orbit": {
+          "return_time_s": 7731.351388986685,
+          "notice_sequence": 2,
+          "trials": [
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "78b2c9af3b4bb586d311ba3338a8106d8fe5d0587201ac0b5e563c9f85f44e4f",
+              "wall_time_s": 73.37709704201552,
+              "contact": {
+                "time_s": 10378.613714376417,
+                "speed_mps": 4.606864736292043,
+                "tilt_deg": 2.3710153435432493,
+                "body_rate_rad_s": 0.003035170635816522,
+                "reserve_kg": 62384.11779155993,
+                "latitude_deg": 5.339780656140765,
+                "longitude_deg": 143.00167714346074
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "4d908c8d4ccdbea88e4631dc2227a4b81239e1cc7de497c5d1845035a5301888",
+              "wall_time_s": 73.45611891697627,
+              "contact": {
+                "time_s": 10379.12273523542,
+                "speed_mps": 4.613196463948874,
+                "tilt_deg": 2.390292301369766,
+                "body_rate_rad_s": 0.003013492718697763,
+                "reserve_kg": 62315.05558046151,
+                "latitude_deg": 5.351302156859927,
+                "longitude_deg": 143.0260758995603
+              }
+            },
+            {
+              "integration_scale": 1.0,
+              "prediction_sha256": "00924bf8f9dd3d1f00fe616d2f350371e853e2cb7498888ea3f0c083955e2c04",
+              "wall_time_s": 70.58561041599023,
+              "contact": {
+                "time_s": 10379.239726642101,
+                "speed_mps": 4.625165297160731,
+                "tilt_deg": 2.389823988983459,
+                "body_rate_rad_s": 0.0030104177095368542,
+                "reserve_kg": 62444.17466439472,
+                "latitude_deg": 5.359308852097318,
+                "longitude_deg": 143.03858187117854
+              }
+            },
+            {
+              "integration_scale": 0.5,
+              "prediction_sha256": "fe6539371cea60bee2520c6c1ae155acf95da0e35b90673b78c0881cb6748a8d",
+              "wall_time_s": 114.61517195901251,
+              "contact": {
+                "time_s": 10389.105523752083,
+                "speed_mps": 4.594107471990594,
+                "tilt_deg": 2.3409165517502997,
+                "body_rate_rad_s": 0.003022990732416408,
+                "reserve_kg": 62517.16636338865,
+                "latitude_deg": 5.653103660335931,
+                "longitude_deg": 143.62277249766714
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "case_accepted_count": 3,
+  "development_failures": [
+    {
+      "label": "e2e-normal",
+      "record_sha256": "e278632cc9c0baeed41481bb4bcd5947e5d74fb6a4239231f05f5794ae56da31",
+      "termination": "return_unresolved",
+      "contact_observed": false,
+      "cause_and_correction": "In-process NumPy scalars rejected by strict checker; tool now returns persisted JSON.",
+      "not_counted_as_completion": true
+    },
+    {
+      "label": "e2e-replan",
+      "record_sha256": "f6f78c026531464843e38e5f5637dcfaa6a8b0878a6b0894ce170df1af0bc152",
+      "termination": "return_unresolved",
+      "contact_observed": false,
+      "cause_and_correction": "Live agent kept waiting and lost the opportunity; clarify future booking and waiting cost. This is development iteration, not held-out evaluation.",
+      "not_counted_as_completion": true
+    }
+  ],
+  "numerical_refinement_screen": [
+    {
+      "case": "nominal0",
+      "original": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "refined": {
+        "time_s": 4940.366653099999,
+        "speed_mps": 4.596546015538718,
+        "tilt_deg": 2.3476004681389813,
+        "body_rate_rad_s": 0.003016212372304488,
+        "reserve_kg": 62530.70664520673,
+        "latitude_deg": 5.197797813846539,
+        "longitude_deg": 165.8993504172915
+      },
+      "contact_displacement_m": 77291.1674031992,
+      "contact_time_difference_s": 10.510223341295386,
+      "wall_s": 77.81349320799927,
+      "profile_change": "halve powered and coast integration/control interval; all physical coefficients unchanged",
+      "not_independent_physics": true
+    },
+    {
+      "case": "next_orbit0",
+      "original": {
+        "time_s": 10379.134572330444,
+        "speed_mps": 4.63321772212186,
+        "tilt_deg": 2.4206867621485197,
+        "body_rate_rad_s": 0.0029919348650326466,
+        "reserve_kg": 62429.76210168558,
+        "latitude_deg": 5.35467732740411,
+        "longitude_deg": 143.030961779163
+      },
+      "refined": {
+        "time_s": 10389.549639819972,
+        "speed_mps": 4.594987929600579,
+        "tilt_deg": 2.3435008720560315,
+        "body_rate_rad_s": 0.0030202270005528923,
+        "reserve_kg": 62523.42319882114,
+        "latitude_deg": 5.665586843094013,
+        "longitude_deg": 143.64739517100668
+      },
+      "contact_displacement_m": 76572.13697679904,
+      "contact_time_difference_s": 10.415067489528155,
+      "wall_s": 138.06684208399383,
+      "profile_change": "halve powered and coast integration/control interval; all physical coefficients unchanged",
+      "not_independent_physics": true
+    }
+  ],
+  "claims": {
+    "m1_development_scenario_completed": true,
+    "actual_ai_return_replanning_executed": true,
+    "full_starship_mission_completed": false,
+    "independent_physics_validation": false,
+    "numerical_convergence_proven": false,
+    "uncertainty_box_covered": false,
+    "arbitrary_recovery_site_guidance": false,
+    "physical_execution": false,
+    "deepseek_required": false,
+    "script_superiority_required": false,
+    "held_out_model_evaluation": false
+  },
+  "publication": {
+    "compact_reviewed_evidence_only": true,
+    "raw_studies_and_receipts_preserved_locally": true,
+    "no_credentials_or_private_databases": true,
+    "no_local_paths": true,
+    "full_verifier_requires_full_study_not_this_summary": true
+  },
+  "authority_template_without_mode": {
+    "schema": "missionos.return_replanning_authority.v1",
+    "scope": "local_simulation_and_bounded_return_replanning",
+    "operations": {
+      "schema": "missionos.m1_study_operations.v1",
+      "basis": "synthetic_development_campaign_calibrated_from_prior_opportunity_screen",
+      "area_geometry_frozen_before_scenarios": true,
+      "independent_target_guidance_demonstrated": false,
+      "surveyed_ocean_clearance": false,
+      "areas": {
+        "east": {
+          "latitude_deg": 5.0,
+          "longitude_deg": 165.0,
+          "radius_m": 125000.0
+        },
+        "west": {
+          "latitude_deg": 5.0,
+          "longitude_deg": 143.0,
+          "radius_m": 125000.0
+        }
+      },
+      "contact": {
+        "maximum_speed_mps": 5.0,
+        "maximum_tilt_deg": 5.0,
+        "maximum_body_rate_rad_s": 0.02,
+        "minimum_fuel_kg": 28000.0
+      },
+      "waiting": {
+        "initial_energy_kwh": 30.0,
+        "power_kw": 4.0,
+        "minimum_energy_kwh": 12.0,
+        "initial_temperature_k": 295.0,
+        "warming_k_per_s": 0.001,
+        "maximum_temperature_k": 310.0,
+        "loss_upper_kg_per_s": 0.02
+      },
+      "uncertainty": {
+        "method": "center_and_two_joint_perturbations_not_full_box_proof",
+        "position_m": 3.0,
+        "velocity_mps": 0.003,
+        "attitude_deg": 0.01,
+        "body_rate_rad_s": 2e-05,
+        "fuel_kg": 100.0,
+        "contact_footprint_padding_m": 20000.0,
+        "contact_time_padding_s": 30.0
+      },
+      "fresh_state_match": {
+        "position_m": 30.0,
+        "velocity_mps": 0.05,
+        "attitude_deg": 0.1,
+        "body_rate_rad_s": 0.0002,
+        "fuel_kg": 300.0,
+        "maximum_sample_gap_s": 2.01
+      },
+      "assumptions": [
+        "Perfect observed actuator position and health telemetry; bounded synthetic navigation and gauge errors.",
+        "Energy, temperature and vent-loss bounds are accounting assumptions; no heat transfer, slosh, boil-off or electrical subsystem simulation.",
+        "Region inclusion is geometric; ocean clearance, recovery vessels, weather validity and real spacecraft accuracy are not certified."
+      ]
+    },
+    "maximum_jev_calls": 12,
+    "maximum_llm_calls": 2,
+    "maximum_forecasts": 12,
+    "prediction_checks": "three_observation_samples_plus_half_step_center_v1",
+    "maximum_workers": 2,
+    "forecast_timeout_s": 180.0,
+    "batch_timeout_s": 600.0,
+    "decision_timeout_s": 35.0,
+    "maximum_plan_revisions": 4,
+    "maximum_delay_s": 6000.0,
+    "monitor_interval_s": 1200.0,
+    "actions": [
+      "evaluate_returns",
+      "keep_plan",
+      "wait_for_update",
+      "refresh_observation",
+      "select_nominal",
+      "select_next_orbit"
+    ],
+    "fallback": "first_currently_admissible_candidate_else_bounded_coast_unresolved",
+    "physical_execution_authorized": false
+  },
+  "post_flight_display_followup": {
+    "flight_source_commit": "ba87a306",
+    "changed_after_flights": [
+      "src/gateway/starship_chat.py"
+    ],
+    "current_sha256": {
+      "src/gateway/starship_chat.py": "67dc3e6f72aee5b29edb1f08c5b9497a22dbe4b6b13160a0c0674c9db786c29b"
+    },
+    "boundary": "M1 approval display text only",
+    "flight_rerun_after_copy_change": false,
+    "authority_payload_and_nonmessage_response_fields_unchanged_for_three_saved_plans": true,
+    "fresh_loopback_http_plan_approve_reject_passed": true,
+    "new_simulation_or_model_calls": 0
+  },
+  "development_run_accounting": {
+    "full_flights": 9,
+    "flight_forecasts": 67,
+    "additional_observation_screen_forecasts": 6,
+    "additional_step_refinement_forecasts": 2,
+    "history": [
+      {
+        "label": "e2e-normal",
+        "case": "normal",
+        "forecasts": 6,
+        "termination": "return_unresolved",
+        "included_in_final_three": false
+      },
+      {
+        "label": "e2e-normal-v2",
+        "case": "normal",
+        "forecasts": 3,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "e2e-replan",
+        "case": "recovery_update",
+        "forecasts": 9,
+        "termination": "return_unresolved",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-normal",
+        "case": "normal",
+        "forecasts": 3,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-replan",
+        "case": "recovery_update",
+        "forecasts": 9,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "final-timeout",
+        "case": "decision_timeout",
+        "forecasts": 9,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": false
+      },
+      {
+        "label": "reviewed-normal",
+        "case": "normal",
+        "forecasts": 4,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      },
+      {
+        "label": "reviewed-replan",
+        "case": "recovery_update",
+        "forecasts": 12,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      },
+      {
+        "label": "reviewed-timeout",
+        "case": "decision_timeout",
+        "forecasts": 12,
+        "termination": "low_speed_surface_contact",
+        "included_in_final_three": true
+      }
+    ],
+    "automatic_retries": 0,
+    "different_development_versions_not_pooled_as_success_rate": true
+  },
+  "verification_checks": {
+    "starship_regression_passed": 3350,
+    "skipped": 5,
+    "warnings": 2,
+    "changed_file_ruff": "passed",
+    "markdown_links": "passed",
+    "publication_path_scan": "passed",
+    "ci_status_at_publication": "pending"
+  }
+}

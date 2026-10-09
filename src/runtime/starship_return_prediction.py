@@ -44,7 +44,7 @@ def snapshot(sample, *, retained_count):
 def validate_origin(origin, profile, return_time_s, duration_s, *, window=None):
     if (set(origin) != {"schema", "basis", "retained_count", "state"}
             or origin["schema"] != SNAPSHOT_SCHEMA
-            or origin["basis"] != "saved_plant_state_development_only"
+            or origin["basis"] not in ("saved_plant_state_development_only", "synthetic_navigation_estimate_v1")
             or type(origin["retained_count"]) is not int
             or not 0 <= origin["retained_count"] <= profile["payload"]["count"]
             or set(origin["state"]) != set(STATE_KEYS)):
@@ -63,7 +63,10 @@ def validate_origin(origin, profile, return_time_s, duration_s, *, window=None):
                 or window["schema"] != WINDOW_SCHEMA or window["maximum_delay_s"] != 6000.
                 or type(window["scheduled_return_time_s"]) not in (int, float)
                 or not math.isfinite(window["scheduled_return_time_s"])
-                or not state.time_s <= window["scheduled_return_time_s"] <= state.time_s+180.):
+                or (origin["basis"] == "saved_plant_state_development_only"
+                    and not state.time_s <= window["scheduled_return_time_s"] <= state.time_s+180.)
+                or (origin["basis"] == "synthetic_navigation_estimate_v1"
+                    and not 0 <= state.time_s <= window["scheduled_return_time_s"]+6000.)):
             raise ValueError("invalid_fixed_opportunity_window")
         latest, horizon = window["scheduled_return_time_s"]+6000., 10000.
     if (type(return_time_s) not in (float, int) or not math.isfinite(return_time_s)

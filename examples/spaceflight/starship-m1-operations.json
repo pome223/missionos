@@ -1,0 +1,16 @@
+{
+  "schema": "missionos.m1_study_operations.v1",
+  "basis": "synthetic_development_campaign_calibrated_from_prior_opportunity_screen",
+  "area_geometry_frozen_before_scenarios": true,
+  "independent_target_guidance_demonstrated": false,
+  "surveyed_ocean_clearance": false,
+  "areas": {
+    "east": {"latitude_deg": 5.0, "longitude_deg": 165.0, "radius_m": 125000.0},
+    "west": {"latitude_deg": 5.0, "longitude_deg": 143.0, "radius_m": 125000.0}
+  },
+  "contact": {"maximum_speed_mps": 5.0, "maximum_tilt_deg": 5.0, "maximum_body_rate_rad_s": 0.02, "minimum_fuel_kg": 28000.0},
+  "waiting": {"initial_energy_kwh": 30.0, "power_kw": 4.0, "minimum_energy_kwh": 12.0, "initial_temperature_k": 295.0, "warming_k_per_s": 0.001, "maximum_temperature_k": 310.0, "loss_upper_kg_per_s": 0.02},
+  "uncertainty": {"method": "center_and_two_joint_perturbations_not_full_box_proof", "position_m": 3.0, "velocity_mps": 0.003, "attitude_deg": 0.01, "body_rate_rad_s": 0.00002, "fuel_kg": 100.0, "contact_footprint_padding_m": 20000.0, "contact_time_padding_s": 30.0},
+  "fresh_state_match": {"position_m": 30.0, "velocity_mps": 0.05, "attitude_deg": 0.1, "body_rate_rad_s": 0.0002, "fuel_kg": 300.0, "maximum_sample_gap_s": 2.01},
+  "assumptions": ["Perfect observed actuator position and health telemetry; bounded synthetic navigation and gauge errors.", "Energy, temperature and vent-loss bounds are accounting assumptions; no heat transfer, slosh, boil-off or electrical subsystem simulation.", "Region inclusion is geometric; ocean clearance, recovery vessels, weather validity and real spacecraft accuracy are not certified."]
+}

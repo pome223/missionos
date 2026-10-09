@@ -32,7 +32,7 @@ class RetainedArtifactFixture(StarshipMissionService):
     def status(self, session_id, plan_id=None):
         if (session_id, plan_id) != ("fixture-session", "fixture-plan"):
             raise StarshipMissionError("no_matching_starship_plan")
-        return {"status": "verified", "execution": {"run_id": "a" * 32, "artifact_sha256": self.hashes}}
+        return {"status": "verified", "execution": {"run_id": "a" * 32, "worker_receipt_verified": True, "artifact_sha256": self.hashes}}
 
 
 @pytest.fixture

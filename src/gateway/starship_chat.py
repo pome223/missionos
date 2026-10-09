@@ -92,7 +92,20 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "60系列の最初の観測失敗後だけを分類し、履歴ルールの実行は変更しません。"
                     "この呼出し範囲も /approve の対象です。"
                 )
-            if plan.get("mission_envelope"):
+            if plan.get("backend") == "starship_return_replanning":
+                scope = plan["mission_envelope"]
+                response["message"] += (
+                    f"\nM1帰還管制: {scope['mode']}。/approve は次の範囲を一度承認します。"
+                    "帰還候補の計算、公開済み回収情報の取得、有限の待機、帰還計画の選択と再判断。"
+                    f"元の帰還予定から最大{scope['maximum_delay_s']:g}秒まで。再判断で期限を延長しません。"
+                    f"Jev最大{scope['maximum_jev_calls']}回、必要時のDeepSeek最大{scope['maximum_llm_calls']}回、"
+                    f"予測最大{scope['maximum_forecasts']}本、計画更新最大{scope['maximum_plan_revisions']}回。"
+                    "観測摂動3条件と細かい計算刻み1条件を検算し、最新状態、回収区域・時間、待機資源を実行直前にも確かめます。"
+                    "判断待ちも飛行を進めます。未応答は同じ検算を通る代替動作へ移り、成立しなければ未解決です。"
+                    "放出・タワーキャッチの追加権限や実機への指令は含みません。"
+                    "\n" + "\n".join(plan["limitations"])
+                )
+            elif plan.get("mission_envelope"):
                 scope = plan["mission_envelope"]
                 response["message"] += (
                     f"\nミッション管制: {scope['mode']}。/approve は各操作ではなく、表示した判断範囲を承認します。"
@@ -154,7 +167,7 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "\n" + "\n".join(plan["limitations"])
                 )
         execution = result.get("execution")
-        if result.get("status") == "verified" and isinstance(execution, dict):
+        if result.get("status") in {"verified", "unresolved"} and isinstance(execution, dict):
             if plan.get("backend") == "starship_sixdof":
                 for outcome in execution.get("verification", {}).get("observed_outcomes", []):
                     response["message"] += (

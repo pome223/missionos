@@ -18,12 +18,13 @@ from threading import Lock
 import time
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
+from src.runtime.starship_replanning import SCENARIOS as M1_SCENARIOS
 from src.runtime.starship_flight import SCENARIOS
 from src.runtime.starship_sixdof_catalog import SIXDOF_DESCRIPTIONS, SIXDOF_SCENARIOS
 from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
 
 
-PLANNER_SCENARIOS = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS)
+PLANNER_SCENARIOS = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M1_SCENARIOS)
 MAX_DEEPSEEK_CALLS = 2
 MAX_INPUT_CHARS = 2000
 MAX_OUTPUT_TOKENS = 600
@@ -40,6 +41,7 @@ JEV_RESPONSE_MAX_BYTES = 65536
 _DESCRIPTIONS = {
     **{name: "Preapproved mission-wide decisions and same-start fixed-timeline comparison: "+case+". Local development 6DOF; capture unqualified and diversion not guaranteed." for name, case in MANAGED_SCENARIOS.items()},
     **SIXDOF_DESCRIPTIONS,
+    **{name: "M1 approved launch/deployment and repeated return control: "+case+". Finite synthetic waiting resources and recovery areas; no real flight authority." for name,case in M1_SCENARIOS.items()},
     "flight14_inspired": "Flight 14 inspired five-stage physical surrogate; no real flight validation",
     "counterfactual_nominal": "Counterfactual nominal physical surrogate without injected faults",
     "orbit_no_go": "Synthetic navigation veto prevents orbit insertion and payload release",
