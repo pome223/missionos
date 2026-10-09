@@ -1,0 +1,49 @@
+{
+  "schema": "yokohama.native-endpoint-single-trial.v1",
+  "created_utc": "2026-10-09T06:49:22.340195+00:00",
+  "flight_source_commit": "9fd977ad178927b927c50caf6a0c59982f6e2337",
+  "admission_commit": "087105f0b77a1be494bd293267c81a93a67f2995",
+  "source_closure_sha256": "f1fb42c7c7edd71ac09eb8a581c96419652730e521deb70179184a2ddc1343b4",
+  "source_unchanged": true,
+  "additional_cpu_flights": 1,
+  "native_flights": 1,
+  "vm_creates": 1,
+  "status": "passed",
+  "mission_outcome": "passed",
+  "recovery_outcome": "not_needed",
+  "native_request_counts": {
+    "vla": 2,
+    "wam": 2
+  },
+  "final_goal_error_m": 0.13717979614169454,
+  "independent_endpoint": "passed",
+  "independent_full_flight": "passed",
+  "unified_altitude_transport": true,
+  "all_authored_holds": true,
+  "returned_landed_disarmed": true,
+  "model_session_revoked": true,
+  "remote_model_shutdown_verified": true,
+  "remote_archive_entries_verified": 44,
+  "owned_vm_disk_ip_processes_and_containers_absent": true,
+  "foreign_stopped_containers_retained": 12,
+  "network_quota_installed_verified": true,
+  "max_egress_bytes": 1073741824,
+  "max_ingress_bytes": 68719476736,
+  "max_paid_runtime_s": 3600,
+  "authorized_total_usd": 8,
+  "invoice_confirmed": false,
+  "provider_hard_dollar_cap": false,
+  "tests": {
+    "unchanged_full_suite_passed": 4494,
+    "skipped": 1,
+    "fresh_targeted_passed": 121
+  },
+  "claims": {
+    "native_vla_wam_inference": true,
+    "vehicle_distance_adapter_control": true,
+    "raw_model_output_control": false,
+    "native_candidate_rejection_observed": false,
+    "physical_execution": false,
+    "payload_delivery": false
+  }
+}
