@@ -152,6 +152,16 @@ def admit(candidate, envelope, observation, notice, scheduled):
     if candidate.get("notice_sequence") != notice.get("sequence"):
         reasons.append("forecast_notice_binding")
     reasons += fresh_match(candidate, observation, envelope)
+    if envelope.get("event_supervision"):
+        observed_engines = observation["state"]["engine_states"]
+        original_engines = candidate["trials"][0]["origin"]["state"]["engine_states"]
+        if (
+            [e["available"] for e in observed_engines] != [e["available"] for e in original_engines]
+            or not all(e["available"] for e in observed_engines)
+            or distance(observation["state"]["omega_body_rad_s"], [0, 0, 0])
+            > envelope["event_supervision"]["maximum_coast_body_rate_rad_s"]
+        ):
+            reasons.append("observed_health_outside_forecast_domain")
     matched = []
     for trial in candidate["trials"]:
         m = metrics(trial)
@@ -199,9 +209,9 @@ def case_reasons(study, expected_case, outcome):
         ),
         None,
     )
-    if expected_case == "normal" and selected != "nominal":
+    if expected_case in ("normal", "event_normal") and selected != "nominal":
         reasons.append("normal_return_changed")
-    if expected_case == "recovery_update":
+    if expected_case in ("recovery_update", "event_tradeoff"):
         record = next(
             (
                 r
@@ -211,15 +221,41 @@ def case_reasons(study, expected_case, outcome):
             None,
         )
         if (
-            selected != "next_orbit"
+            (
+                selected != "next_orbit"
+                if expected_case == "recovery_update"
+                else selected not in ("nominal", "next_orbit")
+            )
             or not executed
             or executed["basis"] != "ai"
             or not record
-            or record["accepted_action"] != "select_next_orbit"
+            or record["accepted_action"] != "select_" + str(selected)
             or not (record["response"] or {}).get("model_inference_invoked")
         ):
             reasons.append("actual_ai_replanning_not_executed")
-    if expected_case == "decision_timeout":
+    if expected_case == "event_tradeoff" and executed:
+        decision = next(
+            (
+                r
+                for r in study["decisions"]
+                if r["request"]["request_id"] == executed["decision_request_id"]
+            ),
+            None,
+        )
+        if (
+            not decision
+            or decision["request"]["notice"]["sequence"] < 2
+            or not all(
+                "select_" + n in decision["request"]["allowed_actions"]
+                for n in ("nominal", "next_orbit")
+            )
+            or any(
+                decision["request"]["candidates"][n]["constraint_rejections"]
+                for n in ("nominal", "next_orbit")
+            )
+        ):
+            reasons.append("two_admissible_options_after_correction_not_demonstrated")
+    if expected_case in ("decision_timeout", "event_timeout"):
         # The registered scenario starts loss at this observed update, not at
         # a potentially incomplete set of self-reported injection flags.
         start = next(
@@ -227,6 +263,7 @@ def case_reasons(study, expected_case, outcome):
                 i
                 for i, r in enumerate(study["decisions"])
                 if r["request"]["stage"] == "updated_recovery_status"
+                or (expected_case == "event_timeout" and r["request"]["notice"]["sequence"] >= 2)
             ),
             None,
         )
@@ -441,6 +478,10 @@ def verify(study, *, expected_envelope, expected_case, expected_sources):
                 if not contact and actual_areas
                 else "contact_or_area_failed"
             )
+        if envelope.get("event_supervision"):
+            from .starship_replanning_events import verify_events
+
+            reasons.extend(verify_events(study, envelope))
         completion_reasons = case_reasons(study, expected_case, outcome)
         return {
             "passed": not reasons,
