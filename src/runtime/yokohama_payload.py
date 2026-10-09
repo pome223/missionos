@@ -55,7 +55,10 @@ def extend_world(root, bundle, world, *, delivery_trial=False):
     # The full-delivery abort can return with cargo still attached. Keep the
     # box above the landing gear, so gear/deck contact remains independently
     # observable without dropping the undelivered cargo on the ship.
-    cargo_height = 0.16 if delivery_trial else 0.04
+    # x500_base's merged link is 0.24 m above the model origin. Mount the
+    # cargo centre at model-origin +0.12 m (below the body, above the feet),
+    # rather than confusing the body origin with the model origin.
+    cargo_height = 0.42 if delivery_trial else 0.04
     cargo.find("pose").text = f"{ship[0]} {ship[1]} {ship[2] + cargo_height} 0 0 0"
     node.append(cargo)
     if delivery_trial:
@@ -63,11 +66,11 @@ def extend_world(root, bundle, world, *, delivery_trial=False):
         # prevents it falling before the fixed joint establishes the offset.
         support = ET.SubElement(node, "model", name="delivery_cargo_support")
         ET.SubElement(support, "static").text = "true"
-        ET.SubElement(support, "pose").text = f"{ship[0]} {ship[1]} {ship[2] + 0.06} 0 0 0"
+        ET.SubElement(support, "pose").text = f"{ship[0]} {ship[1]} {ship[2] + 0.19} 0 0 0"
         support_link = ET.SubElement(support, "link", name="link")
         collision = ET.SubElement(support_link, "collision", name="support_collision")
         box = ET.SubElement(ET.SubElement(collision, "geometry"), "box")
-        ET.SubElement(box, "size").text = "0.1 0.1 0.12"
+        ET.SubElement(box, "size").text = "0.1 0.1 0.38"
     camera_model = ET.SubElement(node, "model", name="delivery_camera")
     ET.SubElement(camera_model, "static").text = "true"
     link = ET.SubElement(camera_model, "link", name="link")
@@ -111,7 +114,7 @@ def extend_world(root, bundle, world, *, delivery_trial=False):
         physical_receipt_verified=False,
     )
     if delivery_trial:
-        world["payload_delivery"]["attachment_offset_z_m"] = -0.14
+        world["payload_delivery"]["attachment_offset_z_m"] = 0.12
         world["payload_delivery"]["removable_support_entity"] = "delivery_cargo_support"
     return world
 

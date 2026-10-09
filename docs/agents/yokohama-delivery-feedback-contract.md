@@ -28,6 +28,9 @@ Recovery success does not turn the failed delivery mission into success.
 The trial mounts the unchanged cargo box above the landing gear; a rejected
 delivery returns with the cargo attached and still requires fresh gear/deck
 contact. It does not detach undelivered cargo to satisfy landing verification.
+The pinned x500 model merges its base link at model-origin +0.24 m. Cargo
+centre is model-origin +0.12 m, below the body and above the landing feet;
+mount checks use the model origin, not the merged body-link origin.
 A removable fixture supports the cargo before PX4 spawns the vehicle; otherwise
 gravity changes the eventual joint offset. Observed fresh cargo/vehicle poses
 must confirm the mount before arming and after takeoff. The fixture is then
