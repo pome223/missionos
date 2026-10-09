@@ -1,32 +1,84 @@
 {
   "schema": "missionos.yokohama.delivery-feedback-qualification.v1",
-  "recorded_utc": "2026-10-09T09:20:00Z",
-  "status": "draft_qualification_in_progress",
-  "runtime_source_commit": "6e1bc0382d9688298485c842d6638e36c88c9a96",
-  "verification_source_commit": "ae5bb94fcefa9f867a144b2c033ce9ce31598fa4",
+  "recorded_utc": "2026-10-09T10:37:54.406472+00:00",
+  "status": "cpu_final_source_qualified_native_not_run",
+  "runtime_source_commit": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
+  "verification_source_commit": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
   "verification_source_sha256": "709284326e906b3717a5f2dd02666b747ebc261a2452dbf75e5d137482fdc073",
-  "verification_note": "The recorded flight passed the corrected independent verifier. The correction requires all six flown prefix/return segments instead of the unflown delivery suffix. Flight/control code was unchanged. A fresh final-source four-scenario run is pending.",
+  "verification_note": "All four fresh CPU scenarios ran the same final runtime and independent verifier sources. Verification preserves fixed authored routes, altitude, waiting, and deadline limits; no final flight evidence was reclassified by a post-flight source change.",
   "simulator_image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
   "cpu_candidate_rejection": {
     "status": "passed",
     "mission_outcome": "failed",
     "recovery_outcome": "passed",
-    "recovery_duration_wall_s": 251.39789815800003,
-    "fixed_recovery_deadline_s": 500,
-    "model_authority_revoked": true,
     "model_reentry_prevented": true,
-    "fresh_landing_foot_contact_verified": true,
-    "cargo_returned_attached": true,
+    "native_model_inference": false,
     "simulated_payload_receipt_verified": false,
-    "native_model_inference": false
+    "physical_execution": false,
+    "verdict_sha256": "b3c733f4a3c0ae2d33223cde1d1f88819108f0c89f889812a424f37621b8527a",
+    "recovery_duration_wall_s": 263.351937289,
+    "fixed_recovery_deadline_s": 500,
+    "fresh_landing_foot_contact_verified": true,
+    "cargo_returned_attached": true
   },
   "cpu_final_source_scenarios": {
-    "candidate_rejected": "pending",
-    "delivery": "pending",
-    "wait": "pending",
-    "timeout": "pending"
+    "candidate_rejected": {
+      "status": "passed",
+      "mission_outcome": "failed",
+      "recovery_outcome": "passed",
+      "model_reentry_prevented": true,
+      "native_model_inference": false,
+      "simulated_payload_receipt_verified": false,
+      "physical_execution": false,
+      "verdict_sha256": "b3c733f4a3c0ae2d33223cde1d1f88819108f0c89f889812a424f37621b8527a",
+      "recovery_duration_wall_s": 263.351937289,
+      "fixed_recovery_deadline_s": 500,
+      "fresh_landing_foot_contact_verified": true,
+      "cargo_returned_attached": true
+    },
+    "delivery": {
+      "status": "passed",
+      "mission_outcome": "passed",
+      "recovery_outcome": "not_needed",
+      "model_reentry_prevented": true,
+      "native_model_inference": false,
+      "simulated_payload_receipt_verified": true,
+      "physical_execution": false,
+      "verdict_sha256": "47b6b1fd31882e18874f0bc710e4ec182d320df750fc03fee96144d3bc201851"
+    },
+    "wait": {
+      "status": "passed",
+      "mission_outcome": "passed",
+      "recovery_outcome": "not_needed",
+      "model_reentry_prevented": true,
+      "native_model_inference": false,
+      "simulated_payload_receipt_verified": true,
+      "physical_execution": false,
+      "verdict_sha256": "f7d87ecce0e464a15a157c513e7a6d2c52704b406361fd5f8e0e0a17e28bbc6f",
+      "independent_pad_queue_verification": "passed",
+      "pad_queue_verdict_sha256": "0ef06a2a4e0ac7a270e9281ebdbea2b39c5f0006b0b0208bf37121ed7072d0b0"
+    },
+    "timeout": {
+      "status": "passed",
+      "mission_outcome": "failed",
+      "recovery_outcome": "passed",
+      "model_reentry_prevented": true,
+      "native_model_inference": false,
+      "simulated_payload_receipt_verified": false,
+      "physical_execution": false,
+      "verdict_sha256": "b3ddd966bcd62bb086574505b5832350f28721f0ec679a3b00258caa31da4fd1",
+      "recovery_duration_wall_s": 239.89070865099984,
+      "fixed_recovery_deadline_s": 500,
+      "fresh_landing_foot_contact_verified": true,
+      "cargo_returned_attached": true
+    }
   },
-  "native_full_delivery": "not_started",
+  "native_full_delivery": {
+    "status": "not_run",
+    "new_cloud_vm_creates": 0,
+    "new_native_flights": 0,
+    "reason": "CPU-only execution scope; separate GPU/cloud authorization required."
+  },
   "physical_execution": false,
   "raw_unmodified_model_control": false,
   "ground_geometry_probe": {
@@ -37,18 +89,31 @@
     "cargo_to_landing_feet_vertical_clearance_m": 0.067
   },
   "tests": {
-    "previous_full_source_commit": "6e1bc0382d9688298485c842d6638e36c88c9a96",
-    "previous_full_passed": 7888,
-    "previous_full_skipped": 6,
+    "runtime_source_commit": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
+    "full_passed": 7890,
+    "full_skipped": 6,
     "verification_fix_targeted_passed": 105,
-    "current_full": "running",
     "configured_ci_lint": "passed",
-    "offline_ci_boundary_checks_passed": 17
+    "offline_ci_boundary_checks_passed": 17,
+    "runtime_commit_ci": {
+      "status": "passed",
+      "python": [
+        "3.11",
+        "3.13"
+      ],
+      "each_passed": 7890,
+      "each_skipped": 6,
+      "exact_head": "2e8ee9c2cfb28763b353473bee541c622f18fa8d",
+      "url": "https://github.com/pome223/missionos/actions/runs/37910849307"
+    },
+    "this_result_summary_commit_ci": "not_run_local_only"
   },
   "limitations": [
     "Stationary authored ship and coast in CPU PX4/Gazebo simulation.",
     "Fixture decisions do not demonstrate native VLA/WAM delivery success.",
     "The receiving station observes simulated cargo contact; there is no human or physical receipt.",
-    "Recovery qualifies the D1 decision boundary, not arbitrary failures on later route stages."
-  ]
+    "Recovery qualifies the D1 decision boundary, not arbitrary failures on later route stages.",
+    "The full delivery catalog has fixed 2100-second overall and 500-second recovery limits; legacy mission/recovery contracts remain unchanged."
+  ],
+  "runtime_source_closure_sha256": "c30f6cd151ed72709c401b34d7e7c450440ae015f0ced423c359639da19854b3"
 }
