@@ -43,6 +43,10 @@ def main():
     args.output_dir.mkdir(parents=True, exist_ok=True)
     sources = source_hashes(ROOT)
     p = json.loads((ROOT/SIXDOF_PROFILE).read_text())
+    from src.runtime.starship_return_feasibility import readiness
+    _, _, readiness_error = readiness(p)
+    if readiness_error is not None:
+        parser.error(readiness_error+"; install .[spaceflight-qualified] or rebuild qualification for this source/environment")
     catch = json.loads((ROOT/CATCH_PROFILE).read_text())
     sites = ReturnSites.from_dict(json.loads((ROOT/"examples/spaceflight/starship-return-sites-model-test.json").read_text()),
                                  profile=p, catch_config=catch)
@@ -57,7 +61,8 @@ def main():
     runs, started = [], time.monotonic()
     for name, director in (("fixed_timeline", None), ("missionos", actor)):
         print(json.dumps({"status": "running", "controller": name, "case": args.case}), flush=True)
-        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites, splashdown_goal=splashdown_goal)
+        run = simulate(p, mission_case=args.case, mission_director=director, return_sites=sites, splashdown_goal=splashdown_goal,
+            return_policy="fixed_v1" if director is not None else "trimmed_state_terminal_v4")
         # Keep each completed branch recoverable if a later branch fails,
         # without storing an extra uncompressed copy of the full study.
         with gzip.open(args.output_dir/(name+".json.gz"), "wt", encoding="utf-8") as checkpoint:
@@ -91,7 +96,12 @@ def main():
         for r in runs[1]["mission_director"]["records"])
     panel = '<section class="content" id="mission-decisions"><h2>MissionOS / 飛行全体の判断</h2>'
     panel += '<p>飛行前に範囲を承認。範囲内の判断、独立した実行チェック、指令、後続観測を記録します。</p>'
-    panel += '<p>'+html.escape(args.director_mode)+' / 比較合格: '+str(study["comparison"]["comparison_accepted"])+'. 合成応答はAI推論ではありません。</p>'
+    panel += '<p>'+html.escape(args.director_mode)+' / 記録検証: '+str(verdict["passed"])+'. 合成応答はAI推論ではありません。</p>'
+    if args.case == "fuel_shortage":
+        panel += '<p><strong>Ship帰還は未解決。</strong>帰還禁止と30秒の軌道観測を確認して終了しました。再判断・着水は行っていません。</p>'
+    else:
+        panel += '<p>Ship帰還のモデル条件: '+str(study["comparison"]["ship_return_qualified"])+'. ミッション全体の成功とは別判定です。</p>'
+    panel += '<p>比較項目: '+html.escape(study["comparison"]["comparison_scope"])+', 項目内の判定: '+str(study["comparison"]["comparison_accepted"])+'.</p>'
     panel += '<table><tr><th>判断点</th><th>実行</th><th>T+ 指令</th><th>T+ 後続観測</th></tr>'+decisions+'</table>'
     panel += '<details><summary>固定タイムラインとの比較</summary><pre>'+html.escape(json.dumps(study["comparison"], indent=2))+'</pre></details>'
     if args.splashdown:

@@ -28,7 +28,7 @@ def test_splashdown_scope_is_separate_immutable_approval():
     legacy=contract("fixture")
     water=contract("fixture",splashdown=True)
     assert "splashdown" not in legacy["decision_points"]["booster_selection"]
-    assert water["schema"]=="missionos.starship_mission_envelope.v4"
+    assert water["schema"]=="missionos.starship_mission_envelope.v6"
     assert water["splashdown_goal"]==goal.to_dict()
     actor=MissionDirector(water,fixture_decider=fixture_decision)
     assert actor.update("booster_selection",row(phase="booster_return"))=="splashdown"
@@ -68,6 +68,8 @@ def test_integrated_numpy_scalars_produce_json_booleans():
 
 @pytest.mark.parametrize("scenario,water", [("sixdof_managed_normal",True),("sixdof_managed_splashdown",False)])
 def test_scenario_cannot_self_select_another_envelope(tmp_path,monkeypatch,scenario,water):
+    from src.runtime import starship_return_feasibility as qualification
+    monkeypatch.setattr(qualification, "readiness", lambda *a, **k: ({}, "fixture", None))
     monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE","fixture")
     service=control.StarshipMissionService(tmp_path,planner=lambda text:plan_starship_request(text,"fixture"))
     service.plan("swap","Starship "+scenario)

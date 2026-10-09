@@ -370,6 +370,10 @@ class StarshipMissionService:
                 "Jev/LLMに誘導・点火・キャッチ指令の権限を追加しません。"])
             plan["simulation"]["catch_profile_sha256"] = plan["source_sha256"][CATCH_PROFILE]
         if scenario in MANAGED_SCENARIOS:
+            from .starship_return_feasibility import readiness
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason is not None:
+                raise StarshipMissionError(reason)
             from .starship_mission_director import contract
             try:
                 envelope = contract(os.environ.get(DIRECTOR_MODE_ENV, "off"), splashdown=scenario == "sixdof_managed_splashdown")
@@ -503,6 +507,10 @@ class StarshipMissionService:
         if plan["source_sha256"] != _plan_sources(plan):
             raise StarshipMissionError("approved_source_changed")
         if plan["scenario"] in MANAGED_SCENARIOS:
+            from .starship_return_feasibility import readiness
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason is not None:
+                raise StarshipMissionError(reason)
             from .starship_mission_director import contract as director_contract
             try:
                 current = director_contract(plan["mission_envelope"]["mode"], splashdown=plan["scenario"] == "sixdof_managed_splashdown")

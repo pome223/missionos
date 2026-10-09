@@ -1,4 +1,4 @@
-"""Development-only regularized fin allocation over finite actuator response.
+"""Development-only regularized surface allocation over finite actuator response.
 
 The optimizer requests bounded commands, never assigns an actual fin state or
 injects a moment. Effectiveness is local to the unchanged surrogate panel law.
@@ -134,9 +134,13 @@ def allocate_fins(state, vehicle, demand, observed, profile, *, interval_s, trim
     if type(policy_id) is not str or policy_id not in POLICIES:
         raise ValueError("invalid_fin_allocation_policy")
     indices = [i for i, p in enumerate(vehicle.aero_panels)
-               if p.name.startswith("grid_fin_") and p.max_deflection_rad > 0]
+               if p.name.startswith(("grid_fin_", "flap_")) and p.max_deflection_rad > 0]
     if not 1 <= len(indices) <= 4:
-        raise ValueError("development_allocator_requires_booster_fins")
+        raise ValueError("development_allocator_requires_supported_surfaces")
+    families = {"grid_fin" if vehicle.aero_panels[i].name.startswith("grid_fin_") else "flap"
+                for i in indices}
+    if len(families) != 1:
+        raise ValueError("development_allocator_requires_one_surface_family")
     actual = np.asarray([state.flap_angles_rad[i] for i in indices])
     limits = np.asarray([vehicle.aero_panels[i].max_deflection_rad for i in indices])
     trim = actual.copy()
@@ -213,5 +217,6 @@ def allocate_fins(state, vehicle, demand, observed, profile, *, interval_s, trim
         "predicted_residual_torque_body_nm": remaining.tolist(), "objective": float(np.linalg.norm(matrix@delta-rhs)**2),
         "half_objective_gradient": gradient.tolist(), "prediction_is_execution": False,
         "actual_state_assigned": False, "production_policy_admitted": False,
-        **(priority_receipt or {})}
+        **(priority_receipt or {}),
+        **({"surface_family": "ship_flap"} if families == {"flap"} else {})}
     return tuple(targets), remaining, diagnostic

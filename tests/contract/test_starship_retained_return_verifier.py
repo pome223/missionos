@@ -115,7 +115,13 @@ def test_continuous_frame_policy_keeps_budget_but_requires_explicit_approval(evi
 def test_verifier_has_no_producer_or_simulator_import():
     source = inspect.getsource(verifier)
     assert "import numpy" not in source
-    assert "from ." not in source
+    import ast
+    imports = [n.module for n in ast.walk(ast.parse(source)) if isinstance(n, ast.ImportFrom) and n.level]
+    assert imports == ["starship_return_feasibility_verifier"]
+    from pathlib import Path
+    independent = (Path(__file__).resolve().parents[2]/"src/runtime/starship_return_feasibility_verifier.py").read_text()
+    assert "from ." not in independent and "import numpy" not in independent
+    assert "simulate(" not in independent
     assert "import starship" not in source
 
 

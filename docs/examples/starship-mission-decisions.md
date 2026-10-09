@@ -1,5 +1,11 @@
 # MissionOS decides within an approved mission scope
 
+Current evidence includes an inventory census and checked mission decisions;
+fuel-shortage recovery remains unresolved. See
+[the current mission-control results](starship-state-return.md). The experiments
+below retain their historical failures and incomplete coverage; they are not
+rewritten as successes.
+
 This development slice connects decisions across a Starship-inspired flight:
 start deployment, monitor the first release, request a mechanism diagnostic if
 needed, select terminal return guidance, and decide capture or diversion.
@@ -25,11 +31,14 @@ fixed-timeline comparison. Normal operation should remain unchanged; abnormal
 conditions must meet the stated outcome comparison before this slice is called
 complete. Record verification alone is insufficient.
 
-Real Jev inference now changes decisions and a recorded return outcome. In the
+In the historical pre-qualification controller, real Jev inference changed
+decisions and a recorded return outcome. In the
 release-fault run it chose to collect mechanism status, stopped deployment after
 the blocked report, selected retained-payload return guidance and chose diversion.
 The same-start fixed timeline impacted at 238.74 m/s; the managed flight contacted
 the surface at 3.22 m/s. This is low-speed contact, not a validated landing.
+The current fixed baseline also uses the improved return tool, so this historical
+238.74 → 3.22 m/s difference is not a current AI benefit measurement.
 
 The operating goal remains **unmet**. In a normal live run, one provider response
 failed format validation. The preapproved fallback stopped after one release;

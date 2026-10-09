@@ -78,6 +78,9 @@ def main():
                "src/runtime/starship_attitude_reference.py", "src/runtime/starship_booster_catch.py", CATCH_PROFILE,
                "src/runtime/starship_booster_control.py", "src/runtime/starship_booster_recovery.py",
                "src/runtime/starship_fin_allocation.py",
+               "src/runtime/starship_entry_trim.py", "src/runtime/starship_return_feasibility.py",
+               "src/runtime/starship_return_feasibility_verifier.py",
+               "docs/assets/starship-state-return-qualification/qualification.json",
                "src/runtime/starship_landing_context.py",
                "src/runtime/starship_wind.py",
                "src/runtime/starship_sixdof_report.py", "src/runtime/assets/starship_sixdof_replay.js", "src/runtime/assets/starship_cg_models.js", "src/runtime/assets/starship_cg_renderer.js"]

@@ -1,0 +1,867 @@
+{
+  "schema": "missionos.starship_return_review_corrections.v1",
+  "reviewed_base_commit": "6185ef920dca676ffa11542f2f8fc93b1a02928b",
+  "qualification": {
+    "schema": "missionos.starship_state_return_qualification.v2",
+    "asset_sha256": "d246f5bb64156f8bc3d305c16a908067a9b2739276e9bd761955d31ee5fcc1e6",
+    "source_sha256": {
+      "src/runtime/starship_sixdof_mission.py": "ad97aed9cdc14e48c1fde113dd41bb2033b0eb20a77c51b5f07488831a494ac2",
+      "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+      "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+      "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+      "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+      "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+      "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+      "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+      "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+      "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+      "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+      "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+      "src/runtime/starship_return_feasibility.py": "fc6dca48da343d941a7eeeae38377990b1c2e00c8c51c1dce949d57c9a0a6de4",
+      "src/runtime/starship_return_feasibility_verifier.py": "7c45a036761872fc191a418c18a7170ff9acd4278ddb76aa2e52e9d35b64a914",
+      "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+    },
+    "backend": {
+      "numpy": "2.4.6",
+      "scipy": "1.17.1"
+    },
+    "cases": 39,
+    "all_cases_passed": true,
+    "retained_counts": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26
+    ],
+    "fuel_probes": {
+      "inventories": [
+        0,
+        14,
+        15,
+        16,
+        25,
+        26
+      ],
+      "offsets_kg": [
+        -1000,
+        1000
+      ]
+    },
+    "max_contact_speed_mps": 4.691169237307238,
+    "max_contact_tilt_deg": 2.754979113709329,
+    "max_body_rate_rad_s": 0.005226891258732632,
+    "min_remaining_fuel_kg": 45231.488448047014,
+    "actual_deorbit_reference_bounds": {
+      "time_s": [
+        2280.4000000000406,
+        2281.1500000000406
+      ],
+      "perigee_altitude_m": [
+        258516.57510010246,
+        262175.5792350359
+      ],
+      "apogee_altitude_m": [
+        357821.4658402819,
+        370090.1492557442
+      ]
+    },
+    "bounds_are_not_admission_box": true,
+    "admission": "inventory-specific recorded coast corridor; no time extrapolation",
+    "matching_tolerances": {
+      "sample_gap_s": 2.01,
+      "position_m": 12.0,
+      "velocity_mps": 0.05,
+      "attitude_deg": 0.1,
+      "body_rate_rad_s": 0.0002,
+      "fuel_kg": 100.1
+    },
+    "physical_disturbance_robustness_proven": false,
+    "all_contact_outcomes_equal_prior_39": true
+  },
+  "current_fixture_five": [
+    {
+      "case": "normal",
+      "response_fault": null,
+      "study_sha256": "64a3b8b9c2395b34bfb8565bb1164ee5760171fd411d4d36bf028b1788bc9faf",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": true,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "command_time_s": 480.9500000000408,
+          "observed_time_s": 481.2000000000408
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "command_time_s": 526.2000000000407,
+          "observed_time_s": 526.4500000000407
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2190.9500000000407,
+          "observed_time_s": 2191.2000000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.69999999999658,
+          "observed_time_s": 135.79999999999657
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4862.20000000277,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 103304.09436161669,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 23.13933893150194,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained0",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 5.424213397665881
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "release_fault",
+      "response_fault": null,
+      "study_sha256": "e4e181a4186457987d9778463e0abf19c0d205a1c7e34e144ca60c9293c99aa4",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "collect_status",
+          "command_time_s": 525.9500000000407,
+          "observed_time_s": 526.2000000000407
+        },
+        {
+          "point": "deployment_diagnostic",
+          "action": "stop_deployment",
+          "command_time_s": 527.9500000000407,
+          "observed_time_s": 528.2000000000407
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2190.7000000000407,
+          "observed_time_s": 2190.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4883.4500000028675,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 102158.35733216489,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 17.823451260448188,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained26",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 65.31122601393145
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "fuel_shortage",
+      "response_fault": null,
+      "study_sha256": "a8cffea708968da5bdab05f3b452163e6864fe1aad19669d42dd1717b1f405f1",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_inhibited_unresolved",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.431392690436,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "unresolved",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "return_inhibited_unresolved",
+          "contact_speed_mps": null,
+          "remaining_fuel_kg": 22365.43696945758,
+          "return_time_s": null,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "unresolved",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "inhibit_and_observe_30s_only",
+        "ship_return_qualified": false,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "stop_deployment",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "return_selection",
+          "action": "inhibit_return",
+          "command_time_s": 2190.7000000000407,
+          "observed_time_s": 2190.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": null,
+      "return_execution_checks": []
+    },
+    {
+      "case": "tower_unavailable",
+      "response_fault": null,
+      "study_sha256": "516839211fd0eddc5bb9028c592825e1982e317519329bc365e7274cb4f7bccf",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "continue",
+          "command_time_s": 525.9500000000407,
+          "observed_time_s": 526.2000000000407
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2190.7000000000407,
+          "observed_time_s": 2190.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4862.20000000277,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 103304.09436161669,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 23.13933893150194,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained0",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 5.424213397665881
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "operations_notice",
+      "response_fault": null,
+      "study_sha256": "77d82e07f2f497d30f56508f51a0fc4d5242e22611f06ba39d42f1dbe527c8c4",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 1,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.5141722945197325,
+          "remaining_fuel_kg": 45743.35648244802,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": null,
+        "comparison_accepted": true,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "continue",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "deployment_monitor",
+          "action": "stop_deployment",
+          "command_time_s": 525.9500000000407,
+          "observed_time_s": 526.2000000000407
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2190.7000000000407,
+          "observed_time_s": 2190.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4875.300000002832,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 102170.09054747628,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 17.99944670241488,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained25",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 66.78087158729613
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "compound_response_failures": [
+    {
+      "case": "normal",
+      "response_fault": "hold_then_reassessment_and_return_timeout",
+      "study_sha256": "f1f1a68c2203f52328402e2922be0a2351fe16dca0208539e76eb0e8487218c1",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": false,
+        "comparison_accepted": false,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "hold",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "deployment_reassessment",
+          "action": "stop_deployment",
+          "command_time_s": 510.7000000000408,
+          "observed_time_s": 510.9500000000408
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2265.7000000000407,
+          "observed_time_s": 2265.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4883.4500000028675,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 102158.35733216489,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 17.823451260448188,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained26",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 65.31122601393145
+            }
+          }
+        }
+      ]
+    },
+    {
+      "case": "normal",
+      "response_fault": "hold_then_reassessment_timeout_invalid_return",
+      "study_sha256": "632353ceb48efffa35ee8539a5b0c8f5f0b3e76b36d0334aa87b8bd627280cf4",
+      "record_verified": true,
+      "comparison": {
+        "baseline": {
+          "released": 26,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 4.608259493361677,
+          "remaining_fuel_kg": 62394.30546504836,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "managed": {
+          "released": 0,
+          "orbit": true,
+          "termination": "low_speed_surface_contact",
+          "contact_speed_mps": 3.473183152898391,
+          "remaining_fuel_kg": 45231.488448047014,
+          "return_time_s": 2280.7000000000407,
+          "booster_destination": "divert",
+          "booster_destination_reached": false,
+          "ship_return_status": "qualified_modeled_contact",
+          "controlled_water_entry_envelope_met": true,
+          "booster_goal": "controlled_water_entry"
+        },
+        "normal_outcomes_equal": false,
+        "comparison_accepted": false,
+        "comparison_is_model_value_proof": false,
+        "comparison_scope": "scenario_regression",
+        "ship_return_qualified": true,
+        "whole_mission_success_claimed": false,
+        "human_workload_measured": false,
+        "physical_success_claimed": false
+      },
+      "decisions": [
+        {
+          "point": "deployment_start",
+          "action": "hold",
+          "command_time_s": 480.7000000000408,
+          "observed_time_s": 480.9500000000408
+        },
+        {
+          "point": "deployment_reassessment",
+          "action": "stop_deployment",
+          "command_time_s": 510.7000000000408,
+          "observed_time_s": 510.9500000000408
+        },
+        {
+          "point": "return_selection",
+          "action": "state_return",
+          "command_time_s": 2190.7000000000407,
+          "observed_time_s": 2190.9500000000407
+        },
+        {
+          "point": "booster_selection",
+          "action": "splashdown",
+          "command_time_s": 135.59999999999658,
+          "observed_time_s": 135.69999999999658
+        }
+      ],
+      "terminal_feasibility": {
+        "time_s": 4883.4500000028675,
+        "required_fuel_kg": 86162.59891303728,
+        "fuel_lower_bound_kg": 102158.35733216489,
+        "available_landing_engines": 3,
+        "aligned_net_acceleration_mps2": 17.823451260448188,
+        "passed": true,
+        "continuation": "qualified_terminal_guidance",
+        "physical_recovery_certified": false
+      },
+      "return_execution_checks": [
+        {
+          "time_s": 2280.7000000000407,
+          "action": "state_return",
+          "return_admitted": true,
+          "coast_match": {
+            "case_id": "retained26",
+            "sample_times_s": [
+              2278.7000000000407,
+              2280.7000000000407
+            ],
+            "errors": {
+              "position_m": 0.0,
+              "velocity_mps": 0.0,
+              "attitude_deg": 0.0,
+              "body_rate_rad_s": 0.0,
+              "fuel_kg": 65.31122601393145
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "current_model_inference_calls": {
+    "jev": 0,
+    "deepseek": 0
+  },
+  "historical_inference": {
+    "commit": "6185ef92",
+    "jev": 19,
+    "deepseek": 0,
+    "relabeled_as_current": false,
+    "observed_roles": [
+      "diagnostic choice",
+      "deployment change"
+    ],
+    "return_policy_changed_by_ai": false
+  },
+  "terminal_engine_loss": {
+    "study_sha256": "e1488bd0d7ddc01ee48767d0fac20ab41aeb3e5e66b2d93a6b4fa1e5cacac3fb",
+    "record_verified": true,
+    "policy_verified": true,
+    "independent_margin_verification_passed": true,
+    "receipt": {
+      "time_s": 4862.20000000277,
+      "required_fuel_kg": 86162.59891303728,
+      "fuel_lower_bound_kg": 103304.09436161669,
+      "available_landing_engines": 2,
+      "aligned_net_acceleration_mps2": 12.165222691574947,
+      "passed": false,
+      "continuation": "unqualified_best_effort_terminal_guidance",
+      "physical_recovery_certified": false
+    },
+    "termination": "surface_impact",
+    "contact_speed_mps": 22.734699481130956,
+    "final_time_s": 4911.761425867647,
+    "violation_and_outcome_preserved": true,
+    "qualified_recovery": false,
+    "source_unchanged": true
+  },
+  "gateway_runtime": {
+    "scenario": "sixdof_managed_splashdown",
+    "status": "verified",
+    "worker_receipt_verified": true,
+    "provider_credentials_present_in_process": false,
+    "approval_and_execution_separate": true,
+    "one_use_approval": true,
+    "plan_hash_mismatch_rejected": true,
+    "unapproved_run_rejected": true,
+    "ambiguous_consent_rejected": true,
+    "cross_session_artifact_rejected": true,
+    "missing_v2_qualification_blocked_before_approval": true,
+    "backend_mismatch_checked_in_unit_and_asgi_tests": true,
+    "actual_alternate_backend_environment_run": false,
+    "test_operator_only": true,
+    "authenticated_human_identity_verified": false
+  },
+  "tests": {
+    "targeted_passed": 494,
+    "targeted_skipped": 4,
+    "operator_followup_passed": 53,
+    "qualification_and_smoke_followup_passed": 33,
+    "test_sets_overlap": true,
+    "ruff_passed": true
+  },
+  "outcome_accounting": {
+    "five_record_checks_passed": true,
+    "ship_qualified_contact_cases": [
+      "normal",
+      "release_fault",
+      "tower_unavailable",
+      "operations_notice"
+    ],
+    "unresolved_ship_cases": [
+      "fuel_shortage"
+    ],
+    "fuel_shortage_scope": "inhibit return and observe 30 s; no return retry or final recovery",
+    "booster_goals_in_current_five": [
+      "controlled_water_entry",
+      "controlled_water_entry",
+      "controlled_water_entry",
+      "controlled_water_entry",
+      "controlled_water_entry"
+    ],
+    "all_five_missions_successful": false,
+    "compound_deployment_objective_preserved": false,
+    "script_parity_is_ai_value_gate": false,
+    "unique_ai_advantage_measured": false,
+    "human_workload_measured": false,
+    "physical_vehicle_recovery_certified": false,
+    "booster_robustness_qualified": false
+  },
+  "preservation": {
+    "historical_steps345_summary_unchanged": true,
+    "first_12_superseded_source_runs_preserved_locally": true,
+    "automatic_failed_flight_retry": false,
+    "private_gateway_records_not_published": true
+  }
+}

@@ -8,6 +8,13 @@ collection, decisions and replanning across deployment, Ship return and booster
 recovery. Local guidance and numerical estimators are tools; the AI does not
 replace the fast attitude or engine-control loops.
 
+The operational purpose is sustainable high-cadence flight: operators approve
+delegated bounds and handle exceptions while MissionOS manages routine missions.
+The [high-cadence operating requirements](starship-high-cadence-operations.md)
+use three launch opportunities in 24 simulated hours as a project workload
+assumption, not a claim about SpaceX's achieved rate. Single-flight recovery
+qualification remains the first prerequisite; fleet execution is not implemented.
+
 ```text
 LLM judges. Human approves. Rules constrain.
 Executor acts. Verifier checks. Repair loops.
@@ -49,28 +56,142 @@ reasoning belongs in MissionOS's toolset. Report real model decisions and their
 observed effects without treating script parity as evidence against their value.
 Claims about unique AI advantage or reduced human workload need separate evidence.
 
-## Current baseline and next qualification
+## Current bounded return evidence and execution contract
 
-The [implemented decision envelope](starship-mission-director.md) is a bounded
-development slice, not completion of this contract. It has finite decision
-points and one hold reassessment; continuous monitoring and in-flight human
-reapproval remain incomplete. Return selection checks the grant but has no
-state-dependent feasibility gate. Partial retained-payload return and combined
-hold/reassessment/return-response failures remain unqualified.
+Step 3 is a finite launch-to-contact census, not qualification of an orbital box.
+`trimmed_state_terminal_v4` covers 0–26 retained inventories and selected initial
+fuel offsets of ±1000 kg at 0/14/15/16/25/26. Its four original contact limits are
+5 m/s, 5 degrees, 0.02 rad/s and 28 t reserve. Physical coefficients, geometry,
+actuator force and the integrated state are not changed to pass those limits.
 
-After merging the current development baseline, the work order is:
+Step 4 uses qualification schema v2 and mission envelope v6. Every case contributes
+its actual state at deorbit and its final 92 seconds of saved orbital-coast samples.
+The table retains inventory, initial-fuel perturbation, study hash, time, inertial
+position/velocity, full quaternion, angular velocity and fuel. Runtime admission
+must match a corridor for the current inventory; it cannot borrow another count,
+extrapolate time, or use the former 150–350 km / 600 km assumed orbital box.
 
-1. Diagnose the 25-retained-payload failure and qualify at least one Ship return
-   policy across 0–26 retained payloads in a frozen, fuel-sufficient operating
-   domain. Include attitude, rates, reserve and time-window margins; payload
-   count alone cannot establish feasibility. Keep booster water-entry
-   robustness as a separate qualification, including the failed fuel probes.
-2. Gate both AI-selected return policies and fallbacks on independent numerical
-   feasibility results. If no policy qualifies, report that gap rather than
-   labeling an unverified fallback safe.
-3. Rerun all five declared conditions on the resulting source and add compound
-   response-failure cases. Preserve failed outcomes and source-bound records.
+Two-second sample interpolation has explicit numerical matching tolerances:
+12 m position, 0.05 m/s velocity, 0.1 degree full attitude, 0.0002 rad/s angular
+velocity and 100.1 kg observed fuel (including the existing 100 kg gauge bound).
+The maximum bracketing gap is 2.01 s. These are numerical matching tolerances,
+not independently flown physical perturbations or a proof between samples.
+They are fixed in both implementations and recorded in the qualification asset.
+The producer and an independent scalar checker reproduce the selected case,
+sample times, residuals, fuel margin and admission. Inputs are bound to separately
+saved pre-command integrated state. Source/profile/backend registration, three
+available landing engines, attitude/rate checks, empirical consumption plus 28 t
+reserve and 1 t margin, and an analytic deorbit-fuel correction also remain required.
 
-Merging this opt-in simulator baseline does not certify recovery or satisfy the
-completion criteria. [Recorded outcomes](../examples/starship-mission-decisions.md)
-and [booster entry limits](../examples/starship-splashdown.md) retain their scope.
+A return choice is rechecked at dispatch and immediately before deorbit, including
+no-response fallbacks. `inhibit_return` means no return burn and a checked 30 s
+observation window, with **no later retry decision**. The run ends as
+`return_inhibited_unresolved`. If even that coast resource bound is unavailable,
+`halt_unresolved_return` records that the simulation has no qualified continuation.
+Neither endpoint is a completed return or recovered vehicle.
+
+After deorbit, a terminal fuel/propulsion violation cannot cancel entry. The
+preapproved response is to record `terminal_return_domain_violation` and continue
+the existing finite controller as `unqualified_best_effort_terminal_guidance`.
+The simulator preserves the final contact or horizon outcome. Verification checks
+that the failure flag, event and later result agree; it must not reinterpret a
+well-formed failure record as qualified return. `terminal_engine_out` is an explicit
+opt-in synthetic late-failure probe, outside the nominal qualification census.
+
+Step 5 separates record checks, scenario checks and terminal mission results.
+The fuel-shortage comparison checks inhibition and a 30 s observation only; its
+`ship_return_qualified` is false and the Ship outcome remains unresolved.
+The normal/release-fault/tower-unavailable/operations-notice cases can establish
+modeled Ship contact, not whole-mission success. Booster diversion and splashdown
+are different goals and must be recorded separately. Compound response failures
+can preserve Ship contact while losing the deployment objective.
+
+The 19 actual Jev receipts belong to the historical `6185ef92` evaluation (envelope
+v5); they are not relabelled as inference on this revision. In those live runs,
+Jev selected diagnostics and deployment changes. Four return selections retained
+the initial `state_return` plan; the fuel-shortage selection had only inhibition
+available. They do not demonstrate an AI-induced return-policy improvement.
+Numerical tools are part of MissionOS; scripted parity is not an AI-value gate.
+
+### Hold/resume coverage
+
+The follow-up on production source `21fbc06f` executes the existing
+`hold_deployment_start` and `hold_deployment_monitor` response fixtures through
+the managed CLI. Both holds last 5 s and resume before their next release slot;
+their 26 release timestamps and contact metrics match the fixed baseline.
+They do not exercise the hypothesized release-timing shift.
+
+`scripts/probe_starship_delayed_hold.py` runs the same worker with a credential-free
+fixture mailbox. The host withholds the reassessment reply for 20 wall seconds;
+the simulator continues its paced clock. In the recorded trial the accepted hold
+lasts 25.25 s, before its 30 s expiry, and the remaining 25 releases shift by 10.75 s.
+Selection and execution both match the existing `retained0` corridor. Maximum
+checked position/velocity residuals are 1.921 m / 0.002366 m/s; at deorbit they
+are 0.174 m / 0.000909 m/s. All 26 bodies release and the four Ship contact limits
+pass at 4.60835 m/s. No corridor, dynamics source or tolerance is modified.
+
+The host delay is measured in wall time; the actual simulated delay must always
+be read from the command/observation receipts. The probe's process exit indicates
+record verification, not recovery; its saved flight still requires outcome audit.
+`hold-resume-summary.json` separately checks accepted hold/resume, later running
+state, 26 releases, actual timing shift, both return admissions and Ship contact.
+The ordinary `normal` comparison remains false because the hold is deliberately
+forced (and the delayed flight's metrics are not identical). It is not reused as
+the hold-probe acceptance criterion. These finite cases do not qualify every
+latency, hold duration or disturbance. No new inference or human-workload result
+is claimed.
+
+```sh
+python scripts/run_starship_managed_mission.py --approve-simulation \
+  --case normal --splashdown --director-mode fixture \
+  --response-fault hold_deployment_monitor \
+  --run-id hold-review-hold_deployment_monitor \
+  --output-dir output/hold-resume-review-20261008/hold_deployment_monitor
+python scripts/probe_starship_delayed_hold.py --approve-simulation \
+  --output-dir output/hold-resume-review-20261008/delayed-monitor
+```
+
+[Saved hold/resume evidence](../assets/starship-state-return-qualification/hold-resume-summary.json)
+includes production source and probe hashes. The existing 39-flight qualification
+remains unchanged; the new delayed hold is follow-up evidence, not a new admission
+corridor.
+
+### Environment and requalification
+
+Use `pip install -e '.[spaceflight-qualified]'` for the recorded numerical backend
+(NumPy 2.4.6 / SciPy 1.17.1). The broader `spaceflight` extra remains useful for
+unqualified development. Managed planning and pre-execution checks reject missing
+qualification, changed source/profile or a backend mismatch with explicit reasons,
+before launching a worker. A dependency mismatch must not silently turn a mission
+into a coast-only run. Old approval envelopes cannot acquire v6 authority.
+
+The qualification asset is
+`docs/assets/starship-state-return-qualification/qualification.json`.
+Its 15 source hashes cover the dynamics, guidance, admission and independent
+checkers. Editing any covered file invalidates registration. The current builder
+requires all 39 trials from the new exact source; it does not rewrite old hashes
+or accept a mixture of runs. This costs 39 full CPU simulations even for a guard-only
+edit. A future reviewed compatibility mechanism could reduce that cost; none is
+assumed here. Failed and historical source-bound records remain preserved.
+
+Runtime commands:
+
+```sh
+python scripts/run_starship_return_qualification.py --approve-simulation --wind-trim \
+  --retained 15 --output-dir output/state-return-example
+python scripts/run_starship_managed_mission.py --approve-simulation \
+  --case operations_notice --splashdown --director-mode fixture \
+  --output-dir output/mission-control-example
+```
+
+Use fresh directories and `spaceflight-qualified` for managed execution; the
+qualified backend versions are in the asset. Do not overwrite failures or automatically
+rerun a failed bounded trial. SDK credentials belong only to the host broker.
+
+[Current results](../examples/starship-state-return.md) and
+[current verification summary](../assets/starship-state-return-qualification/review-fixes-summary.json)
+keep the first failed integration, old negative controllers, nominal water entry
+and limits distinct. Booster water-entry robustness and true recovery/reuse,
+continuous monitoring, in-flight human reapproval and multi-flight readiness/shared
+resources/human workload remain outside this bounded revision. Fuel-shortage
+recovery remains unresolved; five completed comparison checks do not close that gap.

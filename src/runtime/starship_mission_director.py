@@ -27,11 +27,12 @@ POINTS = {
     "deployment_monitor": ["continue", "hold", "stop_deployment", "collect_status"],
     "deployment_diagnostic": ["continue", "stop_deployment"],
     "deployment_reassessment": ["continue", "collect_status", "stop_deployment"],
-    "return_selection": ["fixed_return", "retained_return"],
+    "return_selection": ["state_return", "inhibit_return"],
     "booster_selection": ["capture", "divert"],
 }
+COMPOUND_FAULTS = ("hold_then_reassessment_and_return_timeout", "hold_then_reassessment_timeout_invalid_return")
 RESPONSE_FAULTS = tuple(f"{kind}_{point}" for kind in ("invalid", "timeout") for point in POINTS)+(
-    "hold_deployment_start", "hold_deployment_monitor")
+    "hold_deployment_start", "hold_deployment_monitor", *COMPOUND_FAULTS)
 FIELDS = {"time_s", "phase", "released_count", "release_acknowledged", "sequencer_state",
           "fuel_kg", "return_deadline_s", "tower_ready", "numerical_tools", "operations_notice", "hold_expires_at_s"}
 SCOPE = "local_simulation_and_mission_decision_envelope"
@@ -67,7 +68,9 @@ def fuel_sensor(fuel_kg, time_s, body):
 def contract(mode, *, splashdown=False):
     if mode not in ("fixture", "live"):
         raise ValueError("mission_director_not_configured")
-    result = {"schema": "missionos.starship_mission_envelope.v4", "mode": mode,
+    from .starship_return_feasibility import load_certificate, sources as return_sources
+    _, qualification_identity = load_certificate()
+    result = {"schema": "missionos.starship_mission_envelope.v6", "mode": mode,
             "scope": SCOPE, "decision_points": json.loads(json.dumps(POINTS)), "maximum_decisions": 6,
             "maximum_jev_calls": 6 if mode == "live" else 0,
             "maximum_llm_calls": 6 if mode == "live" else 0,
@@ -76,11 +79,14 @@ def contract(mode, *, splashdown=False):
             "hold_expiry": "stop_deployment_no_automatic_resume",
             "decision_expiry_s": 75.,
             "minimum_return_fuel_kg": 28000., "return_time_change_allowed": False,
-            "return_choices": ["fixed_v1", "mass_state_terminal_v3"],
+            "return_choices": ["trimmed_state_terminal_v4", "inhibit_return_observe_30s_no_retry"],
+            "return_qualification_sha256": qualification_identity, "return_inhibit_observation_s": 30.,
+            "terminal_domain_violation": "record_and_continue_unqualified_best_effort_terminal_guidance",
+            "return_model_source_sha256": digest(return_sources()),
             "booster_sites": ["capture", "divert"],
-            "initial_plan": {"deployment": "continue_subject_to_release_constraints", "return": "fixed_v1", "booster": "divert"},
+            "initial_plan": {"deployment": "continue_subject_to_release_constraints", "return": "trimmed_state_terminal_v4_subject_to_fresh_feasibility", "booster": "divert"},
             "no_response": {"deployment": "preserve_running_plan_subject_to_per_slot_gates_and_persistent_constraints_else_inhibit",
-                            "return": "fixed_return", "booster": "divert"},
+                            "return": "checked_state_return_else_inhibit_and_observe_30s_else_halt_unresolved", "booster": "divert"},
             "initial_decision_deadline": "before_first_planned_release",
             "out_of_scope": "record_escalation_and_apply_preapproved_fallback",
             "pending_time_policy": "integrate_and_pace_simulation_while_provider_pending",
@@ -116,9 +122,9 @@ def validate_observation(row):
             or type(row["operations_notice"]) is not str or len(row["operations_notice"]) > 1000):
         raise ValueError("invalid_director_observation")
     tools = row["numerical_tools"]
-    if (type(tools) is not dict or set(tools) != {"orbit_release_feasible", "retained_payload_present",
-            "capture_corridor_certified", "mechanism_status"}
-            or any(type(tools[k]) is not bool for k in tools if k != "mechanism_status")
+    expected = {"orbit_release_feasible", "retained_payload_present", "capture_corridor_certified", "mechanism_status"}
+    if (type(tools) is not dict or set(tools) not in (expected, expected | {"return_feasibility"})
+            or any(type(tools[k]) is not bool for k in expected if k != "mechanism_status")
             or tools["mechanism_status"] not in ("not_collected", "clear", "blocked", "unknown")):
         raise ValueError("invalid_director_tools")
     return json.loads(json.dumps(row, allow_nan=False))
@@ -134,6 +140,26 @@ def check_action(envelope, point, action, observation, *, elapsed_s, observation
         return "outside_approved_choices"
     if elapsed_s >= envelope["decision_expiry_s"]:
         return "decision_expired"
+    if point == "return_selection":
+        from .starship_return_feasibility import certificate_ready, ROOT
+        from .starship_return_feasibility_verifier import verify
+        profile = json.loads((ROOT/"examples/spaceflight/starship-sixdof-profile.json").read_text())
+        certificate, identity = certificate_ready(profile, check_backend=False)
+        proof = observation["numerical_tools"].get("return_feasibility")
+        # Native integrator endpoints can contain NumPy scalar coordinates.
+        # Requests already cross JSON; execution-time rechecks must use that
+        # same DTO boundary instead of weakening the independent JSON checker.
+        try:
+            proof = json.loads(json.dumps(proof, allow_nan=False))
+        except (ValueError, TypeError):
+            return "return_feasibility_unavailable"
+        checked = verify(proof, certificate, identity, time_s=observation["time_s"],
+                         fuel_kg=observation["fuel_kg"], released_count=observation["released_count"])
+        if not checked["passed"] or identity != envelope["return_qualification_sha256"]:
+            return "return_feasibility_unavailable"
+        key = "return_admitted" if action == "state_return" else "bounded_coast_admitted"
+        if proof[key] is not True:
+            return "return_model_domain_not_met" if action == "state_return" else "bounded_coast_not_feasible"
     if point.startswith("deployment"):
         if observation["time_s"] >= observation["return_deadline_s"]:
             return "return_deadline_reached"
@@ -180,7 +206,11 @@ def fallback_action(envelope, point, row, *, observation_requests, hold_used_s):
     if point == "booster_selection":
         return envelope["no_response"]["booster"]
     if point == "return_selection":
-        return "fixed_return"
+        for action in ("state_return", "inhibit_return"):
+            if check_action(envelope, point, action, row, elapsed_s=0,
+                            observation_requests=observation_requests, hold_used_s=hold_used_s) is None:
+                return action
+        return "halt_unresolved_return"
     # A temporary per-slot orbit/pressure/rate gate is not a permanent abort.
     # Keeping the sequence running never bypasses the executor's release gate.
     if (point.startswith("deployment") and row["sequencer_state"] == "running"
@@ -248,7 +278,7 @@ class MissionDirector:
                            row["time_s"]+self.envelope["decision_expiry_s"] if decision_deadline_s is None else decision_deadline_s)
             if not math.isfinite(deadline) or deadline <= row["time_s"]:
                 raise ValueError("invalid_decision_deadline")
-            request = {"schema": "missionos.starship_director_request.v3", "request_id": token,
+            request = {"schema": "missionos.starship_director_request.v5", "request_id": token,
                        "point": point, "observation": row,
                        "allowed_actions": eligible_actions(self.envelope, point, row,
                            observation_requests=self.observation_requests, hold_used_s=self.hold_used_s),
@@ -277,7 +307,15 @@ class MissionDirector:
         if response is not None and type(response) is not dict:
             response = {"request_id": request["request_id"], "action": None,
                         "mode": "malformed_response", "model_inference_invoked": False}
-        if self.response_fault == "timeout_"+point:
+        if self.response_fault in COMPOUND_FAULTS:
+            if point == "deployment_start" and response is not None:
+                response = {**response, "action": "hold", "synthetic_response_fault": "compound_hold"}
+            elif point == "deployment_reassessment":
+                response = None
+            elif point == "return_selection":
+                response = (None if self.response_fault == COMPOUND_FAULTS[0] else
+                    {**(response or {}), "action": None, "synthetic_response_fault": "compound_invalid_return"})
+        elif self.response_fault == "timeout_"+point:
             response = None
         elif response is not None and self.response_fault == "invalid_"+point:
             response = {**response, "action": None, "synthetic_response_fault": "invalid_action"}
@@ -305,12 +343,19 @@ class MissionDirector:
                 or response.get("mode") != self.envelope["mode"]):
             reason = reason or "response_binding_mismatch"
         applied = fallback if reason else action
+        fallback_reason = (check_action(self.envelope, point, fallback, row, elapsed_s=0,
+            observation_requests=self.observation_requests, hold_used_s=self.hold_used_s) if reason else None)
+        if point == "return_selection" and fallback_reason:
+            applied = "halt_unresolved_return"
         if applied == "collect_status":
             self.observation_requests += 1
         if applied == "hold":
             self.hold_used_s += self.envelope["maximum_hold_s"]
         record.update(response=response, dispatch={"action": applied, "time_s": row["time_s"],
                       "rules_accepted": reason is None, "rejection": reason, "observation": row,
+                      "fallback_rules_accepted": reason is not None and fallback_reason is None,
+                      "fallback_rejection": fallback_reason,
+                      "return_feasibility": row["numerical_tools"].get("return_feasibility") if point == "return_selection" else None,
                       "escalation_requested": reason == "outside_approved_choices" and type(action) is str,
                       "response_invalid": type(action) is not str})
         self.finished.add(point)

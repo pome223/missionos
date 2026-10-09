@@ -27,6 +27,7 @@ dependencies = [
 
 [project.optional-dependencies]
 spaceflight = ["scipy>=1.11.0,<2.0.0"]
+spaceflight-qualified = ["numpy==2.4.6", "scipy==1.17.1"]
 spaceflight-native = ["bsk==2.12.0", "scipy>=1.11.0,<2.0.0"]
 urban-map = ["shapely>=2.0,<3.0", "pyproj>=3.6,<4.0"]
 prediction = [

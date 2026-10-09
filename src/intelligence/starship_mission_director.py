@@ -17,7 +17,7 @@ def fixture_decision(request):
     if point == "booster_selection":
         action = "capture" if row["tower_ready"] and tools["capture_corridor_certified"] else "splashdown" if "splashdown" in request["allowed_actions"] else "divert"
     elif point == "return_selection":
-        action = "retained_return" if tools["retained_payload_present"] else "fixed_return"
+        action = "state_return" if "state_return" in request["allowed_actions"] else "inhibit_return"
     elif point == "deployment_diagnostic":
         action = "continue" if tools["mechanism_status"] == "clear" else "stop_deployment"
     elif row["fuel_kg"] < 28000 or "suspend remaining deployment" in row["operations_notice"].lower():
@@ -38,7 +38,7 @@ class MissionAgent:
     def assess(self, request):
         if (type(request) is not dict or set(request) != {"schema", "request_id", "point", "observation",
                 "allowed_actions", "envelope_sha256", "decision_deadline_s"}
-                or request["schema"] != "missionos.starship_director_request.v3"
+                or request["schema"] != "missionos.starship_director_request.v5"
                 or request["envelope_sha256"] != digest(self.envelope)
                 or request["point"] not in POINTS or type(request["allowed_actions"]) is not list
                 or not request["allowed_actions"]
