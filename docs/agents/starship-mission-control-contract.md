@@ -167,7 +167,7 @@ into a coast-only run. Old approval envelopes cannot acquire v6 authority.
 
 The qualification asset is
 `docs/assets/starship-state-return-qualification/qualification.json`.
-Its 15 source hashes cover the dynamics, guidance, admission and independent
+Its 16 source hashes cover the dynamics, shared return controller, guidance, admission and independent
 checkers. Editing any covered file invalidates registration. The current builder
 requires all 39 trials from the new exact source; it does not rewrite old hashes
 or accept a mixture of runs. This costs 39 full CPU simulations even for a guard-only

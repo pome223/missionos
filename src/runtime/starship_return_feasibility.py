@@ -17,7 +17,7 @@ POLICY = "trimmed_state_terminal_v4"
 # These are not a qualified physical perturbation box or a reachability proof.
 MATCH_LIMITS = {"sample_gap_s": 2.01, "position_m": 12., "velocity_mps": .05,
                 "attitude_deg": .1, "body_rate_rad_s": .0002, "fuel_kg": 100.1}
-CORE_SOURCES = ("src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof.py",
+CORE_SOURCES = ("src/runtime/starship_sixdof_mission.py", "src/runtime/starship_ship_return.py", "src/runtime/starship_sixdof.py",
     "src/runtime/starship_entry_trim.py", "src/runtime/starship_fin_allocation.py",
     "src/runtime/starship_retained_return.py", "src/runtime/starship_retained_return_verifier.py",
     "src/runtime/starship_sixdof_verifier.py", "src/runtime/starship_sixdof_separation.py",

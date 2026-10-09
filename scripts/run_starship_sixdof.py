@@ -71,7 +71,7 @@ def main():
         if (not math.isfinite(duration) or not 0 < duration <= 30 or dt <= 0
                 or duration/dt > 99_999 or 600+dt <= 600 or 600+duration <= 600):
             parser.error("Catch integration requires advancing time and at most 99,999 steps.")
-    sources = ["src/runtime/starship_sixdof.py", "src/runtime/starship_sixdof_mission.py", "src/runtime/starship_sixdof_separation.py",
+    sources = ["src/runtime/starship_sixdof.py", "src/runtime/starship_sixdof_mission.py", "src/runtime/starship_ship_return.py", "src/runtime/starship_sixdof_separation.py",
                "src/runtime/starship_sixdof_contact.py", "src/runtime/starship_sixdof_booster.py", "src/runtime/starship_physics.py", "scripts/run_starship_sixdof.py",
                "src/runtime/starship_flight_supervision.py",
                "src/runtime/starship_retained_return.py",

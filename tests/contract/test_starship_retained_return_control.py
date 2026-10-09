@@ -81,7 +81,7 @@ def test_incomplete_signed_grant_cannot_authorize_retained_guidance(tmp_path, mo
         service.execute(*ref)
 
 
-@pytest.mark.parametrize("source", ["src/runtime/starship_retained_return.py", "src/runtime/starship_retained_return_verifier.py"])
+@pytest.mark.parametrize("source", ["src/runtime/starship_retained_return.py", "src/runtime/starship_retained_return_verifier.py", "src/runtime/starship_ship_return.py"])
 def test_return_algorithm_and_verifier_are_covered_by_approval(tmp_path, monkeypatch, source):
     service, state, ref = planned(tmp_path, monkeypatch)
     service.approve(*ref)

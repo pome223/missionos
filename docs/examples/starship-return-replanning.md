@@ -1,4 +1,38 @@
-# First step toward return replanning
+# Return prediction for mission replanning
+
+
+Execution and prediction now use the same Ship return controller. A fresh
+39-flight regression reproduced **97,703 samples and all recorded commands,
+events and outcomes exactly**. Four fixed prediction candidates, including
+one following-orbit opportunity, meet the modeled contact limits.
+
+The following-orbit results make a real planning constraint visible: waiting
+changes where the vehicle reaches the surface. MissionOS still needs to check
+approved recovery areas, availability, waiting resources and uncertain observations
+before it can choose and execute such a return. The AI replanning loop is not yet
+connected.
+
+| Request delay | Contact speed | Tilt | Propellant | Contact latitude / longitude | CPU process wall time |
+|---|---:|---:|---:|---|---:|
+| Original time | 4.60826 m/s | 2.37486° | 62.39431 t | 4.88280° / 165.27819° | 45.44 s |
+| +60 s | 4.61028 m/s | 2.38119° | 62.39420 t | 6.01916° / 167.51984° | 45.59 s |
+| +5,451.31 s (one period) | 4.63322 m/s | 2.42069° | 62.42976 t | 5.35468° / 143.03096° | 84.15 s |
+| +5,511.31 s | 4.63249 m/s | 2.41880° | 62.49358 t | 7.28258° / 146.88590° | 85.31 s |
+
+Each forecast used one CPU worker; part of the batch overlapped the contract
+tests. These are measured process times, not a live-response guarantee. The
+candidate times were frozen from the initial orbital period before any forecast;
+there was no search, retry, model call or change to contact limits. No recovery
+region was placed around the resulting coordinates to create a success claim.
+
+The [opportunity screen](../assets/starship-return-replanning-m1/opportunity-screen.json)
+and [shared-controller regression](../assets/starship-return-replanning-m1/shared-controller-regression.json)
+record source identities, checks and limits. The registered return certificate
+was rebuilt for the new code but retains its original narrow coast corridors;
+it does not authorize these following-orbit candidates. The terminal-engine-loss
+case still records a 22.73 m/s impact, and fuel shortage remains unresolved.
+
+## Earlier timing screen
 
 Delaying the modeled Ship's return by 60 seconds still reaches low-speed
 contact, but moves the contact point by **about 278 km**. A return planner must
@@ -29,9 +63,10 @@ spherical great-circle estimate (mean radius 6,371,008.8 m); contact occurs
 These results do not establish an available recovery area, actual water entry,
 recovery/reuse, waiting endurance or SpaceX fidelity. No terrain/sea lookup or
 recovery-resource availability was used to approve these contact locations.
-Power, thermal endurance and boil-off remain unmodeled. No old qualification
-tolerance or production guidance source was changed; the existing return
-certificate remains valid for its original scope only.
+Power, thermal endurance and boil-off remain unmodeled. This original timing
+screen changed neither qualification tolerances nor production guidance. Its
+source hashes remain historical; the shared-controller work below requires new
+qualification for the changed source.
 
 The first probe invocation passed in-memory tuples to JSON-only verifiers, so
 both processes exited 2. The original failed verification files are preserved.
@@ -96,10 +131,9 @@ defines the tool's restricted scope and commands. M1 still needs observed-state
 uncertainty, recovery-area/time constraints, bounded waiting, repeated AI
 decisions and the three end-to-end cases.
 
-Before that connection, execution and prediction will share one return
-controller. The current forecast's copied phase logic is an intermediate
-implementation. M1 will also evaluate a following-orbit opportunity within an
-initial development ceiling of 6,000 seconds beyond the original return plan;
-the current short-coast tool does not implement that yet. Recovery-area access
+Execution and prediction now call one return controller, replacing the copied
+phase logic used in the original screen. The next technical screen evaluates
+four fixed times, including a following-orbit opportunity, within a development
+ceiling of 6,000 seconds beyond the original return plan. Recovery-area access
 and waiting resources must be established before such a delay can be selected.
 See the [integration decisions](../agents/starship-return-replanning-m1.md#decisions-before-operational-integration-review-of-pr-127).

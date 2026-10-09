@@ -114,19 +114,19 @@ profile. Vary only the requested return time, nominal versus +60 seconds.
 The full-flight records are compared **after** the forecast; no future sample
 is an input to its dynamics or control.
 
-The development forecast accepts only orbital-coast origins, retained counts
+The original PR #127 screen accepted only orbital-coast origins, retained counts
 0–26, a return request within 180 seconds of the origin, and a positive prediction
 horizon of at most 4,000 seconds beyond the origin that includes that request.
+Those remain the default bounds without an explicit opportunity-window input.
 Those are software bounds, not a qualified flight envelope. Only the two tested
 zero-retained candidates are covered by this screen. Entry/terminal restarts,
 pending releases and persistent mission-director state are unsupported.
 
-The forecast reuses the plant, actuator control, trim preparation and terminal
-budget. Its small return phase machine currently mirrors the production one
-without editing the 15 source files bound by the old certificate. Exact suffix
-checks expose divergence in this mirror; it must not become a separately
-approved production controller. A shared resumable production controller and
-its requalification are prerequisites for dispatch through this path.
+PR #127 reused the plant, actuator control, trim preparation and terminal budget,
+but copied the return phase machine. Its saved artifacts retain the original
+15-file source binding. The implementation below removes that copy; historical
+artifacts are not relabelled as executions of the shared controller. Dispatch
+through a forecast remains unimplemented.
 
 Use the fixed backend from `spaceflight-qualified`. Two CPU forecasts, each
 limited to 900 wall seconds; no search, hosted model or new full flight:
@@ -174,9 +174,10 @@ This screen admits no one-orbit waiting scenario and no waiting-endurance claim.
 
 ## Decisions before operational integration (review of PR #127)
 
-These are requirements for the next implementation, **not implemented grants**.
-The current 180-second input bound and 4,000-second prediction horizon remain
-unchanged. In the tested origin, nominal return is 90 seconds ahead: that bound
+These decisions govern the shared implementation below; they are **not flight
+authority**. The default 180-second input bound and 4,000-second prediction
+horizon remain for the original interface. In the tested origin, nominal return
+is 90 seconds ahead: that bound
 permits at most 90 seconds of postponement beyond the original plan, not 180.
 The two-point displacement measurement cannot establish an 800 km reachable
 corridor or justify linear extrapolation to later orbits.
@@ -243,9 +244,8 @@ period, and +one period+60 seconds. Compute and freeze the period from the origi
 do not tune candidate times or recovery areas after seeing terminal outcomes.
 Ceilings: two CPU workers, 900 wall seconds per forecast, 1,800 seconds for the
 whole batch, no hosted model calls, no automatic retry. Include rejected/failed
-candidates in that budget. These are planning caps, not an experiment run by
-this documentation change. The future horizon must include both bounded coast
-and the remaining descent; raising only `180` is not sufficient.
+candidates in that budget. The bounded probe below implements this fixed candidate set. The extended
+horizon includes both coast and descent; raising only `180` is insufficient.
 
 Measure later-orbit runtime before fixing the live tool budget; 48 seconds was
 measured only for the short coast. Live computation must finish before a fixed
@@ -253,3 +253,141 @@ decision deadline with time left for revalidation and execution. Its budget
 must count uncertainty checks and repeated requests, advance the flight clock,
 and use a checked preapproved continuation on expiry. Do not freeze the flight
 or remove uncertainty checks just to fit a candidate count.
+
+
+## Shared implementation and bounded opportunity probe
+
+`starship_ship_return.ReturnController` owns coast-to-return transitions,
+entry trim history, reference-frame history and terminal decisions. Both
+`starship_sixdof_mission.simulate` and `starship_return_prediction.forecast`
+call its `update` and `command`. Sampling triggers and bracketed contact stepping use shared helpers.
+The flight wrapper retains its existing opt-in integration scale; the predictor
+uses scale 1. The controller invokes the
+same existing actuator/GNC functions; it does not add forces or alter gates.
+
+The JSON context schema `missionos.ship_return_controller.v1` preserves all
+controller fields, including the exact reference quaternion (no second
+normalization on restoration). `from_dict` rejects missing/extra fields,
+non-finite JSON, mismatched policy and invalid reference frames. Restoring this
+history grants no authority. Flight admission still happens in the mission loop
+before `start`; forecast results cannot dispatch. Unit checks exercise all five
+phases, context isolation, commands and finite stepping after round-trip.
+The public forecast interface still starts from post-deployment coast only;
+restoring a controller alone does not restore pending MissionOS transactions.
+
+The new module is bound by the plan source hash, execution manifest, qualification
+builder and independent feasibility verifier. A source change invalidates the
+old certificate. The regression audit compares fresh full flights against the
+previous certificate's exact study hashes, then compares every run field except
+`development_source_sha256`. It includes samples and commands, event order,
+separated satellites, booster execution, return history and final state.
+
+```sh
+python scripts/run_starship_return_qualification.py --approve-simulation \
+  --retained 0 --wind-trim --output-dir output/shared-return/census/retained0
+# Repeat for retained 1..26 and +/-1000 kg at 0,14,15,16,25,26 (39 total).
+python scripts/build_starship_return_qualification.py \
+  --input-dir output/shared-return/census --output output/shared-return/qualification.json
+python scripts/verify_starship_return_refactor.py \
+  --previous-dir output/previous-census --current-dir output/shared-return/census \
+  --previous-certificate output/previous-qualification.json \
+  --previous-certificate-sha256 <reviewed-previous-certificate-sha256> \
+  --output output/shared-return/regression.json
+```
+
+Review the newly built certificate before installing it at the registered path.
+Do not edit its hashes to bypass missing executions. The fixed backend, contact
+limits and 39 coast-matching corridors remain unchanged in meaning; none cover
+following-orbit returns.
+
+`probe_starship_return_opportunities.py` requires a current-certificate-bound
+nominal census run. It selects the same complete coast snapshot 90 seconds
+before the original return request, computes its osculating period, and writes
+all four candidate times before executing one. Each invocation uses a fresh
+directory. Run only the four specified slots, at most two concurrently, with
+external timeouts of 900 seconds each and 1,800 seconds for the complete batch.
+Do not launch another slot after a failure without diagnosing and recording it.
+
+```sh
+python scripts/probe_starship_return_opportunities.py --approve-simulation \
+  --reference-dir output/shared-return/census/retained0 --candidate nominal \
+  --output-dir output/shared-return/opportunities/nominal
+# Other fixed slots: delay60, next_orbit, next_orbit60. No search or retries.
+```
+
+The explicit `missionos.ship_return_opportunity_window.v1` input anchors a
+6,000-second delay ceiling to the original scheduled request. The origin must
+precede that anchor by at most 180 seconds. Its prediction horizon is at most
+10,000 seconds from the origin, including descent; the shorter default interface
+is unchanged. This is an offline compute bound, not delegated authority.
+Inputs, complete predictions, captured source, backend and terminal outcome are
+preserved. Nominal reproduction uses the saved full flight only after prediction.
+The other slots report the unchanged four contact limits, positions and times.
+
+A contact pass is not an available recovery opportunity: no region or availability
+window is approved here, and waiting power/thermal/boil-off are not modeled.
+Do not place a recovery region around the resulting point afterwards and call
+that a mission success. All inputs remain explicit development plant states,
+not uncertainty-bounded onboard estimates; model calls and runtime admission
+remain zero. These limitations must accompany any reported later-orbit result.
+
+
+### Shared-controller requalification result
+
+All 39 freshly executed flights pass the unchanged contact gate and exactly
+match their corresponding previous source-bound flight records. The comparison
+covers **97,703 samples**, including command/controller fields, as well as every
+run field other than the intentionally changed source-hash map. Maximum contact
+speed is 4.691169 m/s, maximum contact tilt 2.754979 degrees, and minimum remaining
+propellant 45,231.488 kg. No retries or parameter changes were used.
+
+The installed certificate binds 16 core files, including the shared controller.
+Removing only source/study identities from the old and new certificates produces
+identical data: corridor coordinates/times, interpolation tolerances, limits,
+backend and empirical margins have not expanded. Historical evidence remains
+under its original identity. The [compact regression audit](../assets/starship-return-replanning-m1/shared-controller-regression.json)
+records both study hashes for each case and the checks applied to every case.
+
+
+The terminal-engine-loss CLI also preserves the previous 22.734699 m/s impact,
+including the domain-violation event and post-trigger integration. Both branches
+of the fixture fuel-shortage comparison preserve `return_inhibited_unresolved`;
+that remains an unresolved return, not a contact pass. Their physical samples,
+commands, final states/outcomes and event times match the saved previous runs.
+Current independent record/return/admission checkers pass. Changed certificate
+identities in admission receipts are excluded from the historical physics
+comparison and checked separately against the current certificate.
+
+
+### Fixed following-orbit screen result
+
+All four fixed candidates pass the unchanged four modeled contact limits. The
+period frozen from the common origin is 5,451.309975 s; requested return times are
+T+2,280.7, 2,340.7, 7,732.009975 and 7,792.009975 s. Request times are lower bounds;
+the first actual control tick at or after each time executes the transition.
+
+| Request delay | Contact speed | Tilt | Propellant | Contact latitude / longitude | CPU process wall time |
+|---|---:|---:|---:|---|---:|
+| Original time | 4.60826 m/s | 2.37486° | 62.39431 t | 4.88280° / 165.27819° | 45.44 s |
+| +60 s | 4.61028 m/s | 2.38119° | 62.39420 t | 6.01916° / 167.51984° | 45.59 s |
+| +5,451.31 s (one period) | 4.63322 m/s | 2.42069° | 62.42976 t | 5.35468° / 143.03096° | 84.15 s |
+| +5,511.31 s | 4.63249 m/s | 2.41880° | 62.49358 t | 7.28258° / 146.88590° | 85.31 s |
+
+The complete batch took 267.29 wall seconds with **one forecast
+worker**, within the two-worker ceiling; Starship tests overlapped part of it.
+No timeouts, retries or model calls occurred. The nominal forecast exactly
+matches the new full-flight suffix. Both short candidates also match final
+state/contact/event times against the historical PR #127 predictions; coverage
+is 1,378/1,380 and 1,397/1,400 samples respectively. The shared controller records
+additional activation/previous-budget witnesses; the 95% coverage threshold
+was not changed.
+
+This is saved-state prediction under a model, not a new dispatched flight or a
+qualified recovery opportunity. Following-orbit contact is near longitude 143
+or 147 degrees, versus 165 or 168 degrees for the short candidates. Recovery
+geometry/availability, observation uncertainty and waiting power/thermal/boil-off
+remain unchecked. The existing certificate cannot admit the later candidates.
+The [compact screen](../assets/starship-return-replanning-m1/opportunity-screen.json)
+preserves source hashes, candidate identities, actual transition times and these
+false claim flags. M1's repeated AI decisions and three operational E2Es remain
+unfinished.

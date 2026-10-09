@@ -1,0 +1,221 @@
+{
+  "schema": "missionos.ship_return_opportunity_screen.v1",
+  "candidate_set": {
+    "schema": "missionos.ship_return_opportunities.v1",
+    "origin_sha256": "afd0343fbf335f8a12dfa0f372b11585e68440d67f4993f20ea83beae6222dff",
+    "window": {
+      "schema": "missionos.ship_return_opportunity_window.v1",
+      "scheduled_return_time_s": 2280.7000000000407,
+      "maximum_delay_s": 6000.0
+    },
+    "osculating_period_s": 5451.309975475451,
+    "return_times_s": {
+      "nominal": 2280.7000000000407,
+      "delay60": 2340.7000000000407,
+      "next_orbit": 7732.009975475492,
+      "next_orbit60": 7792.009975475492
+    },
+    "maximum_forecasts": 4,
+    "maximum_workers": 2,
+    "per_run_wall_limit_s": 900,
+    "batch_wall_limit_s": 1800,
+    "automatic_retry": false,
+    "runtime_admission": false
+  },
+  "source_sha256": {
+    "scripts/run_starship_return_qualification.py": "236f98c0617e5b8ddd0af97461c9d57f552ccde39f324385ea1eb4a933f52b77",
+    "src/runtime/starship_sixdof_mission.py": "f01dcaf2378605b65863651b697edda5c67efaeb5f5f9faefab128da145ec7cd",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src/runtime/starship_return_feasibility_verifier.py": "8041cc485f902621e72e09162d3d3a0fa2bbd973d93a039e52740712b43435b4",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_sixdof_booster.py": "71481d531a12569f6fedd590e3be43f0391c0afe6335ca660526ece4fbd26b52",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/probe_starship_return_opportunities.py": "7647d5e8ba4834408d05048cf3377ae9498aee6047556476ff3f1d8ec5ffd90f",
+    "scripts/probe_starship_return_delay.py": "d16ad761f0a210bc39caf183f3bf286e84b198f83d2847d45ba9f9016fbe4780",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "src/runtime/starship_return_prediction.py": "a377edf22b5bb47cd209e920f89436ab8c85aa6792c564a4683e38cec47f47ca",
+    "src/runtime/starship_return_prediction_verifier.py": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e"
+  },
+  "backend": {
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  },
+  "records_valid": true,
+  "all_four_contact_limits_met": true,
+  "actual_forecast_workers": 1,
+  "batch_wall_time_s": 267.29122058401117,
+  "concurrent_starship_tests_during_part_of_batch": true,
+  "source_unchanged": true,
+  "cases": [
+    {
+      "candidate": "nominal",
+      "candidate_set_sha256": "92514ca64326f6eebcf4bbe48fe4f940ed1a19d7f8191fcb49c5cd688aa33282",
+      "origin_time_s": 2190.7000000000407,
+      "requested_return_time_s": 2280.7000000000407,
+      "actual_return_time_s": [
+        2280.7000000000407
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "nominal_reproduction": {
+        "passed": true,
+        "checks": {
+          "origin_unchanged": true,
+          "first_state_matches_origin": true,
+          "candidate_time_bound": true,
+          "suffix_sample_coverage": true,
+          "shared_physical_samples_exact": true,
+          "final_state_exact": true,
+          "contact_receipt_exact": true,
+          "contact_kinematics_consistent": true,
+          "phase_event_times_exact": true,
+          "termination_matches": true,
+          "time_advanced": true,
+          "fuel_nonincreasing": true,
+          "no_execution_or_admission_claim": true
+        },
+        "matched_sample_count": 1380,
+        "prediction_sample_count": 1380,
+        "same_model_reproduction_only": true,
+        "runtime_admission": false,
+        "independent_physics_validation": false
+      },
+      "wall_time_s": 45.43638395899325,
+      "prediction_sha256": "67927254d23e93ecb26698b9f2236195bbc52dba07f95745e7339f9482719878",
+      "prediction_is_execution": false,
+      "runtime_admission": false,
+      "model_calls": 0,
+      "independent_physics_validation": false,
+      "recovery_area_qualified": false,
+      "observation_uncertainty_qualified": false,
+      "waiting_endurance_qualified": false,
+      "milestone_complete": false
+    },
+    {
+      "candidate": "delay60",
+      "candidate_set_sha256": "92514ca64326f6eebcf4bbe48fe4f940ed1a19d7f8191fcb49c5cd688aa33282",
+      "origin_time_s": 2190.7000000000407,
+      "requested_return_time_s": 2340.7000000000407,
+      "actual_return_time_s": [
+        2340.7000000000407
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 4970.591479233129,
+        "speed_mps": 4.610282524309427,
+        "tilt_deg": 2.3811905095541888,
+        "body_rate_rad_s": 0.0030232284145807965,
+        "reserve_kg": 62394.20342496561,
+        "latitude_deg": 6.019157801623628,
+        "longitude_deg": 167.51984413506779
+      },
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "nominal_reproduction": null,
+      "wall_time_s": 45.59327037498588,
+      "prediction_sha256": "3b810c19d3fa16ef29e63147822be4aa9bd7393c7bba8e0bda360e025e557359",
+      "prediction_is_execution": false,
+      "runtime_admission": false,
+      "model_calls": 0,
+      "independent_physics_validation": false,
+      "recovery_area_qualified": false,
+      "observation_uncertainty_qualified": false,
+      "waiting_endurance_qualified": false,
+      "milestone_complete": false
+    },
+    {
+      "candidate": "next_orbit",
+      "candidate_set_sha256": "92514ca64326f6eebcf4bbe48fe4f940ed1a19d7f8191fcb49c5cd688aa33282",
+      "origin_time_s": 2190.7000000000407,
+      "requested_return_time_s": 7732.009975475492,
+      "actual_return_time_s": [
+        7732.200000000041
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 10379.134572330444,
+        "speed_mps": 4.63321772212186,
+        "tilt_deg": 2.4206867621485197,
+        "body_rate_rad_s": 0.0029919348650326466,
+        "reserve_kg": 62429.76210168558,
+        "latitude_deg": 5.35467732740411,
+        "longitude_deg": 143.030961779163
+      },
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "nominal_reproduction": null,
+      "wall_time_s": 84.14914779100218,
+      "prediction_sha256": "42c69fddcf633f671c6bca398015f8a0b8985dfe0a7ef45eccc1d5c08f45175c",
+      "prediction_is_execution": false,
+      "runtime_admission": false,
+      "model_calls": 0,
+      "independent_physics_validation": false,
+      "recovery_area_qualified": false,
+      "observation_uncertainty_qualified": false,
+      "waiting_endurance_qualified": false,
+      "milestone_complete": false
+    },
+    {
+      "candidate": "next_orbit60",
+      "candidate_set_sha256": "92514ca64326f6eebcf4bbe48fe4f940ed1a19d7f8191fcb49c5cd688aa33282",
+      "origin_time_s": 2190.7000000000407,
+      "requested_return_time_s": 7792.009975475492,
+      "actual_return_time_s": [
+        7792.200000000041
+      ],
+      "termination": "low_speed_surface_contact",
+      "contact": {
+        "time_s": 10447.539910307887,
+        "speed_mps": 4.632492970613469,
+        "tilt_deg": 2.418804240277388,
+        "body_rate_rad_s": 0.0029977107837260743,
+        "reserve_kg": 62493.57703902824,
+        "latitude_deg": 7.282580444303911,
+        "longitude_deg": 146.88590003440495
+      },
+      "contact_limits_met": true,
+      "source_unchanged": true,
+      "nominal_reproduction": null,
+      "wall_time_s": 85.30672662498546,
+      "prediction_sha256": "5a26ccf2bf80363b726430bc9d5f87dab3b11be42e9980e1183ccc31075803ac",
+      "prediction_is_execution": false,
+      "runtime_admission": false,
+      "model_calls": 0,
+      "independent_physics_validation": false,
+      "recovery_area_qualified": false,
+      "observation_uncertainty_qualified": false,
+      "waiting_endurance_qualified": false,
+      "milestone_complete": false
+    }
+  ],
+  "model_calls": 0,
+  "full_flights_in_opportunity_batch": 0,
+  "automatic_retry": false,
+  "runtime_admission": false,
+  "independent_physics_validation": false,
+  "recovery_area_qualified": false,
+  "observation_uncertainty_qualified": false,
+  "waiting_endurance_qualified": false,
+  "milestone_complete": false
+}

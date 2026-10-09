@@ -1,0 +1,463 @@
+{
+  "schema": "missionos.ship_return_refactor_regression.v1",
+  "passed": true,
+  "case_count": 39,
+  "cases": [
+    {
+      "case": "retained0",
+      "passed": true,
+      "sample_count": 2529,
+      "previous_study_sha256": "48efc686a682fda7d156ea17999287e8840bc29c9fa5c5aca429c177f2687c6c",
+      "current_study_sha256": "02cd2d6d17fd90436a1265cc87c6cedee66557496f4cb850dfd419249f27d663"
+    },
+    {
+      "case": "retained1",
+      "passed": true,
+      "sample_count": 2530,
+      "previous_study_sha256": "4cd2428085b4973b630836dc0eeb52e9e26f345f8ab961910833777b4cb4a6ad",
+      "current_study_sha256": "f1188fc988c6dc92319fa44a0210aefe98118e4a4a489fc4b0f72836b1286ca1"
+    },
+    {
+      "case": "retained2",
+      "passed": true,
+      "sample_count": 2531,
+      "previous_study_sha256": "c72bc3285dfaf8b4781a74712652addb12f59333b89fabcf7c035f92c47bdb50",
+      "current_study_sha256": "3a9d2ccde9706cdf70fd23f543d63a7049e079dd844d6c1d2d63d61bd23e0861"
+    },
+    {
+      "case": "retained3",
+      "passed": true,
+      "sample_count": 2523,
+      "previous_study_sha256": "c11f4945ebb0e2eb4fb7d990ccdc1936f15922d30564bccc8a5657700e971e48",
+      "current_study_sha256": "20ff2f1b4984ed792258109fdb3c8a0a6b398e3e1076f7c46ffb37335e37cf92"
+    },
+    {
+      "case": "retained4",
+      "passed": true,
+      "sample_count": 2527,
+      "previous_study_sha256": "d6d388876e4409cb0404fbd846283a0d730725acd20618cffe5baff579798b58",
+      "current_study_sha256": "e1e6a5ecf35d187633be4eb662bb6a4797cb41c7324f33fd69c64b02797b4c63"
+    },
+    {
+      "case": "retained5",
+      "passed": true,
+      "sample_count": 2530,
+      "previous_study_sha256": "3f36c5671cbf17911828566c0001b802af2d37e380e1c82ed7c63836ad6a0a1a",
+      "current_study_sha256": "255bc365320579066e63707e27dede86a1bf5e27727332bb11ec535502a00dff"
+    },
+    {
+      "case": "retained6",
+      "passed": true,
+      "sample_count": 2533,
+      "previous_study_sha256": "b6ebef32c0963375b44830a2d3d0a94e5d476bc1186ccb30937faeac31bc2338",
+      "current_study_sha256": "34975d8ed1db606fa79bec6fcbf2fa316c10c857dcd25dbba43cf7fe066e60a1"
+    },
+    {
+      "case": "retained7",
+      "passed": true,
+      "sample_count": 2522,
+      "previous_study_sha256": "1b0863eccd16c166edf5cb58bd73ecea0b81d3f97a268d71450ddf4e763d31b4",
+      "current_study_sha256": "06897b960ad921bbf87b2eaa8ed5997c15eaad16f155ab599015d9716db24de2"
+    },
+    {
+      "case": "retained8",
+      "passed": true,
+      "sample_count": 2526,
+      "previous_study_sha256": "fe2832bc62a75ae2da6d2184b8ebeb56f3a2df72d4158b83cd3f60f7e31dbcae",
+      "current_study_sha256": "dbb192378675db3502664a3e4c0e324307ace39c5c312771593e73a3640e1c79"
+    },
+    {
+      "case": "retained9",
+      "passed": true,
+      "sample_count": 2511,
+      "previous_study_sha256": "c41791867ba43eed5fcc8136b667e36ce06a14054de66e6108ddf5d1e8fb0d4d",
+      "current_study_sha256": "5fb79c6667dc70d5af54e5d3cbcabe2de09ccd938dee0b9d432ed47fe6819294"
+    },
+    {
+      "case": "retained10",
+      "passed": true,
+      "sample_count": 2519,
+      "previous_study_sha256": "b9bcce6d351e20ca31d721d8300d6e89a56caf57c2eca1ef2a0f6e6718ee27a6",
+      "current_study_sha256": "58acb6756ddf3490657ab3343277f0bd2b4c31f48f5ab6430e528d56b8e179ef"
+    },
+    {
+      "case": "retained11",
+      "passed": true,
+      "sample_count": 2522,
+      "previous_study_sha256": "267698b3b8fd1859db84df4ca07aea8a6d01517fcf215ab8157d1f72c4c56c8f",
+      "current_study_sha256": "e5e1493eb394de455bb28e1e80107271a0779b92193a29b248b419bbfc9ac727"
+    },
+    {
+      "case": "retained12",
+      "passed": true,
+      "sample_count": 2511,
+      "previous_study_sha256": "0c04de72dae111d86c81fe746825ca68ab04f803ef8b43a9d7b9aa9120b8804c",
+      "current_study_sha256": "6e28886b7156585e65d11086da2d53c28b0b4b96425f9ed205a41bc60f4dae90"
+    },
+    {
+      "case": "retained13",
+      "passed": true,
+      "sample_count": 2513,
+      "previous_study_sha256": "71155f0e9497e9a091556bedffd73be3bf503c82f7a53f88390740ebbfa26346",
+      "current_study_sha256": "2ac3c60883521830fa53663551cfd0b79e99285ad68a9c5490f03808e5efabf4"
+    },
+    {
+      "case": "retained14",
+      "passed": true,
+      "sample_count": 2515,
+      "previous_study_sha256": "f406ab9d8d036c94213627e0f2f8b1f49027d59e9bea4f6652f90e524c6efc3c",
+      "current_study_sha256": "87996dfe444f37a31e8237d0ebbaabc0a41239baf3f6e50910d367409d99386f"
+    },
+    {
+      "case": "retained15",
+      "passed": true,
+      "sample_count": 2505,
+      "previous_study_sha256": "b289d4afe17feb4add75eda3f58929ca3361990854fa61631c7a863ef6af991b",
+      "current_study_sha256": "f5f194d607459a13ae00e70b24bbcab082334c4fbb87e82dea852a8c8c8fac6f"
+    },
+    {
+      "case": "retained16",
+      "passed": true,
+      "sample_count": 2501,
+      "previous_study_sha256": "957963861c285a9314fcc637337e070d0d71e847498f08c42736f5b6dd371a56",
+      "current_study_sha256": "bd50736b213c24339f3657427e67cabc937038fcfabb85fd74f06732b9b6ae57"
+    },
+    {
+      "case": "retained17",
+      "passed": true,
+      "sample_count": 2505,
+      "previous_study_sha256": "f4fbaca8533fcd825c6543d2abfadf1ac5658bebb888bcfdae81d62b7b66b67c",
+      "current_study_sha256": "25d16b35db670585d39197f83c2e2c73bc5172a6fad74f8a25ad7278469028b9"
+    },
+    {
+      "case": "retained18",
+      "passed": true,
+      "sample_count": 2495,
+      "previous_study_sha256": "a4c96680639684acf597e25c780a091cba228e4101f2b747e7f4f66ae410eaaa",
+      "current_study_sha256": "8162a9fdb052946cdf47ea06a5afb50c70cc9aebacd7025049713f4a65953563"
+    },
+    {
+      "case": "retained19",
+      "passed": true,
+      "sample_count": 2498,
+      "previous_study_sha256": "dee99e54d6071047db8ac08e34b49f91c47f4da7c6693dcea681a0fd775dfacd",
+      "current_study_sha256": "db7ca9be7121fb4e30a00d51f9d899811669743cbb9d913820184157d8424bca"
+    },
+    {
+      "case": "retained20",
+      "passed": true,
+      "sample_count": 2501,
+      "previous_study_sha256": "9da7f2e913ca6616d71b417ca43265553ee325c5faa19b96c3d501cf5fdad9a7",
+      "current_study_sha256": "117d26412dcb7e1ac0407f4596c96a25a755d1301feb5350ef6158cee9b6e62e"
+    },
+    {
+      "case": "retained21",
+      "passed": true,
+      "sample_count": 2490,
+      "previous_study_sha256": "380700542504be4e1a12ebee730ac9289a493b5fde28e678343c13f12e6288c8",
+      "current_study_sha256": "f3f29a1fe1909975095daa13c76022dde9139af3519037f2c7a9ea77e100eb90"
+    },
+    {
+      "case": "retained22",
+      "passed": true,
+      "sample_count": 2493,
+      "previous_study_sha256": "5764353c247ab5ee519324a2af69dbd0a53095999eac1b8c3e47e995a398d6b1",
+      "current_study_sha256": "75719367e9f48fbd69d67e5a5d5946993edb36df0778ff8456c88108ebdbd133"
+    },
+    {
+      "case": "retained23",
+      "passed": true,
+      "sample_count": 2496,
+      "previous_study_sha256": "9fbed28468e610dac186497b56ccb2e9623f0ab1065b5e4af6d4491393a6c069",
+      "current_study_sha256": "a3ac0b5ef33a61704578866e75c3c27da80c564492fe569ef4cc9e794ea7daf9"
+    },
+    {
+      "case": "retained24",
+      "passed": true,
+      "sample_count": 2487,
+      "previous_study_sha256": "b638f3147e68571fe65bb646eb8151433af342f7e04ff54b6d0c35006c284fd9",
+      "current_study_sha256": "6a497277845ef75e6847cb2189a2c5f8ecfcfe830ae13939b310f1b60e23b5ef"
+    },
+    {
+      "case": "retained25",
+      "passed": true,
+      "sample_count": 2489,
+      "previous_study_sha256": "cf2e902476aa7d1a290eabdc2f7b3f1603a79877019c3253508e41510f3bddb0",
+      "current_study_sha256": "decd4dc2d72501895cf665ed5e218de3315d70c4952e7d88f751f5bb527b3a5d"
+    },
+    {
+      "case": "retained26",
+      "passed": true,
+      "sample_count": 2492,
+      "previous_study_sha256": "ded58dbf4c74f7c5db012b90e7d3923c8409e880cb41981f1dbf3a1933341330",
+      "current_study_sha256": "471839a189cdc412e42f4ed29acf85c7c2a1a96d53e46f3cbd8e41105cb45fc8"
+    },
+    {
+      "case": "retained0-fuel-1000",
+      "passed": true,
+      "sample_count": 2511,
+      "previous_study_sha256": "3b314eb8cc20a197dccd65a16c83bc7627814bf3b4c8696e3e495154230013b9",
+      "current_study_sha256": "8e771480c35970ee34e6dd7199ad629f9c925adb6a8f538c8b9745ef07124b73"
+    },
+    {
+      "case": "retained0-fuel+1000",
+      "passed": true,
+      "sample_count": 2523,
+      "previous_study_sha256": "47af8f75ebff13788a8a2a684d6c45af74cb0818da5c84d458dfbd3aeaad2306",
+      "current_study_sha256": "2a73ec7c80478dc2811d8f85c9138eefb50b3ac7011ceda9352b7520f3b0e254"
+    },
+    {
+      "case": "retained14-fuel-1000",
+      "passed": true,
+      "sample_count": 2483,
+      "previous_study_sha256": "f7d788717b0bc3feb38014998fbbe4ff7b0c6a8498ccd18e8bd46a4244fcac82",
+      "current_study_sha256": "772be5a8340e7884ec964ace628ee4e868e7a7ca92b43e014ce529e40e5f79c9"
+    },
+    {
+      "case": "retained14-fuel+1000",
+      "passed": true,
+      "sample_count": 2510,
+      "previous_study_sha256": "37700dbb774966e332a86cae7d6ebfcc73dde1145b5a7034e817f2bb8c0b7656",
+      "current_study_sha256": "c1bbc6ca3346bd2c1ee555fa09cffdbc2f7e031e0c7b1c0b0e58afd639cce465"
+    },
+    {
+      "case": "retained15-fuel-1000",
+      "passed": true,
+      "sample_count": 2485,
+      "previous_study_sha256": "09799792645219011406a3ca53139188c25c6ec222983f6b3405a9db5250b7b7",
+      "current_study_sha256": "1450eb4c3b7206f8499ca3b82f97efd8cb235921d423ca186223a342621e0b23"
+    },
+    {
+      "case": "retained15-fuel+1000",
+      "passed": true,
+      "sample_count": 2499,
+      "previous_study_sha256": "ab2896df55b4bbaf227b7766086f168776b53873a505f40281301360231ae771",
+      "current_study_sha256": "fd2501b34c7d63dc8cdb7f096a129c1d9e34e414578ccce56c9bcaec03146842"
+    },
+    {
+      "case": "retained16-fuel-1000",
+      "passed": true,
+      "sample_count": 2487,
+      "previous_study_sha256": "b25edae745a398ece5740326f67706b7806f02bcfa7b9e9c578ee41a13923dde",
+      "current_study_sha256": "4c60449462760b2602bbc450f973e90c90c2751c59f7a7e0653221f6b843a855"
+    },
+    {
+      "case": "retained16-fuel+1000",
+      "passed": true,
+      "sample_count": 2501,
+      "previous_study_sha256": "a5638b647ccaea8a868dd890d2c78c6ee6edf8842f52c30df807bff2c454cf2c",
+      "current_study_sha256": "c7addb9decd4c56f27e4c3446544bb91dbcabbdffd13c530f65df0ec68d4c6f6"
+    },
+    {
+      "case": "retained25-fuel-1000",
+      "passed": true,
+      "sample_count": 2469,
+      "previous_study_sha256": "0f5e706d590474c95420a591c7ceb2575b52bb80ef43d302ccb737029513b133",
+      "current_study_sha256": "0def63eb4558dc5b2f62657dbae1a4f320b4e0698af8a7e0feba210256afad42"
+    },
+    {
+      "case": "retained25-fuel+1000",
+      "passed": true,
+      "sample_count": 2483,
+      "previous_study_sha256": "fabe9e124d3f744f3d6bdfb0f1e562e038581edcc152202c2b4a697b54b828d2",
+      "current_study_sha256": "47c9cb78e299c6c4d4798279a3b545e0afd88e42e2146ae43be92113fc8e08a8"
+    },
+    {
+      "case": "retained26-fuel-1000",
+      "passed": true,
+      "sample_count": 2472,
+      "previous_study_sha256": "1f83a1b8920258013faa386153a2975146ef8114870ea45ec466661848d8011c",
+      "current_study_sha256": "dac9c8f30d17f9839185dc459ddc94dfd8ed9fa925c1ac3e59f5f04fb7d2a918"
+    },
+    {
+      "case": "retained26-fuel+1000",
+      "passed": true,
+      "sample_count": 2486,
+      "previous_study_sha256": "5aa3677df03de63b1add75d2d53dfcac455ffc3831c7f1fb5ac64a83373da453",
+      "current_study_sha256": "e9c58520b56e335c68c89d3bc4ab578ab17bb43fb37939929457ad9c931fedaa"
+    }
+  ],
+  "current_source_sha256": {
+    "src/runtime/starship_sixdof_mission.py": "f01dcaf2378605b65863651b697edda5c67efaeb5f5f9faefab128da145ec7cd",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_return_feasibility.py": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src/runtime/starship_return_feasibility_verifier.py": "8041cc485f902621e72e09162d3d3a0fa2bbd973d93a039e52740712b43435b4",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "old_record_relabeling": false,
+  "independent_physics_validation": false,
+  "previous_certificate_sha256": "d246f5bb64156f8bc3d305c16a908067a9b2739276e9bd761955d31ee5fcc1e6",
+  "sample_count": 97703,
+  "certificate_sha256": "15082a7d0d4cdd503548a40ee1303844fe742fb28b0bfdf51bb22b9ac708647d",
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "max_contact_speed_mps": 4.691169237307238,
+  "max_contact_tilt_deg": 2.754979113709329,
+  "minimum_reserve_kg": 45231.488448047014,
+  "qualification_domain_expanded": false,
+  "model_calls": 0,
+  "milestone_complete": false,
+  "checks_applied_to_each_case": [
+    "previous_study_bound",
+    "current_study_bound",
+    "current_case_bound",
+    "previous_source_bound",
+    "current_source_bound",
+    "contact_gate_maintained",
+    "profile_exact",
+    "same_fields",
+    "booster_run",
+    "booster_separation_state",
+    "development_return_qualification",
+    "events",
+    "final_state",
+    "final_vehicle",
+    "initial_state",
+    "outcome",
+    "retained_return",
+    "samples",
+    "satellites",
+    "scenario"
+  ],
+  "failure_path_regression": {
+    "passed": true,
+    "cases": [
+      {
+        "case": "terminal-engine-loss",
+        "run_count": 1,
+        "same_run_count": true,
+        "checks": [
+          {
+            "physical_samples_and_commands_exact": true,
+            "final_state_exact": true,
+            "outcome_exact": true,
+            "event_times_exact": true
+          }
+        ],
+        "previous_study_sha256": "e1488bd0d7ddc01ee48767d0fac20ab41aeb3e5e66b2d93a6b4fa1e5cacac3fb",
+        "current_study_sha256": "dcd6337831375df61297d6f1a0e3320ada0d7e784ba8a7ec14ca92ffd24836aa",
+        "current_verifiers_passed": true,
+        "outcome": {
+          "termination": "surface_impact",
+          "terminal_qualification_violated": true
+        },
+        "impact_speed_mps": 22.734699481130956,
+        "passed": true
+      },
+      {
+        "case": "fuel-shortage",
+        "run_count": 2,
+        "same_run_count": true,
+        "checks": [
+          {
+            "physical_samples_and_commands_exact": true,
+            "final_state_exact": true,
+            "outcome_exact": true,
+            "event_times_exact": true
+          },
+          {
+            "physical_samples_and_commands_exact": true,
+            "final_state_exact": true,
+            "outcome_exact": true,
+            "event_times_exact": true
+          }
+        ],
+        "previous_study_sha256": "a8cffea708968da5bdab05f3b452163e6864fe1aad19669d42dd1717b1f405f1",
+        "current_study_sha256": "2c006eb22b157e2b6067e4e974f414d341adad186dc0f082f21367ba1713d569",
+        "current_verifiers_passed": true,
+        "terminations": [
+          "return_inhibited_unresolved",
+          "return_inhibited_unresolved"
+        ],
+        "resolved": false,
+        "passed": true
+      }
+    ],
+    "model_calls": 0,
+    "terminal_failure_is_success": false
+  },
+  "short_prediction_regression": {
+    "passed": true,
+    "cases": [
+      {
+        "case": "nominal",
+        "previous_prediction_sha256": "285bae446379e6a793d7f5c57fa8697e7c246c42be36532ea94dae5e945027bf",
+        "current_prediction_sha256": "67927254d23e93ecb26698b9f2236195bbc52dba07f95745e7339f9482719878",
+        "verification": {
+          "passed": true,
+          "checks": {
+            "origin_unchanged": true,
+            "first_state_matches_origin": true,
+            "candidate_time_bound": true,
+            "suffix_sample_coverage": true,
+            "shared_physical_samples_exact": true,
+            "final_state_exact": true,
+            "contact_receipt_exact": true,
+            "contact_kinematics_consistent": true,
+            "phase_event_times_exact": true,
+            "termination_matches": true,
+            "time_advanced": true,
+            "fuel_nonincreasing": true,
+            "no_execution_or_admission_claim": true
+          },
+          "matched_sample_count": 1378,
+          "prediction_sample_count": 1380,
+          "same_model_reproduction_only": true,
+          "runtime_admission": false,
+          "independent_physics_validation": false
+        }
+      },
+      {
+        "case": "delay60",
+        "previous_prediction_sha256": "0ac8a4369de52dc3e12bff64c3767094e66639f05aa954d6efd9c4525c37862c",
+        "current_prediction_sha256": "3b810c19d3fa16ef29e63147822be4aa9bd7393c7bba8e0bda360e025e557359",
+        "verification": {
+          "passed": true,
+          "checks": {
+            "origin_unchanged": true,
+            "first_state_matches_origin": true,
+            "candidate_time_bound": true,
+            "suffix_sample_coverage": true,
+            "shared_physical_samples_exact": true,
+            "final_state_exact": true,
+            "contact_receipt_exact": true,
+            "contact_kinematics_consistent": true,
+            "phase_event_times_exact": true,
+            "termination_matches": true,
+            "time_advanced": true,
+            "fuel_nonincreasing": true,
+            "no_execution_or_admission_claim": true
+          },
+          "matched_sample_count": 1397,
+          "prediction_sample_count": 1400,
+          "same_model_reproduction_only": true,
+          "runtime_admission": false,
+          "independent_physics_validation": false
+        }
+      }
+    ],
+    "independent_physics_validation": false
+  },
+  "contract_tests": {
+    "passed": 3322,
+    "skipped": 5,
+    "warnings": 2,
+    "wall_time_s": 314.08,
+    "command": "python -m pytest -q tests/contract/test_starship*.py"
+  }
+}
