@@ -79,6 +79,20 @@ def verify_authored_route(world, route):
                 "authored_world_waypoint_changed")
 
 
+def verify_recovery_transport(root, config, events):
+    """Verify the entire flown prefix and fixed return, not the aborted delivery."""
+    from scripts.yokohama_altitude_contract import verify_transport_evidence
+
+    validate_config(config)
+    require(config["delivery_scenario"] in {"candidate_rejected", "timeout"},
+            "recovery_transport_requires_failed_delivery_scenario")
+    required = {"SEA-TAKEOFF", "SEA-INBOUND-COAST", "00-D1", "01-FEEDBACK-EXIT",
+                "SEA-OUTBOUND-COAST", "SEA-RETURN"}
+    recovery_config = dict(config, flight_stages=[s for s in config["flight_stages"]
+                                                if s["name"] in required])
+    return verify_transport_evidence(root, recovery_config, events)
+
+
 def verify(root, bundle=None):
     root = Path(root).resolve()
     bundle = Path(bundle or REPO / "docs/examples/yokohama-urban-scene")
@@ -235,8 +249,7 @@ def verify(root, bundle=None):
         begin, deadline = rejection["recovery_begin_wall_s"], rejection["recovery_deadline_wall_s"]
         require(deadline == begin + CONTRACT["recovery_timeout_s"]
                 and config["timeout_s"] - 10 >= begin + CONTRACT["recovery_timeout_s"], "recovery_deadline_changed")
-        from scripts.yokohama_altitude_contract import verify_transport_evidence
-        transport = verify_transport_evidence(root, config, events)
+        transport = verify_recovery_transport(root, config, events)
         require(transport["status"] == "passed", "recovery_altitude_transport_failed")
         from scripts.yokohama_delivery_recovery import validate_sample
         from scripts.yokohama_delivery_contract import qualify_return_map

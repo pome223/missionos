@@ -25,6 +25,11 @@ delays the second VLA response past the unchanged 75-second exchange deadline.
 Both faults occur after an observed first leg. Recovery first revokes model
 authority, then follows the original D1/coast/ship line and lands/disarms.
 Recovery success does not turn the failed delivery mission into success.
+Recovery transport verification requires all six flown authored segments:
+takeoff, inbound coast, D1, feedback exit, outbound coast, and ship return.
+Each retains its full upload, altitude mapping, and command checks. An aborted
+delivery cannot supply evidence for the unflown delivery stages; successful
+delivery and wait scenarios still require every authored stage.
 The trial mounts the unchanged cargo box above the landing gear; a rejected
 delivery returns with the cargo attached and still requires fresh gear/deck
 contact. It does not detach undelivered cargo to satisfy landing verification.

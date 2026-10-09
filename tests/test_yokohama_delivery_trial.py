@@ -171,3 +171,10 @@ def test_observed_cargo_mount_blocks_arming_when_fixture_did_not_hold_position(f
         row["arming_state"] = 2
     with pytest.raises(ValueError, match="cargo mount"):
         require_delivery_mount(config(), row, before_takeoff=True)
+
+
+@pytest.mark.parametrize("scenario", ["delivery", "wait"])
+def test_successful_delivery_cannot_use_aborted_route_transport_coverage(tmp_path, scenario):
+    from scripts.verify_yokohama_delivery_trial import verify_recovery_transport
+    with pytest.raises(ValueError, match="failed_delivery_scenario"):
+        verify_recovery_transport(tmp_path, config(scenario=scenario), [])
