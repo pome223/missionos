@@ -195,10 +195,16 @@ class Trial:
             if type(self.create_submitted) is not bool:
                 raise ValueError("Invalid create submission state")
 
+    def validate_plan(self):
+        validate_plan(self.plan)
+
+    def validate_operator_approval(self, approval):
+        validate_approval(self.plan, approval)
+
     def validate_execution_binding(self, approval):
         # Never turn the files presently on disk into new operator approval.
-        validate_approval(self.plan, approval)
-        validate_plan(self.plan)
+        self.validate_operator_approval(approval)
+        self.validate_plan()
         if self.plan.get("budget_scope") == GROUP_SCOPE:
             if self.group_gate is None:
                 raise ValueError("Capacity group execution requires the owning group controller")
@@ -289,7 +295,7 @@ class Trial:
         return inventory
 
     def preflight(self):
-        validate_plan(self.plan)
+        self.validate_plan()
         if self.attempt.exists():
             raise ValueError("The one paid attempt has already been consumed")
         key = Path(self.plan["ssh_key"])
@@ -461,7 +467,7 @@ print(hashlib.sha256((r/'evidence.tar.gz').read_bytes()).hexdigest())
             raise ValueError("Remote evidence digest mismatch")
 
     def execute(self, approval):
-        validate_approval(self.plan, approval)
+        self.validate_operator_approval(approval)
         self.execution_approval = copy.deepcopy(approval)
         if self.plan.get("budget_scope") == GROUP_SCOPE:
             self.validate_execution_binding(approval)
@@ -561,6 +567,9 @@ print(hashlib.sha256((r/'evidence.tar.gz').read_bytes()).hexdigest())
             ))
         return 1 if errors else 0
 
+    def prepare_network_budget(self):
+        """Dedicated controllers may constrain their own newly created VM."""
+
     def bootstrap(self):
         for attempt in range(8):
             if self.ssh('mkdir -p "$HOME/yokohama-native"', f"ssh-ready-{attempt}",
@@ -570,6 +579,7 @@ print(hashlib.sha256((r/'evidence.tar.gz').read_bytes()).hexdigest())
             time.sleep(5)
         else:
             raise TimeoutError("SSH readiness failed; no paid retry")
+        self.prepare_network_budget()
         self.call(["compute", "scp", *[str(self.payload_directory / p) for p in PAYLOAD],
                    self.plan["instance"] + ":~/yokohama-native/", *self.common,
                    "--ssh-key-file", self.plan["ssh_key"],
@@ -660,11 +670,11 @@ print(hashlib.sha256((r/'evidence.tar.gz').read_bytes()).hexdigest())
     def verify_flight(self, job, proposal, execution_approval):
         env = {k: v for k, v in os.environ.items() if k in {"PATH", "HOME", "USER", "TMPDIR", "LANG", "LC_ALL"}}
         for name in VERIFIERS:
-            validate_plan(self.plan)
+            self.validate_plan()
             subprocess.run([self.plan["python"], str(REPO / f"scripts/verify_yokohama_{name}.py"),
                             str(job / "run"), "--output", str(job / "run" / f"verification-{name}.json")],
                            check=True, timeout=180, env=env, stdout=subprocess.DEVNULL)
-        validate_plan(self.plan)
+        self.validate_plan()
         receipt = vehicle.verify_receipt(job / "run", proposal, execution_approval)
         write(job / "run/verification-vehicle_service.json", receipt)
         if receipt["status"] != "passed":

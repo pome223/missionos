@@ -35,6 +35,7 @@ SOURCES = (
     "docs/examples/yokohama-pad-state/model/model.json",
 )
 FEEDBACK_SOURCES = SOURCES + (
+    "scripts/yokohama_native_endpoint_contract.py",
     "scripts/yokohama_goal_distance_adapter.py",
     "scripts/yokohama_endpoint_feedback.py",
     "src/runtime/yokohama_scene.py",

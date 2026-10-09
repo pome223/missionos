@@ -227,8 +227,13 @@ def verify(root, bundle):
         output["holds_recomputed"] = holds
         expected_stops = [s["name"] for s in config["flight_stages"]]
         sea = world.get("sea_extension")
+        expected_hold_count = (11 if sea else 7) + (2 if world.get("payload_delivery") else 0)
+        if config.get("endpoint_adapter_trial") is not None:
+            from scripts.yokohama_native_endpoint_contract import validate_config
+            validate_config(config)
+            expected_hold_count = 2
         checks["all_authored_holds"] = (
-            len(holds) == (11 if sea else 7) + (2 if world.get("payload_delivery") else 0)
+            len(holds) == expected_hold_count
             and [h["point"] for h in holds] == expected_stops
             and all(r["passed"] for r in holds)
         )

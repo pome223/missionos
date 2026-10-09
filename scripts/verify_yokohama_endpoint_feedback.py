@@ -103,10 +103,14 @@ def verify(root):
         config, result = read(root / "config.json"), read(root / "result.json")
         policy = feedback_policy(config)
         require(policy is not None, "endpoint_feedback_policy_missing")
+        live = config.get("endpoint_adapter_trial") is not None
+        if live:
+            from scripts.yokohama_native_endpoint_contract import validate_config
+            validate_config(config)
         native = config["decisions"]["backend"] == "native"
         require(config["decisions"]["backend"] in {"fixture", "native"}, "unknown_model_backend")
         require(result.get("config_sha256") == digest(config), "result_config_binding")
-        if not native:
+        if not native and not live:
             require(result.get("fixture") is True and result.get("execution_scope") == "cpu_fixture"
                     and result.get("native_model_calls") == {"vla": 0, "wam": 0}
                     and all(result.get(key) is False for key in (
@@ -232,7 +236,7 @@ def verify(root):
         dispatches = [e for e in events if e["event"] == "city_segment_dispatched"]
         arrivals = [e for e in events if e["event"] == "city_segment_arrived"]
         require(len(dispatches) == len(arrivals) == 2, "feedback_action_count")
-        if not native:
+        if not native and not live:
             activations = [e for e in events if e["event"] == "fixture_executor_activated"]
             uploads = [e for e in events if e["event"] == "fixture_upload_observed"]
             require(len(activations) == len(uploads) == 2
@@ -370,7 +374,7 @@ def verify(root):
                     "permit_dispatch_order_or_expiry")
             require(file_hash(root / (permit["upload_name"] + "-upload.py")) == permit["upload_sha256"],
                     "upload_source_binding")
-            if not native:
+            if not native and not live:
                 uploaded = one("fixture_upload_observed", upload_name=permit["upload_name"])
                 executed = one("fixture_executor_activated", permit_id=permit["permit_id"])
                 require(uploaded["upload_sha256"] == permit["upload_sha256"]
@@ -433,7 +437,7 @@ def verify(root):
                 and finished["goal_world_xyz_m"] == goal
                 and finished["exit_world_xyz_m"] == policy["exit_world_xyz_m"], "completion_claim_mismatch")
         require(result.get("status") in {"passed", "completed"}, "producer_reported_failure")
-        if not native:
+        if not native and not live:
             require(result["fixture_decision_requests"] == {"vla": 2, "wam": 2}
                     and result["executor_action_count"] == result["completed_updates"] == 2
                     and result["model_goal_reached"] is goal_observed, "producer_counter_or_goal_mismatch")

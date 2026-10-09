@@ -1,6 +1,6 @@
 # Vehicle goal-distance adapter
 
-This opt-in planning feature shortens a decoded VLA translation when its endpoint
+This opt-in feature shortens a decoded VLA translation when its endpoint
 would pass the plane through the approved nearby goal. It keeps the original
 translation direction and commanded yaw. It cannot extend a translation, steer
 toward the goal, repair an invalid raw action, relax Rules, or grant dispatch.
@@ -33,27 +33,27 @@ separate claims. Existing expiry and irrevocable session revocation still apply.
 ## Qualification and execution limit
 
 `--endpoint-feedback --goal-distance-adapter --plan-only` compiles a source-bound
-plan without Docker, model calls or flight. The CLI rejects live use of this flag.
+plan without Docker, model calls or flight. Live use additionally requires the
+separate exact `--endpoint-adapter-trial` catalog and a source-bound single-use
+approval; see [native endpoint admission](yokohama-native-endpoint-admission.md).
 The October 9 CPU rejection/return qualification at commit `a8beaa08` predates
 this adapter; it is retained as independent evidence and must not be relabelled
 as an adapter or native-model flight.
 
-Before a future real VLA/WAM trial, implement and review a separate native
-endpoint admission/controller path, native rejection-to-return integration and
-an applicable live-evidence verifier. Bind these final sources, services, image,
-config, operator approval and a one-attempt budget ledger. The existing native
-trial runner contains a different sea/payload mission and cannot be reused
-unchanged for this experiment. Offline tests here do not qualify live execution.
+The dedicated endpoint controller, shared CPU-double/native rejection return,
+and offline verifier are implemented. Normal tests qualify their contracts;
+they do not qualify live execution. GPU creation requires a fresh successful CPU
+endpoint flight from the full final source closure, plus exact-plan USD 8 approval (received; freeze final plan before execution).
+The earlier rejection recovery is insufficient for this new gate.
 
-The proposed infrastructure is one Oregon `g2-standard-16` VM with one L4, a
-200 GiB balanced boot disk, one ephemeral IPv4 address, provider-side absolute
-DELETE deadline within one hour, local watchdog and identity-checked cleanup.
-No service account/scopes, firewall expansion, static IP, snapshots, cloud
-storage or fallback VM are needed. Use the existing SSH key and SSH tunnels to
-loopback model services. Limit the trial to two VLA and two WAM requests, one
-600-second endpoint session, and keep the fixed rejection recovery reserve.
-The pending paid-trial approval and source-bound native admission are execution
-gates. Do not start resources merely because this planning feature passed tests.
+The proposed infrastructure is one Oregon `g2-standard-16` VM with one L4,
+200 GiB balanced boot disk and ephemeral IPv4. The provider absolute DELETE
+deadline is at most one hour from reservation, with boot-disk auto-delete and
+numeric identity checked controller cleanup. The controller checks tunnel liveness
+and remaining cleanup time; this does not constitute a guaranteed dollar cap. No fallback VM or capacity retry is permitted. The local total
+flight limit is 900 seconds. Endpoint work stops by the earlier of its 600-second
+session deadline and worker elapsed 665 seconds, retaining the fixed 220-second
+return window and five-second trigger margin before the ten-second worker cutoff.
 
 Cloud upload is limited to reviewed service/bootstrap/lifecycle source and the
 existing motion-adapter weight. Models download immutable public weight
@@ -63,3 +63,9 @@ collision-map oracle, task database, credentials, repository archive or unrelate
 private evidence is supplied to a model. Preserve small results in Git and raw
 evidence locally before deleting only numeric resource identities owned by the
 trial. Keep the unpushed checkout and a verified Git bundle.
+
+On the owned VM only, IPv4 non-loopback packet quotas are installed before
+upload/bootstrap: 1 GiB outbound, 64 GiB inbound. Global IPv6 addresses cause
+admission failure. Quota exhaustion blocks traffic and requires cleanup through
+the independent GCP API. No firewall or network policy of a persistent resource
+is changed. Provider DELETE and disk auto-delete remain required.

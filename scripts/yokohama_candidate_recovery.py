@@ -30,10 +30,17 @@ def policy(config):
     if value is None:
         return None
     from_scripts = config["decisions"]["endpoint_feedback"]
+    adapted = config.get("endpoint_adapter_trial") is not None
+    if adapted:
+        if __package__:
+            from .yokohama_native_endpoint_contract import validate_config
+        else:
+            from yokohama_native_endpoint_contract import validate_config
+        validate_config(config)
     if (
         value != LIMITS
-        or config["decisions"]["backend"] != "fixture"
-        or config.get("fixture_reject_second_candidate") is not True
+        or (not adapted and config["decisions"]["backend"] != "fixture")
+        or (not adapted and config.get("fixture_reject_second_candidate") is not True)
         or from_scripts["entry_world_xyz_m"][:2] != [0.0, 0.0]
         or from_scripts["exit_world_xyz_m"] != from_scripts["entry_world_xyz_m"]
         or not config.get("operator_approval_manifest_sha256")

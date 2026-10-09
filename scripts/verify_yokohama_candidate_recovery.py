@@ -208,7 +208,7 @@ def verify_observations(config, trajectory, poses, contacts, rejection, returned
     }
 
 
-def verify(root, bundle=None):
+def verify(root, bundle=None, *, adapted=False):
     root = Path(root)
     try:
         from scripts.yokohama_altitude_contract import verify_transport_evidence
@@ -223,12 +223,17 @@ def verify(root, bundle=None):
             feedback is not None and feedback["entry_world_xyz_m"][:2] == [0, 0],
             "fixed_launch_recovery_changed",
         )
+        require(adapted or config.get("endpoint_adapter_trial") is None, "dedicated_endpoint_verifier_required")
+        if adapted:
+            from scripts.yokohama_native_endpoint_contract import validate_config
+            validate_config(config)
+            require(result.get("physical_execution_invoked") is False, "scope_changed")
         require(
-            config["decisions"]["backend"] == "fixture"
+            adapted or (config["decisions"]["backend"] == "fixture"
             and result.get("vla_invoked") is False
             and result.get("wam_invoked") is False
             and result.get("physical_execution_invoked") is False
-            and result.get("gpu_requested") is False,
+            and result.get("gpu_requested") is False),
             "scope_changed",
         )
         require(
@@ -255,7 +260,7 @@ def verify(root, bundle=None):
             and approved["approval"]["approved_proposal_sha256"]
             == proposal_digest(approved["proposal"])
             and approved["proposal"]["limits"] == LIMITS
-            and approved["proposal"]["city_models"] == "fixture"
+            and approved["proposal"]["city_models"] == (config["decisions"]["backend"] if adapted else "fixture")
             and approved["proposal"]["image_id"] == inspect["Image"] == result["image_id"],
             "approval_binding_changed",
         )
@@ -282,7 +287,7 @@ def verify(root, bundle=None):
         returned, landed = one("recovery_return_observed"), one("recovery_landing_disarm_observed")
         authorization = one("recovery_return_authorized")
         require(
-            rejected["cycle"] == 2
+            (rejected["cycle"] in (1, 2) if adapted else rejected["cycle"] == 2)
             and rejected["wall_s"] <= revoked["wall_s"] < returned["wall_s"] < landed["wall_s"],
             "recovery_event_order_changed",
         )
@@ -299,6 +304,10 @@ def verify(root, bundle=None):
             and revoked["receipt"]["session_revoked"] is True,
             "host_revocation_missing",
         )
+        if adapted and config["decisions"]["backend"] == "native":
+            require(read(root / "decisions/shutdown.json").get("remote_model_processes_absent") is True
+                    and revoked["receipt"].get("remote_model_processes_absent") is True,
+                    "remote_model_shutdown_unconfirmed")
         requests = [read(p) for p in sorted((root / "decisions").glob("*-request.json"))]
         stop_index = next(i for i, r in enumerate(requests) if r["operation"] == "stop")
         require(stop_index == len(requests) - 1, "model_request_after_revocation")
@@ -306,8 +315,10 @@ def verify(root, bundle=None):
             any(e["event"] == "city_late_response_rejected" for e in events),
             "revoked_replay_guard_missing",
         )
+        dispatches = [e for e in events if e["event"] == "city_segment_dispatched"]
         require(
-            len([e for e in events if e["event"] == "city_segment_dispatched"]) == 1,
+            (len(dispatches) <= rejected["cycle"] and all(e["wall_s"] < rejected["wall_s"] for e in dispatches))
+            if adapted else len(dispatches) == 1,
             "rejected_candidate_dispatched_or_no_prior_segment",
         )
         failed_vla = [
@@ -316,7 +327,7 @@ def verify(root, bundle=None):
             if read(p).get("cycle") == 2 and read(p)["operation"] == "vla"
         ]
         require(
-            len(failed_vla) == 1 and "error" in failed_vla[0], "candidate_rejection_receipt_missing"
+            adapted or (len(failed_vla) == 1 and "error" in failed_vla[0]), "candidate_rejection_receipt_missing"
         )
         require(
             not any(

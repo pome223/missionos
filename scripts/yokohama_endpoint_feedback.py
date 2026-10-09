@@ -57,7 +57,11 @@ def feedback_policy(config):
         if "endpoint_feedback" not in decisions:
             raise ValueError("Vehicle distance adapter requires the bounded endpoint policy")
         if config.get("candidate_recovery") is not None:
-            raise ValueError("Vehicle distance adapter cannot change the fixed CPU rejection trial")
+            if __package__:
+                from .yokohama_native_endpoint_contract import validate_config
+            else:
+                from yokohama_native_endpoint_contract import validate_config
+            validate_config(config)
     if "endpoint_feedback" not in decisions:
         return None
     policy = decisions["endpoint_feedback"]

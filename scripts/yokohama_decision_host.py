@@ -477,8 +477,13 @@ class DecisionHost:
             rejected_fixture = self.config.get("fixture_reject_second_candidate") and message["cycle"] == 2
             if rejected_fixture:
                 forward_bin = 58
+            elif self.config.get("endpoint_adapter_trial"):
+                # The dedicated CPU double uses immutable actions, including a
+                # second overshoot that must pass through the explicit adapter.
+                # It does not choose bins from the known remaining goal distance.
+                forward_bin = 58 if message["cycle"] == 1 else 43
             elif feedback is not None:
-                # Explicit CPU double: choose before decoding, never repair native output.
+                # Existing CPU fixture behavior remains unchanged.
                 forward_bin = min(58, math.floor(
                     math.dist(row["vehicle"]["xyz"], feedback["goal_world_xyz_m"]) * 98 / 5
                 ))

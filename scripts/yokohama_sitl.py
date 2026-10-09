@@ -296,6 +296,8 @@ def main(argv=None):
     parser.add_argument("--candidate-recovery", action="store_true",
                         help="Separately approved CPU rejection/return qualification")
     parser.add_argument("--fixture-reject-second-candidate", action="store_true")
+    parser.add_argument("--endpoint-adapter-trial", action="store_true",
+                        help="Source-bound single native or CPU-double adapted endpoint trial")
     parser.add_argument("--goal-distance-adapter", action="store_true",
                         help="CPU plan: explicitly shorten VLA translations along their original ray")
     parser.add_argument(
@@ -392,7 +394,14 @@ def main(argv=None):
         help="Explicit recovery-only radius, 1..3 m; requires mapped clearance",
     )
     args = parser.parse_args(argv)
-    if args.goal_distance_adapter and (not args.endpoint_feedback or not args.plan_only):
+    if args.endpoint_adapter_trial and (
+        not args.endpoint_feedback or not args.goal_distance_adapter or args.plan_only
+        or not args.approval_manifest or not args.approve_sitl or not args.local_image_id
+        or args.candidate_recovery or args.fixture_reject_second_candidate
+        or args.timeout_seconds != 900
+    ):
+        parser.error("Adapted endpoint trial requires a fresh exact approval, fixed image and 900-second limit")
+    if args.goal_distance_adapter and (not args.endpoint_feedback or not (args.plan_only or args.endpoint_adapter_trial)):
         parser.error("Goal-distance adaptation requires endpoint planning; a fresh native runtime approval is still required")
     if args.fixture_reject_second_candidate and not args.candidate_recovery:
         parser.error("Fault injection requires candidate recovery")
@@ -405,7 +414,7 @@ def main(argv=None):
     if args.plan_only and not args.endpoint_feedback:
         parser.error("--plan-only currently requires --endpoint-feedback")
     if args.endpoint_feedback:
-        if not args.plan_only and not args.candidate_recovery:
+        if not args.plan_only and not (args.candidate_recovery or args.endpoint_adapter_trial):
             parser.error("Endpoint-feedback runtime is blocked until controller and SITL qualification; use --plan-only")
         if args.phase != "flight" or not args.decision_backend or args.wam_profile != "motion-v4":
             parser.error("Endpoint-feedback planning requires --phase flight, an explicit backend, and --wam-profile motion-v4")
@@ -415,7 +424,7 @@ def main(argv=None):
                 args.capture_motion_views, args.goal_plan, args.recover_city_hold,
                 args.recovery_radius_m is not None, args.wind_east_mps, args.wind_profile,
                 args.wind_after_takeoff, args.gust_seed is not None, args.fixture_cold_start,
-                args.altitude_diagnostics, args.approval_manifest and not args.candidate_recovery)):
+                args.altitude_diagnostics, args.approval_manifest and not (args.candidate_recovery or args.endpoint_adapter_trial))):
             parser.error("Endpoint feedback permits only the fixed inland static scene without extra modes or reused approvals")
     if args.pad_state_advisory and not args.occupied_pad:
         parser.error("Pad-state advisory requires --occupied-pad")
@@ -508,6 +517,21 @@ def main(argv=None):
             return write_endpoint_feedback_plan(args)
         except (ValueError, OSError, KeyError) as exc:
             parser.error(str(exc))
+    admitted_service_bytes = None
+    admitted_approval_bytes = None
+    if args.endpoint_adapter_trial:
+        from scripts.yokohama_native_endpoint_contract import admit, arguments
+        if args.native_service_config:
+            args.native_service_config = args.native_service_config.resolve()
+        expected = arguments(args.decision_backend, args.local_image_id, args.native_service_config)
+        canonical = parser.parse_args(expected + ["--approve-sitl", "--approval-manifest",
+                                      str(args.approval_manifest), "--output-dir", str(args.output_dir)])
+        if vars(args) != vars(canonical):
+            parser.error("Adapted endpoint arguments differ from the exact approved catalog")
+        admitted_approval_bytes = args.approval_manifest.read_bytes()
+        _, admitted_service_bytes = admit(admitted_approval_bytes, REPO, expected)
+        with (args.approval_manifest.parent / "flight-attempt-claimed.json").open("x") as stream:
+            json.dump({"approval": __import__("hashlib").sha256(admitted_approval_bytes).hexdigest(), "flight_attempt": 1}, stream)
     if args.candidate_recovery:
         from src.runtime.yokohama_execution_service import (
             admit_recovery_request, recovery_arguments,
@@ -661,7 +685,9 @@ def main(argv=None):
         if args.approval_manifest:
             import hashlib
 
-            manifest = args.approval_manifest.read_bytes()
+            manifest = admitted_approval_bytes if args.endpoint_adapter_trial else args.approval_manifest.read_bytes()
+            if args.endpoint_adapter_trial and args.approval_manifest.read_bytes() != manifest:
+                raise ValueError("Endpoint approval changed after admission")
             approval = json.loads(manifest)["approval"]
             config["operator_approval"] = (
                 "MissionOS chat approval " + approval["operator_approval_ref"]
@@ -819,16 +845,23 @@ def main(argv=None):
             config["mission_upload_preparation"] = UPLOAD_PREPARATION_SCHEMA
             (root / "upload-prepare.py").write_text(_inner_upload_script(
                 preparation_only_path="/mission/upload-transaction.json"))
-        if args.candidate_recovery:
+        if args.candidate_recovery or args.endpoint_adapter_trial:
             from scripts.yokohama_candidate_recovery import LIMITS, map_clearance, policy
             config = build_endpoint_feedback_config(config)
             config["candidate_recovery"] = dict(LIMITS)
-            config["fixture_reject_second_candidate"] = True
+            config["fixture_reject_second_candidate"] = bool(args.candidate_recovery)
+            if args.endpoint_adapter_trial:
+                from scripts.yokohama_native_endpoint_contract import CONTRACT
+                from scripts.yokohama_goal_distance_adapter import POLICY
+                config["endpoint_adapter_trial"] = dict(CONTRACT)
+                config["decisions"]["goal_distance_adapter"] = dict(POLICY)
             policy(config)
             config["recovery_map_qualification"] = map_clearance(
                 config, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson")
             shutil.copy2(REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson",
                          root / "recovery-map.geojson")
+            if args.endpoint_adapter_trial:
+                shutil.copy2(root / "recovery-map.geojson", root / "collision-footprints.geojson")
             for index, stage in enumerate(config["flight_stages"]):
                 name = stage["name"]
                 (root / (name + "-upload.py")).write_text(_inner_upload_script(
@@ -866,9 +899,10 @@ def main(argv=None):
             if config.get("decisions", {}).get("endpoint_feedback"):
                 sources.extend([
                     REPO / "scripts/yokohama_endpoint_feedback.py",
+                    REPO / "scripts/yokohama_native_endpoint_contract.py",
                     REPO / "src/runtime/yokohama_shadow_http.py",
                 ])
-            if args.candidate_recovery:
+            if args.candidate_recovery or args.endpoint_adapter_trial:
                 sources.extend([
                     REPO / "scripts/yokohama_candidate_recovery.py",
                     REPO / "scripts/verify_yokohama_candidate_recovery.py",
@@ -925,6 +959,8 @@ def main(argv=None):
                     "scripts/ship_aerovla_server.py",
                     "src/runtime/ship_vla_adapter.py",
                     "scripts/verify_yokohama_decisions.py",
+                    "scripts/verify_yokohama_endpoint_feedback.py",
+                    "scripts/verify_yokohama_native_endpoint.py",
                     "scripts/verify_yokohama_sitl.py",
                 ]
             )
@@ -936,12 +972,14 @@ def main(argv=None):
             image_id=image,
             world=world,
             source_sha256={p.name: sha256(p) for p in sources},
+            config_sha256=__import__("src.runtime.yokohama_native", fromlist=["digest"]).digest(config),
             started_utc=datetime.now(timezone.utc).isoformat(),
         )
         if args.decision_backend:
             from scripts.yokohama_decision_host import DecisionHost
 
-            service_bytes = args.native_service_config.read_bytes() if args.native_service_config else None
+            service_bytes = (admitted_service_bytes if args.endpoint_adapter_trial
+                             else args.native_service_config.read_bytes() if args.native_service_config else None)
             service = json.loads(service_bytes) if service_bytes is not None else None
             if service_bytes is not None:
                 import hashlib
@@ -1058,8 +1096,8 @@ def main(argv=None):
             if worker.returncode == 0 and result.get("observed", {}).get("status") == "passed"
             else "failed"
         )
-        if args.candidate_recovery:
-            result["mission_outcome"] = "failed"
+        if args.candidate_recovery or args.endpoint_adapter_trial:
+            result["mission_outcome"] = "passed" if args.endpoint_adapter_trial and result["status"] == "passed" else "failed"
             result["recovery_outcome"] = result.get("observed", {}).get(
                 "recovery_outcome", "unverified")
     except Exception as exc:

@@ -193,6 +193,9 @@ def execute_model_segments(
     model_goal = list(feedback["goal_world_xyz_m"] if feedback else next_target)
     deadline = clock() + feedback["total_timeout_s"] if feedback else None
     if feedback:
+        if config.get("endpoint_adapter_trial"):
+            # Preserve the fixed 220-second return reserve, with a 5-second trigger margin.
+            deadline = min(deadline, config["timeout_s"] - 10 - 220 - 5)
         decisions.endpoint_deadline = deadline
 
     def check_deadline():
@@ -319,6 +322,8 @@ def execute_model_segments(
         if feedback and goal_reached(config, arrived):
             break
     if feedback:
+        if config.get("endpoint_adapter_trial") and not goal_reached(config, arrived):
+            raise ValueError("Approved goal not observed after two endpoint candidates")
         decisions.stop()
         check_deadline()
         if not decisions.closed or decisions.active:
@@ -1124,6 +1129,13 @@ def flight_trial(config, obs, run, field):
                 decisions
                 and len(decisions.completed) == len(model_phases)
                 and config["decisions"]["backend"] == "native"
+                and not config["decisions"].get("goal_distance_adapter")
+            ),
+            native_with_vehicle_distance_adapter=bool(
+                endpoint_feedback and decisions and len(decisions.completed) == 2
+                and goal_reached(config, decisions.completed[-1]["arrived"])
+                and config["decisions"]["backend"] == "native"
+                and config["decisions"].get("goal_distance_adapter")
             ),
             city_decision_updates=len(decisions.completed) if decisions else 0,
             city_decision_backend=config.get("decisions", {}).get("backend"),
