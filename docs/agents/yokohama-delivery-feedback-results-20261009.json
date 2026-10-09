@@ -1,0 +1,54 @@
+{
+  "schema": "missionos.yokohama.delivery-feedback-qualification.v1",
+  "recorded_utc": "2026-10-09T09:20:00Z",
+  "status": "draft_qualification_in_progress",
+  "runtime_source_commit": "6e1bc0382d9688298485c842d6638e36c88c9a96",
+  "verification_source_commit": "ae5bb94fcefa9f867a144b2c033ce9ce31598fa4",
+  "verification_source_sha256": "709284326e906b3717a5f2dd02666b747ebc261a2452dbf75e5d137482fdc073",
+  "verification_note": "The recorded flight passed the corrected independent verifier. The correction requires all six flown prefix/return segments instead of the unflown delivery suffix. Flight/control code was unchanged. A fresh final-source four-scenario run is pending.",
+  "simulator_image_id": "sha256:79968fe25aa19d51c49fbd4a863ea9380f4efe6d9afabd1c579ddeffeb8b8c93",
+  "cpu_candidate_rejection": {
+    "status": "passed",
+    "mission_outcome": "failed",
+    "recovery_outcome": "passed",
+    "recovery_duration_wall_s": 251.39789815800003,
+    "fixed_recovery_deadline_s": 500,
+    "model_authority_revoked": true,
+    "model_reentry_prevented": true,
+    "fresh_landing_foot_contact_verified": true,
+    "cargo_returned_attached": true,
+    "simulated_payload_receipt_verified": false,
+    "native_model_inference": false
+  },
+  "cpu_final_source_scenarios": {
+    "candidate_rejected": "pending",
+    "delivery": "pending",
+    "wait": "pending",
+    "timeout": "pending"
+  },
+  "native_full_delivery": "not_started",
+  "physical_execution": false,
+  "raw_unmodified_model_control": false,
+  "ground_geometry_probe": {
+    "status": "passed",
+    "px4_started": false,
+    "flight_attempts": 0,
+    "arming_commands": 0,
+    "cargo_to_landing_feet_vertical_clearance_m": 0.067
+  },
+  "tests": {
+    "previous_full_source_commit": "6e1bc0382d9688298485c842d6638e36c88c9a96",
+    "previous_full_passed": 7888,
+    "previous_full_skipped": 6,
+    "verification_fix_targeted_passed": 105,
+    "current_full": "running",
+    "configured_ci_lint": "passed",
+    "offline_ci_boundary_checks_passed": 17
+  },
+  "limitations": [
+    "Stationary authored ship and coast in CPU PX4/Gazebo simulation.",
+    "Fixture decisions do not demonstrate native VLA/WAM delivery success.",
+    "The receiving station observes simulated cargo contact; there is no human or physical receipt.",
+    "Recovery qualifies the D1 decision boundary, not arbitrary failures on later route stages."
+  ]
+}
