@@ -134,6 +134,22 @@ def verify(root, bundle=None):
         events, trajectory = rows(root / "flight-events.jsonl"), rows(root / "flight-trajectory.jsonl")
         require(all(b["wall_s"] >= a["wall_s"] for a, b in zip(events, events[1:])), "events_reordered")
         verify_measurements(config, trajectory, rows(root / "recovery-poses.jsonl"))
+        from src.runtime.yokohama_payload import require_delivery_mount
+        mounted = one(events, "delivery_cargo_mount_observed")
+        airborne = one(events, "payload_airborne_observed")
+        removed = one(events, "delivery_cargo_support_removed")
+        require_delivery_mount(config, mounted["observation"], before_takeoff=True)
+        require_delivery_mount(config, airborne["observation"], before_takeoff=False)
+        require(all(any(digest(r) == digest(event["observation"]) for r in trajectory)
+                    for event in (mounted, airborne)), "cargo_mount_observation_missing_from_trajectory")
+        scene = root / "cargo-support-removed-scene.pbtxt"
+        require(mounted["wall_s"] < airborne["wall_s"] < removed["wall_s"]
+                and removed["entity"] == "delivery_cargo_support"
+                and "data: true" in removed["response"]
+                and sha(scene) == removed["scene_sha256"]
+                and all(f'name: "{name}"' in scene.read_text() for name in ("x500_0", "delivery_payload"))
+                and 'name: "delivery_cargo_support"' not in scene.read_text(),
+                "cargo_mount_or_support_removal_not_observed")
         native = config["decisions"]["backend"] == "native"
         requests = []
         for path in sorted((root / "decisions").glob("*-request.json")):

@@ -860,6 +860,12 @@ def flight_trial(config, obs, run, field):
             )
         wait_for(lambda r: r["position_valid"] is True and r["preflight_pass"] is True, 90)
         event("preflight_observed", observation=sample())
+        if config.get("delivery_trial"):
+            from yokohama_payload import require_delivery_mount
+
+            mounted = sample()
+            require_delivery_mount(config, mounted, before_takeoff=True)
+            event("delivery_cargo_mount_observed", observation=mounted)
         if "simulator_initial_heading_deg" in config:
             initial_heading = config["simulator_initial_heading_deg"]
             before = sample()
@@ -991,6 +997,28 @@ def flight_trial(config, obs, run, field):
                 ):
                     raise RuntimeError("Cargo did not take off attached to the vehicle")
                 event("payload_airborne_observed", observation=carried)
+                if config.get("delivery_trial"):
+                    from yokohama_payload import require_delivery_mount
+
+                    require_delivery_mount(config, carried, before_takeoff=False)
+                    support = config["world"]["payload_delivery"]["removable_support_entity"]
+                    removed = run(["gz", "service", "-s", "/world/default/remove",
+                                   "--reqtype", "gz.msgs.Entity", "--reptype", "gz.msgs.Boolean",
+                                   "--timeout", "5000", "--req", f'name: "{support}" type: MODEL'])
+                    if "data: true" not in removed:
+                        raise RuntimeError("Cargo support removal was not acknowledged")
+                    # Allow the queued Gazebo command to reach a physics update.
+                    after = carried["sim_s"]
+                    wait_for(lambda r: r["sim_s"] > after + 0.2, 5)
+                    scene = run(["gz", "service", "-s", "/world/default/scene/info",
+                                 "--reqtype", "gz.msgs.Empty", "--reptype", "gz.msgs.Scene",
+                                 "--timeout", "5000", "--req", ""])
+                    if (not all(f'name: "{name}"' in scene for name in ("x500_0", "delivery_payload"))
+                            or f'name: "{support}"' in scene):
+                        raise RuntimeError("Removed cargo support remains in observed scene")
+                    (ROOT / "cargo-support-removed-scene.pbtxt").write_text(scene)
+                    event("delivery_cargo_support_removed", entity=support, response=removed,
+                          scene_sha256=__import__("hashlib").sha256(scene.encode()).hexdigest())
             if phase == "SEA-TAKEOFF" and config["world"].get("wind", {}).get("after_takeoff"):
                 if wind_profile:
                     wind_profile_active = True

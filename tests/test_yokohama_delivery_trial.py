@@ -32,7 +32,8 @@ def base_config(backend="fixture", scenario="delivery"):
         hold_max_speed_mps=0.5,
         world=dict(world_sha256="a" * 64, source_sha256={"collision-footprints.geojson": "b" * 64},
                    points=[dict(id=n, world_xyz_m=p) for n, p in points.items()],
-                   payload_delivery=dict(hover_world_xyz_m=hover, attachment_offset_z_m=-0.14),
+                   payload_delivery=dict(hover_world_xyz_m=hover, attachment_offset_z_m=-0.14,
+                                         removable_support_entity="delivery_cargo_support"),
                    **({"pad_queue": {"fixture": True}} if scenario == "wait" else {}),
                    sea_extension=dict(stationary_ship=True, wind_mps=0, offshore_distance_m=1000,
                                       coast_to_city_entry_m=400, sea_airspeed_mps=8, city_airspeed_mps=3,
@@ -153,3 +154,20 @@ def test_offline_verifier_rejects_coordinated_source_and_world_waypoint_change()
     world["points"][0]["world_xyz_m"][0] = 999
     with pytest.raises(ValueError, match="authored_source_waypoint_changed"):
         verify_authored_route(world, route)
+
+
+@pytest.mark.parametrize("fault", ["settled_before_spawn", "stale_payload", "already_armed"])
+def test_observed_cargo_mount_blocks_arming_when_fixture_did_not_hold_position(fault):
+    from src.runtime.yokohama_payload import require_delivery_mount
+    row = dict(sim_s=1, arming_state=1, landed=True,
+               vehicle=dict(xyz=[0, 0, 0.3], age_s=0, sensor_sim_s=1, id=1),
+               payload=dict(xyz=[0, 0, 0.16], age_s=0, sensor_sim_s=1, id=2))
+    require_delivery_mount(config(), row, before_takeoff=True)
+    if fault == "settled_before_spawn":
+        row["payload"]["xyz"][2] = 0.04
+    elif fault == "stale_payload":
+        row["payload"]["age_s"] = 0.501
+    else:
+        row["arming_state"] = 2
+    with pytest.raises(ValueError, match="cargo mount"):
+        require_delivery_mount(config(), row, before_takeoff=True)

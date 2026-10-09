@@ -58,6 +58,16 @@ def extend_world(root, bundle, world, *, delivery_trial=False):
     cargo_height = 0.16 if delivery_trial else 0.04
     cargo.find("pose").text = f"{ship[0]} {ship[1]} {ship[2] + cargo_height} 0 0 0"
     node.append(cargo)
+    if delivery_trial:
+        # Cargo exists before PX4 spawns its vehicle. This removable fixture
+        # prevents it falling before the fixed joint establishes the offset.
+        support = ET.SubElement(node, "model", name="delivery_cargo_support")
+        ET.SubElement(support, "static").text = "true"
+        ET.SubElement(support, "pose").text = f"{ship[0]} {ship[1]} {ship[2] + 0.06} 0 0 0"
+        support_link = ET.SubElement(support, "link", name="link")
+        collision = ET.SubElement(support_link, "collision", name="support_collision")
+        box = ET.SubElement(ET.SubElement(collision, "geometry"), "box")
+        ET.SubElement(box, "size").text = "0.1 0.1 0.12"
     camera_model = ET.SubElement(node, "model", name="delivery_camera")
     ET.SubElement(camera_model, "static").text = "true"
     link = ET.SubElement(camera_model, "link", name="link")
@@ -102,6 +112,7 @@ def extend_world(root, bundle, world, *, delivery_trial=False):
     )
     if delivery_trial:
         world["payload_delivery"]["attachment_offset_z_m"] = -0.14
+        world["payload_delivery"]["removable_support_entity"] = "delivery_cargo_support"
     return world
 
 
@@ -118,6 +129,19 @@ def fresh_pose(row, name, max_age=0.5):
         and abs(row["sim_s"] - stamp) <= max_age
         and pose.get("id") is not None
     )
+
+
+def require_delivery_mount(config, row, *, before_takeoff):
+    """Observed mounting, not authored SDF position, gates the new cargo trial."""
+    payload = config["world"]["payload_delivery"]
+    if (
+        not fresh_pose(row, "vehicle") or not fresh_pose(row, "payload")
+        or math.dist(row["vehicle"]["xyz"][:2], row["payload"]["xyz"][:2]) > 0.02
+        or abs(row["payload"]["xyz"][2] - row["vehicle"]["xyz"][2]
+               - payload["attachment_offset_z_m"]) > 0.015
+        or (row["arming_state"], row["landed"]) != ((1, True) if before_takeoff else (2, False))
+    ):
+        raise ValueError("Observed cargo mount is not above the landing gear")
 
 
 def require_release(config, row):
