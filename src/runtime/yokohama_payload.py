@@ -36,7 +36,7 @@ def atomic_json(path, value):
     temporary.replace(path)
 
 
-def extend_world(root, bundle, world):
+def extend_world(root, bundle, world, *, delivery_trial=False):
     from src.runtime.yokohama_scene import camera, sha256, to_world
     from scripts.smoke_missionos_auto_mission_full_runtime_probe import (
         _payload_model_sdf_patch,
@@ -52,7 +52,11 @@ def extend_world(root, bundle, world):
     tree = ET.parse(path)
     node = tree.getroot().find("world")
     cargo = ET.fromstring(_payload_world_sdf_patch(payload_mass_kg=0.05))
-    cargo.find("pose").text = f"{ship[0]} {ship[1]} {ship[2] + 0.04} 0 0 0"
+    # The full-delivery abort can return with cargo still attached. Keep the
+    # box above the landing gear, so gear/deck contact remains independently
+    # observable without dropping the undelivered cargo on the ship.
+    cargo_height = 0.16 if delivery_trial else 0.04
+    cargo.find("pose").text = f"{ship[0]} {ship[1]} {ship[2] + cargo_height} 0 0 0"
     node.append(cargo)
     camera_model = ET.SubElement(node, "model", name="delivery_camera")
     ET.SubElement(camera_model, "static").text = "true"
@@ -96,6 +100,8 @@ def extend_world(root, bundle, world):
         receiver="independent host verifier of simulated pad contact and resting cargo",
         physical_receipt_verified=False,
     )
+    if delivery_trial:
+        world["payload_delivery"]["attachment_offset_z_m"] = -0.14
     return world
 
 

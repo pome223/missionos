@@ -629,7 +629,8 @@ def main(argv=None):
         if args.deliver_payload:
             from src.runtime.yokohama_payload import extend_world as add_payload
 
-            world = add_payload(root, REPO / "docs/examples/yokohama-urban-scene", world)
+            world = add_payload(root, REPO / "docs/examples/yokohama-urban-scene", world,
+                                delivery_trial=bool(args.delivery_trial))
         if args.occupied_pad:
             from src.runtime.yokohama_pad_queue import extend_world as add_pad_queue
 

@@ -32,7 +32,7 @@ def base_config(backend="fixture", scenario="delivery"):
         hold_max_speed_mps=0.5,
         world=dict(world_sha256="a" * 64, source_sha256={"collision-footprints.geojson": "b" * 64},
                    points=[dict(id=n, world_xyz_m=p) for n, p in points.items()],
-                   payload_delivery=dict(hover_world_xyz_m=hover),
+                   payload_delivery=dict(hover_world_xyz_m=hover, attachment_offset_z_m=-0.14),
                    **({"pad_queue": {"fixture": True}} if scenario == "wait" else {}),
                    sea_extension=dict(stationary_ship=True, wind_mps=0, offshore_distance_m=1000,
                                       coast_to_city_entry_m=400, sea_airspeed_mps=8, city_airspeed_mps=3,

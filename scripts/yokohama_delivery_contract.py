@@ -92,7 +92,9 @@ def validate_config(config):
         or from_scripts.get("sea_leg_present") is not True
         or from_scripts.get("payload_release_present") is not True
         or from_scripts.get("fixture_delay_s") != {}
-        or not world.get("payload_delivery") or bool(world.get("pad_queue")) != (scenario == "wait")
+        or not world.get("payload_delivery")
+        or world["payload_delivery"].get("attachment_offset_z_m") != -0.14
+        or bool(world.get("pad_queue")) != (scenario == "wait")
         or sea.get("stationary_ship") is not True or sea.get("wind_mps") != 0
         or sea.get("offshore_distance_m") != 1000 or sea.get("coast_to_city_entry_m") != 400
         or sea.get("sea_airspeed_mps") != 8 or sea.get("city_airspeed_mps") != 3

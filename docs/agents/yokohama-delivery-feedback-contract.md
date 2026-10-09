@@ -25,6 +25,9 @@ delays the second VLA response past the unchanged 75-second exchange deadline.
 Both faults occur after an observed first leg. Recovery first revokes model
 authority, then follows the original D1/coast/ship line and lands/disarms.
 Recovery success does not turn the failed delivery mission into success.
+The trial mounts the unchanged cargo box above the landing gear; a rejected
+delivery returns with the cargo attached and still requires fresh gear/deck
+contact. It does not detach undelivered cargo to satisfy landing verification.
 The wait scenario proves pad waiting after revocation and prevents late model
 responses from re-entering control. These tests do not qualify arbitrary
 failures outside the D1 model boundary or moving ships, weather, or real coastlines.

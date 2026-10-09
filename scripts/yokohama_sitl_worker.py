@@ -85,7 +85,7 @@ class Observer:
         self.sensor_file = (ROOT / "sensor-events.jsonl").open("w", buffering=1)
         self.recovery_pose_file = (
             (ROOT / "recovery-poses.jsonl").open("w", buffering=1)
-            if config.get("candidate_recovery") else None)
+            if config.get("candidate_recovery") or config.get("delivery_trial") else None)
         self.last_recovery_pose_sim_s = -1
         self.subscribe(Pose_V, "/world/default/pose/info", self.receive_poses)
         self.subscribe(WorldStatistics, "/world/default/stats", self.receive_stats)
