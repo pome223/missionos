@@ -15,14 +15,29 @@ forecast waits. No unpublished notice timestamp is exposed to the actor.
 
 Events are notice content changes, notice expiry, observed health changes, and
 one-shot candidate deadlines. The deadline lead is the approved forecast batch
-budget (600 s) plus model deadline (35 s) plus a 60 s development margin. This
+budget (600 s) plus model deadline (35 s) plus the approved `deadline_margin_s` (60 s in these cases). This
 margin is an engineering assumption, not a SpaceX/NASA flight rule. Periodic
 monitoring remains a backstop. Events coalesce by observation generation.
 
 Requests bind current notice, generation and drained event IDs. New facts while
-waiting invalidate the pending result and force fresh assessment. A deadline
+waiting invalidate the pending model response and force fresh assessment. A deadline
 event does not cancel an already-running forecast; it is serviced as soon as
 that bounded forecast finishes. Response and event latency are recorded.
+
+A notice revision does not invalidate a physical forecast. Each existing
+forecast must still match the fresh measured state, and its predicted contact
+must satisfy the **current** area permission, time and resource checks. A benign
+notice therefore preserves the forecast and the booked revision. Reforecasting
+is needed for missing or mismatched physical evidence, not a changed notice ID.
+
+Inside `decision_timeout_s + coast_dt_s` of a previously booked burn, the
+approved `commitment_response` permits a `deadline_fallback` without publishing
+a model request or consuming its time budget. It preserves only the same
+currently admissible booking. It cannot override revoked permission, admit a
+new candidate or move the burn. The record explicitly has no model response and
+no later measurement; subsequent execution and observations are checked
+separately. The verifier independently repeats the timing, revision and fresh
+admission checks. Interrupted stale responses are not labelled applied fallbacks.
 
 Observed unavailable engines or coast body rate above 0.02 rad/s immediately
 inhibit return without waiting for a model. The latch cannot be cleared by AI.
@@ -65,6 +80,14 @@ the uncertain service estimate. Rules parity is not an AI-value rejection gate.
 The independent event audit replays the observed notice/health/deadline stream,
 checks continuous orbital coverage, missing/forged events, notice and generation
 binding, exact event draining, late responses and urgent dispatch inhibition.
+Every delivered notice is also checked against the registered scenario at that
+time; a self-consistent trace that silently omits an update fails. Undrained
+input requires an explicit, substantiated terminal disposition even when no
+return is dispatched. A health inhibit records an immediate unresolved stop.
+
+Verification schema v2 binds the verdict to a canonical study hash, expected
+case, trusted CLI/Gateway run ID, approved envelope, source map and verifier
+source hash. A success-shaped verdict from another run cannot serve as evidence.
 Existing scalar checks still cover authority, fresh state, finite resource
 budgets, contact geometry, recorded execution and actual recovery area/time.
 
@@ -78,33 +101,53 @@ accuracy, physical splashdown success, or held-out operational reliability.
 
 ## Runtime evidence
 
-The three HTTP runs passed record verification and their declared case gates.
+Runtime source `108e1871` passed record, contact and area verification in all
+three HTTP flights. **Two of three declared case gates passed.** The corrected
+advisory flight remains unresolved because the AI did not request the second
+return forecast; it therefore did not make a choice between two admitted returns.
 
-| Flight | Executed plan | Observed Jev / DeepSeek calls | Contact |
-| --- | --- | --- | --- |
-| Normal | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
-| Corrected servicing forecast | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
-| Persistent outage after correction | nominal | 0 / 0 | 4.608 m/s; 2.375°; 62.394 t |
+| Flight | Case gate | Jev attempts / valid inference receipts | Forecasts started | Return |
+| --- | --- | --- | --- | --- |
+| Normal | pass | 5 / 5 | 4 | nominal |
+| Corrected servicing forecast | **two-option condition unmet** | 5 / 4 | 4 | nominal |
+| Persistent outage after correction | pass | 0 / 0 | 8 | checked nominal fallback |
 
-Both live flights detected the T+1450 s notice after 0.2 simulated seconds and
-requested reassessment at the same observed step. Both received two admissible
-returns after the update and selected nominal return. The corrected flight did
-not produce a different selected return or final state from the outage fallback.
-This result is retained without another live attempt or prompt tuning.
+DeepSeek calls and inflight human commands are zero. All three release 26 generic
+rigid payloads and reach 4.608 m/s contact, 2.375° tilt and 62.394 t propellant in
+the eastern study area. The normal final state and outcome exactly match the
+historical M1 normal flight.
 
-Normal final state and contact exactly match the historical M1 normal flight.
-All three release 26 generic rigid payloads and use zero inflight human commands.
-The outage uses no model calls; its checked fallback preserves nominal return.
-These are test-operator approvals, not authenticated human identity.
+The T+1450 s notice is detected after 0.2 simulated seconds and triggers a
+request at the same observed step. Normal flight preserves its original forecast
+and one booked revision across the update. In the corrected-advisory flight,
+Jev chooses to retain the plan instead of calculating the second option. Its
+last response is invalid; checked fallback still preserves the nominal return.
+The persistent-outage flight cancels a forecast on new information and then
+uses checked fallback. The failed case gate and original HTTP result are kept;
+no prompt tuning or further live attempt was used to force a pass.
 
-A separate scripted next-orbit counterfactual is pending to exercise the long
-coast and alternative dispatch. It is not an AI-selected alternative or part of
-the three live/outage case gates.
 
-Starship regression: 3383 passed, 5 skipped. Focused M1/event checks: 61 passed.
+A later **verifier-only** correction recognizes live reaffirmations of the same
+booking without requiring a new revision. The original HTTP study, verdict and
+receipt are unchanged. Separate rechecks bind the original approved inputs to
+the new verifier and reject differences in any execution source other than that
+verifier. The verdicts remain pass / unmet / pass; the corrected flight still
+has only one predicted candidate. This is recorded revalidation, not three new
+flights. The evidence summary preserves both verdicts and their source hashes.
+
+The [pre-review evidence](../assets/starship-orbit-events/pre-review-summary.json)
+includes the older-source scripted next-orbit counterfactual: 90.85 minutes of
+delay, 4.613 m/s contact and 2.396° tilt in the western area. It establishes a
+previously executed alternative branch, not a new live AI decision or a
+replacement for the current unmet two-option condition. Test-operator approvals
+do not establish authenticated human identity.
+
+The frozen runtime passed 3455 Starship regression tests (5 skipped); the focused
+suite including the final verifier-only correction passed 161 tests. Late benign notices,
+late clearance revocation and urgent health inhibition use a finite fake-plant
+production-loop harness, not additional HTTP physical flights.
 
 Run through `scripts/start_starship_gateway.py` and
 `scripts/smoke_starship_chat_gateway.py` with the selected catalog case. Use
 the `spaceflight-qualified` extra, a fresh state/output directory and explicit
 simulation approval. Live keys are read through Secret Manager in the host only.
-No automatic retries or undisclosed prompt tuning are included in the result.

@@ -8,7 +8,9 @@ results.
 A corrected recovery notice, an expired notice, an observed health change or an
 approaching return deadline can trigger reassessment. The simulated spacecraft
 continues flying while Jev decides or a numerical tool runs. New information
-invalidates an outdated response. An urgent health problem inhibits return
+invalidates an outdated model response. A harmless update preserves a return
+that still satisfies the latest checks, including just before its scheduled burn.
+A withdrawn permission still blocks it. An urgent health problem inhibits return
 without waiting for AI; if no qualified alternative exists, the recorded outcome
 remains unresolved.
 
@@ -52,28 +54,46 @@ choice changed the outcome are separate questions.
 
 ## Recorded result
 
-The three HTTP runs passed record verification and their declared case gates.
+Runtime source `108e1871` passed record, contact and area verification in all
+three HTTP flights. **Two of three declared case gates passed.** The corrected
+advisory flight remains unresolved because the AI did not request the second
+return forecast; it therefore did not make a choice between two admitted returns.
 
-| Flight | Executed plan | Observed Jev / DeepSeek calls | Contact |
-| --- | --- | --- | --- |
-| Normal | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
-| Corrected servicing forecast | nominal | 5 / 0 | 4.608 m/s; 2.375°; 62.394 t |
-| Persistent outage after correction | nominal | 0 / 0 | 4.608 m/s; 2.375°; 62.394 t |
+| Flight | Case gate | Jev attempts / valid inference receipts | Forecasts started | Return |
+| --- | --- | --- | --- | --- |
+| Normal | pass | 5 / 5 | 4 | nominal |
+| Corrected servicing forecast | **two-option condition unmet** | 5 / 4 | 4 | nominal |
+| Persistent outage after correction | pass | 0 / 0 | 8 | checked nominal fallback |
 
-Both live flights detected the T+1450 s notice after 0.2 simulated seconds and
-requested reassessment at the same observed step. Both received two admissible
-returns after the update and selected nominal return. The corrected flight did
-not produce a different selected return or final state from the outage fallback.
-This result is retained without another live attempt or prompt tuning.
+DeepSeek calls and inflight human commands are zero. All three release 26 generic
+rigid payloads and reach 4.608 m/s contact, 2.375° tilt and 62.394 t propellant in
+the eastern study area. The normal final state and outcome exactly match the
+historical M1 normal flight.
 
-Normal final state and contact exactly match the historical M1 normal flight.
-All three release 26 generic rigid payloads and use zero inflight human commands.
-The outage uses no model calls; its checked fallback preserves nominal return.
-These are test-operator approvals, not authenticated human identity.
+The T+1450 s notice is detected after 0.2 simulated seconds and triggers a
+request at the same observed step. Normal flight preserves its original forecast
+and one booked revision across the update. In the corrected-advisory flight,
+Jev chooses to retain the plan instead of calculating the second option. Its
+last response is invalid; checked fallback still preserves the nominal return.
+The persistent-outage flight cancels a forecast on new information and then
+uses checked fallback. The failed case gate and original HTTP result are kept;
+no prompt tuning or further live attempt was used to force a pass.
 
-A separate scripted next-orbit counterfactual is pending to exercise the long
-coast and alternative dispatch. It is not an AI-selected alternative or part of
-the three live/outage case gates.
+
+A later **verifier-only** correction recognizes live reaffirmations of the same
+booking without requiring a new revision. The original HTTP study, verdict and
+receipt are unchanged. Separate rechecks bind the original approved inputs to
+the new verifier and reject differences in any execution source other than that
+verifier. The verdicts remain pass / unmet / pass; the corrected flight still
+has only one predicted candidate. This is recorded revalidation, not three new
+flights. The evidence summary preserves both verdicts and their source hashes.
+
+The [pre-review evidence](../assets/starship-orbit-events/pre-review-summary.json)
+includes the older-source scripted next-orbit counterfactual: 90.85 minutes of
+delay, 4.613 m/s contact and 2.396° tilt in the western area. It establishes a
+previously executed alternative branch, not a new live AI decision or a
+replacement for the current unmet two-option condition. Test-operator approvals
+do not establish authenticated human identity.
 
 Detailed scope and verification requirements:
 [orbital event supervision contract](../agents/starship-orbit-events.md).

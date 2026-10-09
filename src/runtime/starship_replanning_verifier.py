@@ -200,6 +200,117 @@ def admit(candidate, envelope, observation, notice, scheduled):
     }
 
 
+def event_tradeoff_witnesses(study, executed):
+    """Identify live decisions that control the exact dispatched booking.
+
+    Keeping an unchanged booking need not create a revision. A witness still
+    binds an actual response to stored forecast snapshots and rechecks current
+    notice, state and constraints. Requests record candidate checks, but not a
+    full request-time navigation observation; only the later observation can
+    be independently re-admitted here. Missing forecasts are never inferred.
+    """
+    if not executed or not study.get("dispatch"):
+        return []
+    dispatch, envelope = study["dispatch"], study["envelope"]
+    selected = executed["candidate_id"]
+    candidate_hash = checksum(executed["candidate_snapshot"])
+    if (
+        selected not in ("nominal", "next_orbit")
+        or executed["candidate_sha256"] != candidate_hash
+        or dispatch["revision"] != executed["revision"]
+        or dispatch["candidate_id"] != selected
+        or checksum(study["candidates"].get(selected)) != candidate_hash
+    ):
+        return []
+    versions = {}
+    for name, candidate in study["candidates"].items():
+        versions[name, checksum(candidate)] = candidate
+    for revision in study["plan_revisions"]:
+        candidate = revision["candidate_snapshot"]
+        versions[revision["candidate_id"], checksum(candidate)] = candidate
+    witnesses = []
+    for record in study["decisions"]:
+        request, response = record["request"], record["response"] or {}
+        action = record["accepted_action"]
+        reaffirmed = (
+            request.get("selected") == selected
+            and request["revision"] == executed["revision"]
+            and executed["time_s"] <= request["time_s"]
+        )
+        created = (
+            executed["decision_request_id"] == request["request_id"]
+            and executed["revision"] == request["revision"] + 1
+            and executed["time_s"] == record["later_time_s"]
+            and action == "select_" + selected
+            and executed["basis"] == "ai"
+        )
+        if (
+            not (reaffirmed or created)
+            or action not in ("select_" + selected, "keep_plan")
+            or (action == "keep_plan" and not reaffirmed)
+            or action not in request["allowed_actions"]
+            or response.get("action") != action
+            or response.get("request_id") != request["request_id"]
+            or response.get("request_sha256") != checksum(request)
+            or response.get("model_inference_invoked") is not True
+            or response.get("mode") != "live"
+            or record.get("fallback") is not False
+            or record.get("interrupted_by_events", False)
+            or request["notice"]["sequence"] < 2
+            or not request["time_s"] < record["later_time_s"] <= dispatch["time_s"]
+            or record["later_time_s"] > request["deadline_s"]
+            or record["later_observation"]["state"]["time_s"] != record["later_time_s"]
+        ):
+            continue
+        admitted = {}
+        hashes = {}
+        for name in ("nominal", "next_orbit"):
+            public = request["candidates"].get(name)
+            candidate = None if not public else versions.get((name, public.get("candidate_sha256")))
+            if (
+                candidate is None
+                or public["constraint_rejections"]
+                or public["return_time_s"] != candidate["return_time_s"]
+                or public["predicted_contacts"] != [metrics(t) for t in candidate["trials"]]
+                or candidate["trials"][0]["origin"]["state"]["time_s"] > request["time_s"]
+            ):
+                continue
+            check = admit(
+                candidate,
+                envelope,
+                record["later_observation"],
+                request["notice"],
+                study["scheduled_s"],
+            )
+            if check["accepted"]:
+                admitted[name] = check
+                hashes[name] = checksum(candidate)
+        if hashes.get(selected) != candidate_hash:
+            continue
+        both = all(
+            name in admitted and "select_" + name in request["allowed_actions"]
+            for name in ("nominal", "next_orbit")
+        )
+        witnesses.append(
+            {
+                "request_id": request["request_id"],
+                "accepted_action": action,
+                "executed_revision": executed["revision"],
+                "candidate_id": selected,
+                "candidate_sha256": candidate_hash,
+                "request_time_s": request["time_s"],
+                "later_time_s": record["later_time_s"],
+                "notice_sequence": request["notice"]["sequence"],
+                "existing_booking_reaffirmed": reaffirmed,
+                "request_navigation_observation_rechecked": False,
+                "request_checks_basis": "recorded_candidate_hashes_and_constraint_results",
+                "later_admission_checks": admitted,
+                "both_options_admissible": both,
+            }
+        )
+    return witnesses
+
+
 def case_reasons(study, expected_case, outcome):
     """Completion uses the dispatched revision, never an abandoned AI choice."""
     reasons = []
@@ -217,7 +328,7 @@ def case_reasons(study, expected_case, outcome):
     )
     if expected_case in ("normal", "event_normal") and selected != "nominal":
         reasons.append("normal_return_changed")
-    if expected_case in ("recovery_update", "event_tradeoff"):
+    if expected_case == "recovery_update":
         record = next(
             (
                 r
@@ -227,11 +338,7 @@ def case_reasons(study, expected_case, outcome):
             None,
         )
         if (
-            (
-                selected != "next_orbit"
-                if expected_case == "recovery_update"
-                else selected not in ("nominal", "next_orbit")
-            )
+            selected != "next_orbit"
             or not executed
             or executed["basis"] != "ai"
             or not record
@@ -239,27 +346,11 @@ def case_reasons(study, expected_case, outcome):
             or not (record["response"] or {}).get("model_inference_invoked")
         ):
             reasons.append("actual_ai_replanning_not_executed")
-    if expected_case == "event_tradeoff" and executed:
-        decision = next(
-            (
-                r
-                for r in study["decisions"]
-                if r["request"]["request_id"] == executed["decision_request_id"]
-            ),
-            None,
-        )
-        if (
-            not decision
-            or decision["request"]["notice"]["sequence"] < 2
-            or not all(
-                "select_" + n in decision["request"]["allowed_actions"]
-                for n in ("nominal", "next_orbit")
-            )
-            or any(
-                decision["request"]["candidates"][n]["constraint_rejections"]
-                for n in ("nominal", "next_orbit")
-            )
-        ):
+    if expected_case == "event_tradeoff":
+        witnesses = event_tradeoff_witnesses(study, executed)
+        if not witnesses:
+            reasons.append("actual_ai_replanning_not_executed")
+        if not any(w["both_options_admissible"] for w in witnesses):
             reasons.append("two_admissible_options_after_correction_not_demonstrated")
     if expected_case in ("decision_timeout", "event_timeout"):
         # The registered scenario starts loss at this observed update, not at
