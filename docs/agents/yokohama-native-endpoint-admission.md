@@ -66,3 +66,13 @@ upload/bootstrap: 1 GiB outbound, 64 GiB inbound. Global IPv6 addresses cause
 admission failure. Quota exhaustion blocks traffic and requires cleanup through
 the independent GCP API. No firewall or network policy of a persistent resource
 is changed. Provider DELETE and disk auto-delete remain required.
+
+## Single-flight outcome
+
+The October 9 CPU flight ran once from the qualified source commit. The runner,
+model-goal observations and endpoint verifier passed; return, landing and disarm
+were observed. Overall qualification failed: the altitude transport verifier
+requires authored `01-FEEDBACK-EXIT`, while normal endpoint return commanded the
+approved `city-02-connect` under that phase. No evidence was relabelled, criteria
+relaxed, second CPU flight or paid trial performed. The GPU gate stays closed.
+See [qualification record](yokohama-native-endpoint-qualification-20261009.json).

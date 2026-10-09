@@ -1,0 +1,61 @@
+{
+  "schema": "yokohama.native-endpoint-cpu-qualification.v1",
+  "created_utc": "2026-10-09T02:20:24.067711+00:00",
+  "flight_source_commit": "17c43f43c5a29616e8f9439f938c65dd531a9e24",
+  "final_source_closure_sha256": "b3209d950ecce5e51b6e57fcbcdc8eab9de5adf57042537f60bd8529f58fc8ee",
+  "source_file_count": 888,
+  "cpu_flight_attempts": 1,
+  "maximum_cpu_flight_attempts": 1,
+  "gpu_flights": 0,
+  "new_cloud_resources": 0,
+  "paid_execution_started": false,
+  "aggregate_budget_authorized_usd": 8,
+  "runner_status": "passed",
+  "worker_status": "passed",
+  "endpoint_independent_verdict": "passed",
+  "full_flight_independent_verdict": "failed",
+  "overall_qualification": "failed",
+  "model_goal_observed": true,
+  "last_goal_error_m": 0.04257998791232085,
+  "return_landing_disarm_observed": true,
+  "recorded_model_revocation": true,
+  "adapter_second_action": {
+    "original_distance_m": 2.1938775507948205,
+    "executed_distance_m": 0.9913412277321844,
+    "scale": 0.45186716440527197,
+    "raw_bins": [
+      43,
+      49,
+      49
+    ],
+    "heading_and_yaw_preserved": true
+  },
+  "blocker": {
+    "check": "unified_altitude_transport",
+    "reason": "Missing altitude mission phase",
+    "authored_exit": "01-FEEDBACK-EXIT",
+    "actual_approved_segment": "city-02-connect",
+    "actual_phase": "01-FEEDBACK-EXIT",
+    "remaining_work": "Reconcile exact authored AP exit versus approved dynamic connector transport coverage without changing route/altitude/hold bounds; qualify revised final sources before any paid trial"
+  },
+  "tests": {
+    "passed": 4491,
+    "skipped": 1,
+    "targeted": 195,
+    "lint": "passed",
+    "gateway_cpu_http_smoke": "passed"
+  },
+  "claims": {
+    "cpu_simulator_only": true,
+    "native_model_inference": false,
+    "raw_model_output_control": false,
+    "physical_execution": false,
+    "payload_delivery": false,
+    "full_mission_qualified": false
+  },
+  "cleanup": {
+    "owned_cpu_runtime_absent": true,
+    "shared_resources_retained": true
+  },
+  "new_flight_retry_performed": false
+}
