@@ -15,7 +15,7 @@ from scripts import yokohama_sitl as sitl
 from scripts.verify_yokohama_native_endpoint import verify
 from scripts.yokohama_candidate_recovery import LIMITS, policy
 from scripts.yokohama_endpoint_feedback import FIXED, feedback_policy
-from scripts.yokohama_flight_worker import execute_model_segments
+from scripts.yokohama_flight_worker import ap_exit_connector, execute_model_segments
 from scripts.yokohama_goal_distance_adapter import POLICY, adapt_candidate, validate_adaptation
 from src.runtime import yokohama_execution_service as vehicle
 from src.runtime.yokohama_native import vla_candidate
@@ -647,3 +647,24 @@ def test_owned_vm_network_quota_must_be_confirmed_before_bootstrap(
         assert not (tmp_path / "network-budget.json").exists()
     assert "OUTPUT 1 ! -o lo" in commands[0] and "INPUT 1 ! -i lo" in commands[0]
     assert "ip -6 -o addr show scope global" in commands[0]
+
+
+@pytest.mark.parametrize("backend", ["fixture", "native"])
+def test_dedicated_return_selects_exact_authored_exit_transport(backend):
+    cfg = config(backend)
+    permit = dict(connector_name="city-02-connect")
+    chosen = ap_exit_connector(cfg, permit)
+    # The worker uploads chosen or its next authored phase. It therefore uses
+    # the fixed stage's latitude/longitude/altitude/yaw and transport identity.
+    assert (chosen or cfg["flight_stages"][1]["name"]) == "01-FEEDBACK-EXIT"
+    assert cfg["candidate_recovery"]["recovery_timeout_s"] == 220
+    legacy = deepcopy(cfg)
+    legacy.pop("endpoint_adapter_trial")
+    assert ap_exit_connector(legacy, permit) == "city-02-connect"
+
+
+def test_changed_trial_contract_cannot_select_authored_exit():
+    cfg = config()
+    cfg["endpoint_adapter_trial"]["timeout_s"] = 901
+    with pytest.raises(ValueError):
+        ap_exit_connector(cfg, dict(connector_name="city-02-connect"))

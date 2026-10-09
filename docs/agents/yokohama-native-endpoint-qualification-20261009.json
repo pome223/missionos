@@ -2,7 +2,7 @@
   "schema": "yokohama.native-endpoint-cpu-qualification.v1",
   "created_utc": "2026-10-09T02:20:24.067711+00:00",
   "flight_source_commit": "17c43f43c5a29616e8f9439f938c65dd531a9e24",
-  "final_source_closure_sha256": "b3209d950ecce5e51b6e57fcbcdc8eab9de5adf57042537f60bd8529f58fc8ee",
+  "final_source_closure_sha256": "f1fb42c7c7edd71ac09eb8a581c96419652730e521deb70179184a2ddc1343b4",
   "source_file_count": 888,
   "cpu_flight_attempts": 1,
   "maximum_cpu_flight_attempts": 1,
@@ -36,14 +36,15 @@
     "authored_exit": "01-FEEDBACK-EXIT",
     "actual_approved_segment": "city-02-connect",
     "actual_phase": "01-FEEDBACK-EXIT",
-    "remaining_work": "Reconcile exact authored AP exit versus approved dynamic connector transport coverage without changing route/altitude/hold bounds; qualify revised final sources before any paid trial"
+    "remaining_work": "Corrected final sources need fresh CPU flight qualification before GPU; original one-CPU scope is consumed. No additional flight or paid attempt performed."
   },
   "tests": {
-    "passed": 4491,
+    "passed": 4494,
     "skipped": 1,
     "targeted": 195,
     "lint": "passed",
-    "gateway_cpu_http_smoke": "passed"
+    "gateway_cpu_http_smoke": "passed",
+    "preflight_targeted": 195
   },
   "claims": {
     "cpu_simulator_only": true,
@@ -57,5 +58,12 @@
     "owned_cpu_runtime_absent": true,
     "shared_resources_retained": true
   },
-  "new_flight_retry_performed": false
+  "new_flight_retry_performed": false,
+  "flight_source_closure_sha256": "b3209d950ecce5e51b6e57fcbcdc8eab9de5adf57042537f60bd8529f58fc8ee",
+  "corrected_runtime_not_flown": true,
+  "source_code_changed_after_flight": true,
+  "postflight_correction": "Dedicated AP exit uses exact authored stage template; legacy connector and all verifier thresholds preserved",
+  "changed_execution_source_files": [
+    "scripts/yokohama_flight_worker.py"
+  ]
 }

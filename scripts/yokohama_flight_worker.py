@@ -340,6 +340,19 @@ def execute_model_segments(
     return permit
 
 
+def ap_exit_connector(config, permit):
+    """Select the authored AP stage for the dedicated trial, preserving legacy.
+
+    None makes the next normal worker stage upload its exact approved template.
+    This preserves its altitude, yaw and transport identity instead of replacing
+    it with the city's differently named dynamic connector.
+    """
+    if config.get("endpoint_adapter_trial") is not None:
+        feedback_policy(config)  # exact separate approval and fixed route contract
+        return None
+    return permit["connector_name"]
+
+
 def flight_trial(config, obs, run, field):
     endpoint_feedback = feedback_policy(config)
     if config.get("altitude_transport_contract") != SCHEMA:
@@ -1087,8 +1100,8 @@ def flight_trial(config, obs, run, field):
                 connector = ROOT / (permit["connector_name"] + "-upload.py")
                 if hashlib.sha256(connector.read_bytes()).hexdigest() != permit["connector_sha256"]:
                     raise ValueError("AP connector differs from independently checked route")
-                next_connector = permit["connector_name"]
-                if config.get("altitude_transport_contract") == SCHEMA:
+                next_connector = ap_exit_connector(config, permit)
+                if next_connector and config.get("altitude_transport_contract") == SCHEMA:
                     connector_world_hashes[next_connector] = permit["connector_world_items_sha256"]
                 if phase == "02-D3":
                     pad_queue.move_hold(candidate["target_world_xyz_m"], permit["permit_id"])

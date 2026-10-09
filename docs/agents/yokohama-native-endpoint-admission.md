@@ -76,3 +76,10 @@ requires authored `01-FEEDBACK-EXIT`, while normal endpoint return commanded the
 approved `city-02-connect` under that phase. No evidence was relabelled, criteria
 relaxed, second CPU flight or paid trial performed. The GPU gate stays closed.
 See [qualification record](yokohama-native-endpoint-qualification-20261009.json).
+
+The postflight correction selects the next exact authored AP stage for this
+dedicated trial; legacy connector selection is preserved. Verifiers and route,
+altitude, recovery deadline and hold bounds are unchanged. The corrected runtime
+has normal-test qualification only and has not flown. The original single CPU
+attempt is consumed; a fresh qualification outside that scope is necessary before
+GPU. The failed flight-source verdict and original raw files remain preserved.
