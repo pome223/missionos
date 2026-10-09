@@ -112,7 +112,7 @@
         "observed_run_id": "df1ed16caa344c179c61ecdb737f5594",
         "expected_sources_sha256": "aaac225913379208a3c03ab69bda4f82a9fb9f0ff04f71358e75d8b2aa355d5f",
         "expected_envelope_sha256": "70cb93aa92f4e800a7146ac66ef1e54600443aeebc1a444296b236ba2c28b93e",
-        "verifier_source_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa",
+        "verifier_source_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74",
         "binding_unavailable": [],
         "binding_complete": true
       },
@@ -124,7 +124,7 @@
       "recheck_source_differences": {
         "src/runtime/starship_replanning_verifier.py": {
           "execution_sha256": "d8fad3ced1284e70b6767f6cffc6739cfe43af41864aed976c77627c441ce799",
-          "recheck_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa"
+          "recheck_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74"
         }
       },
       "authority": {
@@ -659,7 +659,7 @@
       },
       "actual_servicing_completion_observed": false,
       "actual_servicing_completion_time_s": null,
-      "post_review_verification_sha256": "95abf2c017f2b89ba822500b4ca4f25332ff39f1eb7bf4c77e06a5c18121a498",
+      "post_review_verification_sha256": "8e19368eafee9ef335017174923116097bb1dd45a02d9fb55748e12f5a377d24",
       "post_review_verification_artifact": "normal-live/post-review-verification.json"
     },
     {
@@ -708,7 +708,7 @@
         "observed_run_id": "be1f2770eec94fd595af0611132d0b3d",
         "expected_sources_sha256": "aaac225913379208a3c03ab69bda4f82a9fb9f0ff04f71358e75d8b2aa355d5f",
         "expected_envelope_sha256": "70cb93aa92f4e800a7146ac66ef1e54600443aeebc1a444296b236ba2c28b93e",
-        "verifier_source_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa",
+        "verifier_source_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74",
         "binding_unavailable": [],
         "binding_complete": true
       },
@@ -720,7 +720,7 @@
       "recheck_source_differences": {
         "src/runtime/starship_replanning_verifier.py": {
           "execution_sha256": "d8fad3ced1284e70b6767f6cffc6739cfe43af41864aed976c77627c441ce799",
-          "recheck_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa"
+          "recheck_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74"
         }
       },
       "authority": {
@@ -1312,7 +1312,7 @@
       },
       "actual_servicing_completion_observed": false,
       "actual_servicing_completion_time_s": null,
-      "post_review_verification_sha256": "d8abab308d325776f80d8b3e9e2d38975df661da79255bd6a0e9e8a8925be367",
+      "post_review_verification_sha256": "35aaf0f6357782ca9db358dd24852f0e568f8e6beae074172fc7788797fccc57",
       "post_review_verification_artifact": "tradeoff-live/post-review-verification.json"
     },
     {
@@ -1357,7 +1357,7 @@
         "observed_run_id": "0dd37d83b5a64437a89dbb081e370d37",
         "expected_sources_sha256": "aaac225913379208a3c03ab69bda4f82a9fb9f0ff04f71358e75d8b2aa355d5f",
         "expected_envelope_sha256": "780cef41cbb048fb62caf60ef6fb4283ab6dda344941eff80b244e041d61e85a",
-        "verifier_source_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa",
+        "verifier_source_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74",
         "binding_unavailable": [],
         "binding_complete": true
       },
@@ -1369,7 +1369,7 @@
       "recheck_source_differences": {
         "src/runtime/starship_replanning_verifier.py": {
           "execution_sha256": "d8fad3ced1284e70b6767f6cffc6739cfe43af41864aed976c77627c441ce799",
-          "recheck_sha256": "5afffb083c01e22097118aca4ee813e1730e7097149942369d1040b120b8f8aa"
+          "recheck_sha256": "b9a31d32cbba16f3e786fe13b46cde1adae9fe670e87589ef0cfe24cb5ed6d74"
         }
       },
       "authority": {
@@ -1811,7 +1811,7 @@
       },
       "actual_servicing_completion_observed": false,
       "actual_servicing_completion_time_s": null,
-      "post_review_verification_sha256": "7a6cb6fbe1103d932fdc7109e72a742e46c6b7149182534cdb2c66aa26f7a58c",
+      "post_review_verification_sha256": "7a7f0a012bb7bdc7b2fc95c5a0ad9113f53a99750b14192b9aa3bfac4e65b282",
       "post_review_verification_artifact": "timeout-fixture/post-review-verification.json"
     }
   ],
@@ -1856,7 +1856,7 @@
     "all_source_frozen_runs_preserved": true
   },
   "verification_update": {
-    "scope": "verifier_only_same_booking_reaffirmation",
+    "scope": "verifier_only_same_booking_reaffirmation_and_registered_action_notices",
     "new_flights_after_gate_fix": 0,
     "original_http_artifacts_unchanged": true,
     "original_gate_results": [
@@ -1874,8 +1874,27 @@
   "tests": {
     "frozen_execution_source_starship_regression_passed": 3455,
     "skipped": 5,
-    "final_verifier_replanning_suite_passed": 161,
+    "final_verifier_replanning_suite_passed": 175,
     "reducer_immutability_tests_passed": 6,
-    "runtime_after_final_verifier_change": "saved-record production verifier recheck only; no new flight"
+    "runtime_after_final_verifier_change": "saved-record production verifier recheck only; no new flight",
+    "registered_action_notice_tamper_smoke_rejections": 2
+  },
+  "review": {
+    "reviewer": "Claude Opus 5.5",
+    "effort": "high",
+    "rounds": 2,
+    "first_round_findings_resolved": 6,
+    "code_blockers_reported_in_final_review": 0,
+    "scenario_gate_unmet": "two_admissible_options_after_correction_not_demonstrated",
+    "final_review_followup": {
+      "id": "R2-1",
+      "status": "fixed_after_final_review_and_checked_by_codex",
+      "scope": "registered notices and observation times at revisions and dispatch",
+      "independently_rereviewed": false
+    },
+    "deferred_low_priority_findings": [
+      "R2-2: separate audit-module digest in verifier identity; approved source map and immutable reducer already bind this module",
+      "R2-3: additional terminal dispositions; undrained unsupported exits fail verification conservatively"
+    ]
   }
 }

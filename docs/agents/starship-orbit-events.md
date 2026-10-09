@@ -80,8 +80,8 @@ the uncertain service estimate. Rules parity is not an AI-value rejection gate.
 The independent event audit replays the observed notice/health/deadline stream,
 checks continuous orbital coverage, missing/forged events, notice and generation
 binding, exact event draining, late responses and urgent dispatch inhibition.
-Every delivered notice is also checked against the registered scenario at that
-time; a self-consistent trace that silently omits an update fails. Undrained
+Every delivered notice, each revision notice and the dispatch notice are also
+checked against the registered scenario at their observed action time; a self-consistent trace that silently omits an update fails. Undrained
 input requires an explicit, substantiated terminal disposition even when no
 return is dispatched. A health inhibit records an immediate unresolved stop.
 
@@ -143,7 +143,7 @@ replacement for the current unmet two-option condition. Test-operator approvals
 do not establish authenticated human identity.
 
 The frozen runtime passed 3455 Starship regression tests (5 skipped); the focused
-suite including the final verifier-only correction passed 161 tests. Late benign notices,
+suite including both final verifier-only corrections passed 175 tests. Late benign notices,
 late clearance revocation and urgent health inhibition use a finite fake-plant
 production-loop harness, not additional HTTP physical flights.
 
@@ -151,3 +151,24 @@ Run through `scripts/start_starship_gateway.py` and
 `scripts/smoke_starship_chat_gateway.py` with the selected catalog case. Use
 the `spaceflight-qualified` extra, a fresh state/output directory and explicit
 simulation approval. Live keys are read through Secret Manager in the host only.
+
+## Review disposition
+
+Two read-only reviews used Claude Opus 5.5 with high effort. The final review
+confirmed all six first-round findings resolved and reported no code blockers.
+The unmet two-option scenario remains a separate reason to keep this PR draft.
+
+Its additional notice-binding recommendation (R2-1) was subsequently implemented
+and checked by Codex: revision and dispatch notices must match the registered
+input by canonical hash, with finite action times equal to observation times.
+Saved HTTP records were rechecked without a new flight; all three record verdicts
+and the pass / unmet / pass case results remain unchanged. Two self-consistent
+forged notices in in-memory copies of the normal HTTP record were rejected.
+Original artifact bytes remain unchanged. This narrow final fix was not submitted
+for a third independent review.
+
+R2-2 (a combined verifier/audit-module identity digest) is deferred: the approved
+source map already binds the event audit module, and the recheck rejects any
+change to it. R2-3 (more explicit termination reasons on additional failure exits)
+is also deferred: unsupported undrained exits fail verification conservatively.
+Neither item establishes a successful recovery outside the recorded conditions.

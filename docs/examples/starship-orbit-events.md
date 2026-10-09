@@ -80,8 +80,9 @@ uses checked fallback. The failed case gate and original HTTP result are kept;
 no prompt tuning or further live attempt was used to force a pass.
 
 
-A later **verifier-only** correction recognizes live reaffirmations of the same
-booking without requiring a new revision. The original HTTP study, verdict and
+Later **verifier-only** corrections recognize live reaffirmations of the same
+booking without requiring a new revision, and check the notices recorded when
+a plan changes or return begins against the registered input. The original HTTP study, verdict and
 receipt are unchanged. Separate rechecks bind the original approved inputs to
 the new verifier and reject differences in any execution source other than that
 verifier. The verdicts remain pass / unmet / pass; the corrected flight still

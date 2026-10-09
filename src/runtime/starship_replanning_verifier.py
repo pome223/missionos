@@ -311,6 +311,24 @@ def event_tradeoff_witnesses(study, executed):
     return witnesses
 
 
+def event_operation_notice_reasons(study, expected_case):
+    """Bind operational notices to registered input at each actual action time."""
+    from .starship_replanning import notices
+
+    reasons = []
+    operations = [("revision", r) for r in study["plan_revisions"]]
+    if study["dispatch"] is not None:
+        operations.append(("dispatch", study["dispatch"]))
+    for kind, record in operations:
+        when, observed = record["time_s"], record["observation"]["state"]["time_s"]
+        finite = all(type(t) in (int, float) and math.isfinite(t) for t in (when, observed))
+        if not finite or when != observed:
+            reasons.append(kind + "_observation_time")
+        if finite and checksum(record["notice"]) != checksum(notices(expected_case, when)):
+            reasons.append(kind + "_notice_registration")
+    return reasons
+
+
 def case_reasons(study, expected_case, outcome):
     """Completion uses the dispatched revision, never an abandoned AI choice."""
     reasons = []
@@ -750,6 +768,7 @@ def verify(study, *, expected_envelope, expected_case, expected_sources, expecte
             from .starship_replanning_events import verify_events
 
             reasons.extend(verify_events(study, envelope, expected_case=expected_case))
+            reasons.extend(event_operation_notice_reasons(study, expected_case))
         completion_reasons = case_reasons(study, expected_case, outcome)
         return {
             **binding,
