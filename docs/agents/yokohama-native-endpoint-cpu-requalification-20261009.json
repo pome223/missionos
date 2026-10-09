@@ -1,0 +1,31 @@
+{
+  "schema": "yokohama.native-endpoint-cpu-requalification.v1",
+  "created_utc": "2026-10-09T06:20:20.229866+00:00",
+  "flight_source_commit": "9fd977ad178927b927c50caf6a0c59982f6e2337",
+  "source_closure_sha256": "f1fb42c7c7edd71ac09eb8a581c96419652730e521deb70179184a2ddc1343b4",
+  "additional_cpu_flights": 1,
+  "previous_endpoint_cpu_flights": 1,
+  "status": "passed",
+  "mission_outcome": "passed",
+  "independent_endpoint": "passed",
+  "independent_full_flight": "passed",
+  "unified_altitude_transport": true,
+  "authored_exit_segment": "01-FEEDBACK-EXIT",
+  "last_goal_error_m": 0.08008435103071529,
+  "return_landing_disarm_observed": true,
+  "model_session_revoked": true,
+  "tests": {
+    "previous_unchanged_full_suite_passed": 4494,
+    "skipped": 1,
+    "fresh_targeted_passed": 121
+  },
+  "claims": {
+    "cpu_double_only": true,
+    "native_inference": false,
+    "raw_model_output_control": false,
+    "physical_execution": false,
+    "payload_delivery": false
+  },
+  "owned_cpu_runtime_absent": true,
+  "new_gpu_resources_so_far": 0
+}
