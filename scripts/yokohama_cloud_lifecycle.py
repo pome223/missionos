@@ -38,7 +38,7 @@ def command(resource, operation):
             f"os.execv(sys.executable,[sys.executable,str(root/'remote_lifecycle.py'),'{operation}'])",
         ]
     )
-    return [
+    argv = [
         resource.get("gcloud", "gcloud"),
         "compute",
         "ssh",
@@ -48,9 +48,18 @@ def command(resource, operation):
         "--zone",
         resource["zone"],
         "--quiet",
-        "--command",
-        "python3 -c " + shlex.quote(code),
     ]
+    # An explicitly approved ephemeral trial may reuse an existing SSH key
+    # and keep its host-key cache inside the trial, without changing defaults.
+    if resource.get("ssh_key_file") or resource.get("known_hosts_file"):
+        for name in ("ssh_key_file", "known_hosts_file"):
+            if not isinstance(resource.get(name), str) or not Path(resource[name]).is_absolute():
+                raise ValueError("Explicit SSH paths must be absolute")
+        if not Path(resource["ssh_key_file"]).is_file():
+            raise ValueError("Existing SSH key required; do not generate a key")
+        argv += ["--ssh-key-file", resource["ssh_key_file"], "--ssh-key-expire-after", "2h",
+                 "--ssh-flag=-oUserKnownHostsFile=" + resource["known_hosts_file"]]
+    return [*argv, "--command", "python3 -c " + shlex.quote(code)]
 
 
 def main():

@@ -2,6 +2,7 @@
 from copy import deepcopy
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -317,6 +318,65 @@ def test_reserved_run_upgrades_only_to_its_signed_current_actor(service, monkeyp
     service._observe_tower_exit(run_id, process)
     service._observe_exit(SESSION, run_id, process)
     assert not (service.root/"tower-active-run.json").exists()
+
+
+@pytest.mark.parametrize("axis", ["wall", "simulation"])
+@pytest.mark.parametrize("issued", [200.1, 1000.])
+@pytest.mark.parametrize("exceeds_deadline", [False, True])
+def test_registered_actor_expiry_uses_constructed_deadline_without_ulp_extension(
+    service, monkeypatch, axis, issued, exceeds_deadline,
+):
+    from src.runtime.starship_operator_resolution import OperatorResolutionLedger
+    from src.runtime.starship_tower_broker import TowerBroker
+
+    plan = future_plan(service)
+    service.approve(SESSION, plan["id"], plan["sha256"])
+    monkeypatch.setenv("MISSIONOS_STARSHIP_TOWER_RUNTIME_MODE", "fixture")
+    process = StaticProcessFixture()
+    monkeypatch.setattr(control.subprocess, "Popen", lambda *a, **k: process)
+    monkeypatch.setattr(control.Thread, "start", lambda self: None)
+    started = service.execute(SESSION, plan["id"], plan["sha256"])
+    run_id = started["execution"]["run_id"]
+    run_dir = service.root/("run-"+run_id)
+    with service._lock():
+        stored = service._load(SESSION)
+    profile, catch, sites = public_inputs()
+    key = runtime.read_local_key(run_dir)
+    wall = issued if axis == "wall" else 1000.
+    simulation = issued if axis == "simulation" else 153.9
+    actor_type = runtime.TowerActor
+
+    def signed_actor_with_boundary(mailbox, scope, *args, **kwargs):
+        # Produce an otherwise genuine signed identity, so an over-budget
+        # rejection exercises the deadline check rather than bad signatures.
+        if exceeds_deadline:
+            field = "original_"+axis+"_deadline_s"
+            scope[field] = math.nextafter(scope[field], math.inf)
+        return actor_type(mailbox, scope, *args, **kwargs)
+
+    monkeypatch.setattr(runtime, "TowerActor", signed_actor_with_boundary)
+    context = runtime.TowerWorkerContext(run_dir, plan, stored["approval"], run_id, profile, catch, sites,
+        local_integrity_key=key, source_is_current=lambda: True, clock=lambda: wall)
+    context.activate(body(simulation), phase="recovery_boostback_burn")
+    scope = context.scope
+    broker = TowerBroker(run_dir/"tower", run_id, scope, process,
+        OperatorResolutionLedger(key, store_path=run_dir/"tower-resolution.sqlite3"),
+        runtime.FixtureTowerJudge(), lambda: True, clock=lambda: wall)
+    try:
+        if exceeds_deadline:
+            with pytest.raises(control.StarshipMissionError, match="tower_broker_scope_binding_mismatch"):
+                service.register_tower_broker(SESSION, plan["id"], plan["sha256"], run_id, broker=broker)
+            assert service.current(SESSION)["execution"]["tower_supervision_registered"] is False
+            assert control._read(service.root/"tower-active-run.json")["schema"] == "missionos.starship_tower_run_reservation.v1"
+        else:
+            assert scope["original_"+axis+"_deadline_s"] == issued+75.
+            service.register_tower_broker(SESSION, plan["id"], plan["sha256"], run_id, broker=broker)
+            assert service.current(SESSION)["execution"]["tower_supervision_registered"] is True
+    finally:
+        context.close()
+        process.ended = True
+        service._observe_tower_exit(run_id, process)
+        service._observe_exit(SESSION, run_id, process)
 
 
 def test_second_approved_run_is_refused_before_any_second_spawn(service, monkeypatch):

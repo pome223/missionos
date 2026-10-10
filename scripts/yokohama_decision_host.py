@@ -7,10 +7,12 @@ Native lifecycle commands are supplied explicitly; this module allocates no VM.
 from __future__ import annotations
 
 import base64
+import copy
 import io
 import json
 import math
 from pathlib import Path
+import re
 import subprocess
 import threading
 import time
@@ -21,11 +23,18 @@ import numpy as np
 from PIL import Image
 
 from scripts import ship_anwm
+from scripts.yokohama_endpoint_feedback import (
+    feedback_policy,
+    validate_feedback_candidate,
+    validate_feedback_map,
+    validate_feedback_request,
+)
 from scripts.yokohama_altitude_contract import (
     SCHEMA,
     compile_mission,
     recheck_mapping,
 )
+from scripts.yokohama_goal_distance_adapter import adapt_candidate, validate_adaptation
 from scripts.yokohama_wam_profile import MOTION_CONTRACT, validate_service_profile
 from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
 from src.runtime.yokohama_native import (
@@ -56,23 +65,187 @@ def exchange(port, path, payload=None, timeout=75):
     return json.loads(raw)
 
 
+def validate_native_services(config, identities, source_hashes):
+    """Check pinned service contracts without reading files or contacting services."""
+    if set(identities) != {"vla", "wam"} or not all(
+        isinstance(identity, dict) for identity in identities.values()
+    ):
+        raise ValueError("Both native service identities are required")
+    source_names = (
+        "yokohama_appearance.py", "yokohama_wam_profile.py", "ship_anwm_server.py",
+        "ship_anwm.py", "ship_aerovla_server.py", "ship_aerovla.py",
+    )
+    if any(
+        not isinstance(source_hashes.get(name), str)
+        or len(source_hashes[name]) != 64
+        or any(c not in "0123456789abcdef" for c in source_hashes[name])
+        for name in source_names
+    ):
+        raise ValueError("Frozen native source hashes are required")
+    if any(v.get("cpu_between_requests") is not True for v in identities.values()):
+        raise ValueError("Serial CPU-between-requests residency required")
+    if identities["vla"].get("exit_after_request") is not False:
+        raise ValueError("One-shot VLA cannot serve a repeated city session")
+    wam_profile = config["decisions"].get("wam_profile", "legacy")
+    compact = wam_profile == "motion-v4"
+    if (
+        identities["vla"].get("short_segment_flight") is not True
+        or identities["vla"].get("yaw_bin_range") != ([45, 53] if compact else [38, 60])
+        or (
+            compact
+            and (
+                identities["vla"].get("compact_city_flight") is not True
+                or identities["vla"].get("forward_bin_range") != [20, 58]
+                or identities["vla"].get("hold_bin_allowed") is not False
+                or identities["vla"].get("terminal_proposal_allowed") is not False
+                or identities["vla"].get("decoding_policy")
+                != "aerovla_compact_city_grammar.v2"
+            )
+        )
+    ):
+        raise ValueError("City translation phase requires bounded native decoding")
+    contract = MOTION_CONTRACT if compact else "yokohama_anwm_request.v1"
+    if contract not in identities["wam"].get("candidate_contracts", []):
+        raise ValueError("Native WAM does not support this action contract")
+    validate_service_profile(
+        identities["wam"],
+        wam_profile,
+        appearance_sha256=source_hashes["yokohama_appearance.py"],
+        profile_sha256=source_hashes["yokohama_wam_profile.py"],
+    )
+    if (
+        identities["wam"].get("server_sha256") != source_hashes["ship_anwm_server.py"]
+        or identities["wam"].get("helper_sha256") != source_hashes["ship_anwm.py"]
+        or identities["wam"].get("checkpoint_sha256") != ship_anwm.MODEL_SHA256
+        or identities["wam"].get("upstream_revision") != ship_anwm.UPSTREAM_REVISION
+        or any(
+            identities["vla"].get("runtime_sha256", {}).get(name) != source_hashes[name]
+            for name in ("ship_aerovla_server.py", "ship_aerovla.py", "ship_anwm.py")
+        )
+    ):
+        raise ValueError("Native services differ from the frozen source/checkpoint")
+
+
 class DecisionHost:
-    def __init__(self, root, config, bundle, backend, service_config=None):
+    def __init__(
+        self, root, config, bundle, backend, service_config=None, *,
+        detached=False, capture_root=None, http_exchange=None, mock_http=False,
+    ):
+        if mock_http and not detached:
+            raise ValueError("Mock HTTP requires a detached shadow host")
         self.root, self.config, self.bundle = Path(root), config, Path(bundle)
+        self.capture_root = self.root if capture_root is None else Path(capture_root)
+        self.detached, self.mock_http = detached, mock_http
+        self.http_exchange = http_exchange
+        self.attachment_attempted = False
         self.backend, self.service_config = backend, service_config
+        feedback = feedback_policy(config)
+        if feedback is not None and (detached or mock_http or backend != config["decisions"]["backend"]):
+            raise ValueError("Endpoint feedback requires its explicit non-shadow backend")
         self.identity, self.pending = None, {}
         self.attempts = {}
         self.active, self.closed = False, False
+        self.feedback_deadline = None
+        self.feedback_failed = False
+        self.feedback_activated = {}
+        self.feedback_vla_capture_end = {}
+        self.feedback_model_requests = {"vla": 0, "wam": 0}
+        self.feedback_requested = set()
         self.stop_receipt = None
         self.stop_event = threading.Event()
         self.lock = threading.Lock()
         self.folder = self.root / "decisions"
         self.folder.mkdir()
         self.process = None
-        self.thread = threading.Thread(target=self.serve, daemon=True)
-        self.thread.start()
+        self.thread = None
+        if not detached:
+            self.thread = threading.Thread(target=self.serve, daemon=True)
+            self.thread.start()
+
+    def _exchange(self, *args, **kwargs):
+        if feedback_policy(getattr(self, "config", {})) is not None:
+            from src.runtime.yokohama_shadow_http import exchange as bounded_exchange
+
+            remaining = self.feedback_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Endpoint feedback total deadline exceeded")
+            kwargs["timeout"] = min(kwargs.get("timeout", 75), remaining)
+            return (getattr(self, "http_exchange", None) or bounded_exchange)(*args, **kwargs)
+        return (getattr(self, "http_exchange", None) or exchange)(*args, **kwargs)
+
+    def feedback_guard(self, message, *, model=None):
+        """Independently bind endpoint continuation and reserve each model call."""
+        policy = feedback_policy(self.config)
+        if policy is None:
+            return None
+        if self.closed or not self.active or self.feedback_failed:
+            raise ValueError("Endpoint feedback session is inactive")
+        if self.feedback_deadline is None or time.monotonic() >= self.feedback_deadline:
+            raise TimeoutError("Endpoint feedback total deadline exceeded")
+        validate_feedback_map(self.config, self.bundle)
+        validate_feedback_request(self.config, message)
+        if (message.get("run_id") != self.config["run_id"]
+                or message.get("config_sha256") != digest(self.config)):
+            raise ValueError("Endpoint feedback run/config mismatch")
+        cycle = message["cycle"]
+        if cycle == 2 and message["previous_segment"]["permit"] != self.feedback_activated.get(1):
+            raise ValueError("Endpoint feedback predecessor was not activated by this host")
+        if model is not None:
+            key = (cycle, model)
+            if (key in self.feedback_requested
+                    or self.feedback_model_requests[model] >= policy[f"max_{model}_requests"]):
+                raise ValueError("Endpoint feedback model request budget exhausted")
+            if model == "wam" and (cycle, "vla") not in self.feedback_requested:
+                raise ValueError("Endpoint feedback WAM requires this cycle's VLA")
+            self.feedback_requested.add(key)
+            self.feedback_model_requests[model] += 1
+        return policy
+
+    def feedback_capture(self, message, record, model):
+        if feedback_policy(self.config) is None:
+            return
+        first, last = record["frames"][0], record["frames"][-1]
+        row = message["observation"]
+        cutoff = (message["previous_segment"]["arrival"]["sim_s"]
+                  if message["cycle"] == 2 else -math.inf)
+        if model == "wam":
+            cutoff = max(cutoff, self.feedback_vla_capture_end[message["cycle"]])
+        if first["stamp_ns"] / 1e9 <= cutoff:
+            raise ValueError("Endpoint feedback requires a fresh post-boundary capture")
+        rotation = ship_anwm.rotation(row["vehicle"]["quat_wxyz"])
+        captured_rotation = ship_anwm.rotation(last["pose"]["quat_wxyz"])
+        if (math.dist(row["vehicle"]["xyz"], last["pose"]["xyz"]) > 0.5
+                or np.arccos(np.clip((np.trace(rotation.T @ captured_rotation) - 1) / 2, -1, 1)) > 0.03):
+            raise ValueError("Endpoint feedback capture/observation pose mismatch")
+        if model == "vla":
+            self.feedback_vla_capture_end[message["cycle"]] = last["stamp_ns"] / 1e9
+
+    def feedback_rules(self, rules, start, candidate, *, origin=None, final=False):
+        policy = feedback_policy(self.config)
+        if policy is not None:
+            target = candidate["target_world_xyz_m"]
+            rules["endpoint_feedback"] = validate_feedback_candidate(
+                self.config, start, target, origin=origin,
+            )
+            if final:
+                rules["exit_connection"] = geometry_rules(
+                    start, target, policy["exit_world_xyz_m"], self.config, self.bundle,
+                    origin=origin,
+                )
+        return rules
 
     def lifecycle(self, operation):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host does not own service lifecycle")
+        feedback = feedback_policy(self.config)
+        timeout = self.config["decisions"].get("startup_timeout_s", 180) if operation == "start" else 60
+        if feedback is not None and operation == "start":
+            if self.feedback_deadline is None:
+                raise ValueError("Endpoint feedback startup requires a session deadline")
+            remaining = self.feedback_deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError("Endpoint feedback total deadline exceeded before startup")
+            timeout = min(timeout, remaining)
         argv = self.service_config[operation + "_argv"]
         if not isinstance(argv, list) or not argv or not all(isinstance(s, str) for s in argv):
             raise ValueError("Lifecycle requires explicit argv")
@@ -81,11 +254,20 @@ class DecisionHost:
             (self.folder / (operation + ".stderr")).open("w") as err,
         ):
             self.process = subprocess.Popen(argv, stdout=out, stderr=err, stdin=subprocess.DEVNULL)
-            self.process.wait(
-                timeout=self.config["decisions"].get("startup_timeout_s", 180)
-                if operation == "start"
-                else 60
-            )
+            try:
+                self.process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired as exc:
+                if feedback is None:
+                    raise
+                # Reap only this owned local lifecycle child. Remote cleanup
+                # remains a separate stop receipt, even after local timeout.
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    self.process.wait(timeout=2)
+                raise TimeoutError("Endpoint feedback lifecycle deadline: " + operation) from exc
         if self.process.returncode:
             raise RuntimeError("Model lifecycle failed: " + operation)
         receipt = json.loads((self.folder / (operation + ".stdout")).read_text().splitlines()[-1])
@@ -94,72 +276,87 @@ class DecisionHost:
         return receipt
 
     def start(self):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host must attach existing services")
         if self.active or self.closed:
             raise ValueError("Model session is single use")
+        policy = feedback_policy(self.config)
+        if policy is not None:
+            if self.feedback_failed or self.feedback_deadline is not None:
+                raise ValueError("Endpoint feedback model session is single use")
+            validate_feedback_map(self.config, self.bundle)
+            self.feedback_deadline = time.monotonic() + policy["total_timeout_s"]
         if self.backend == "native":
             receipt = self.lifecycle("start")
             identities = {
-                name: exchange(self.service_config[name + "_port"], "health")
+                name: self._exchange(self.service_config[name + "_port"], "health")
                 for name in ("vla", "wam")
             }
-            if any(v.get("cpu_between_requests") is not True for v in identities.values()):
-                raise ValueError("Serial CPU-between-requests residency required")
-            if identities["vla"].get("exit_after_request") is not False:
-                raise ValueError("One-shot VLA cannot serve a repeated city session")
-            wam_profile = self.config["decisions"].get("wam_profile", "legacy")
-            compact = wam_profile == "motion-v4"
-            if (
-                identities["vla"].get("short_segment_flight") is not True
-                or identities["vla"].get("yaw_bin_range") != ([45, 53] if compact else [38, 60])
-                or (
-                    compact
-                    and (
-                        identities["vla"].get("compact_city_flight") is not True
-                        or identities["vla"].get("forward_bin_range") != [20, 58]
-                        or identities["vla"].get("hold_bin_allowed") is not False
-                        or identities["vla"].get("terminal_proposal_allowed") is not False
-                        or identities["vla"].get("decoding_policy")
-                        != "aerovla_compact_city_grammar.v2"
-                    )
-                )
-            ):
-                raise ValueError("City translation phase requires bounded native decoding")
-            contract = MOTION_CONTRACT if wam_profile == "motion-v4" else "yokohama_anwm_request.v1"
-            if contract not in identities["wam"].get("candidate_contracts", []):
-                raise ValueError("Native WAM does not support this action contract")
             sources = self.root / "sources"
-            validate_service_profile(
-                identities["wam"],
-                wam_profile,
-                appearance_sha256=ship_anwm.digest(sources / "yokohama_appearance.py"),
-                profile_sha256=ship_anwm.digest(sources / "yokohama_wam_profile.py"),
-            )
-            if (
-                identities["wam"].get("server_sha256")
-                != ship_anwm.digest(sources / "ship_anwm_server.py")
-                or identities["wam"].get("helper_sha256")
-                != ship_anwm.digest(sources / "ship_anwm.py")
-                or identities["wam"].get("checkpoint_sha256") != ship_anwm.MODEL_SHA256
-                or identities["wam"].get("upstream_revision") != ship_anwm.UPSTREAM_REVISION
-                or any(
-                    identities["vla"].get("runtime_sha256", {}).get(name)
-                    != ship_anwm.digest(sources / name)
-                    for name in ("ship_aerovla_server.py", "ship_aerovla.py", "ship_anwm.py")
+            validate_native_services(self.config, identities, {
+                name: ship_anwm.digest(sources / name)
+                for name in (
+                    "yokohama_appearance.py", "yokohama_wam_profile.py", "ship_anwm_server.py",
+                    "ship_anwm.py", "ship_aerovla_server.py", "ship_aerovla.py",
                 )
-            ):
-                raise ValueError("Native services differ from the frozen source/checkpoint")
+            })
+            if policy is not None:
+                from src.runtime.ship_aerovla_host import validate_service_identity
+
+                if any(identity.get("fixture") is True for identity in identities.values()):
+                    raise ValueError("Native endpoint feedback rejects fixture identities")
+                validate_service_identity(identities["vla"])
+                wam = identities["wam"]
+                if (wam.get("schema_version") != "ship_anwm_static_service.v1"
+                        or re.fullmatch(r"[0-9a-f]{32}", wam.get("session_id", "")) is None
+                        or wam.get("model_revision") != ship_anwm.MODEL_REVISION
+                        or wam.get("vae_revision") != ship_anwm.VAE_REVISION
+                        or wam.get("diffusion_steps") != 250):
+                    raise ValueError("Unreviewed endpoint feedback native WAM identity")
             identity = dict(backend="native", services=identities, lifecycle=receipt)
         else:
             identity = dict(backend="fixture", models_invoked=False)
         self.identity, self.active = identity, True
         return identity
 
+    def attach_existing_services(self, *, expected_services, source_hashes):
+        """Attach once to explicitly pinned services without owning their lifecycle."""
+        if not getattr(self, "detached", False) or self.backend != "native":
+            raise ValueError("Attaching requires a detached native-protocol host")
+        if self.active or self.closed or self.attachment_attempted:
+            raise ValueError("Model attachment is single use")
+        self.attachment_attempted = True
+        expected = copy.deepcopy(expected_services)
+        validate_native_services(self.config, expected, source_hashes)
+        identities = {
+            name: self._exchange(self.service_config[name + "_port"], "health")
+            for name in ("vla", "wam")
+        }
+        if identities != expected:
+            raise ValueError("Existing service identity differs from the approved identity")
+        if self.mock_http:
+            if any(v.get("fixture") is not True for v in identities.values()):
+                raise ValueError("Mock HTTP requires explicit fixture service identities")
+        elif any(v.get("fixture") is True for v in identities.values()):
+            raise ValueError("Native attachment rejects fixture service identities")
+        validate_native_services(self.config, identities, source_hashes)
+        self.identity = dict(
+            backend="native", services=copy.deepcopy(identities),
+            externally_owned_services=True, mock_http=self.mock_http,
+        )
+        self.active = True
+        return copy.deepcopy(self.identity)
+
     def stop(self):
         if self.closed and self.stop_receipt is not None:
             return self.stop_receipt
         self.active, self.closed = False, True
         self.pending.clear()
-        receipt = self.lifecycle("stop") if self.backend == "native" else {"fixture_stopped": True}
+        receipt = (
+            dict(remote_cleanup_verified=False, externally_owned_services=True)
+            if getattr(self, "detached", False)
+            else self.lifecycle("stop") if self.backend == "native" else {"fixture_stopped": True}
+        )
         self.stop_receipt = dict(receipt, session_revoked=True)
         (self.folder / "shutdown.json").write_text(json.dumps(self.stop_receipt, indent=2) + "\n")
         return self.stop_receipt
@@ -193,10 +390,11 @@ class DecisionHost:
 
     def capture(self, message):
         entry = message["capture"]
-        path = self.root / entry["file"]
+        capture_root = getattr(self, "capture_root", self.root)
+        path = capture_root / entry["file"]
         if (
             path.is_symlink()
-            or not path.resolve().is_relative_to(self.root.resolve())
+            or not path.resolve().is_relative_to(capture_root.resolve())
             or ship_anwm.digest(path) != entry["sha256"]
         ):
             raise ValueError("Unbound city capture")
@@ -208,7 +406,11 @@ class DecisionHost:
         return path, record, arrays
 
     def vla(self, message, output):
+        if getattr(self, "detached", False) and (not self.active or self.closed):
+            raise ValueError("Detached model session revoked or not attached")
+        feedback = self.feedback_guard(message, model="vla")
         path, capture, _ = self.capture(message)
+        self.feedback_capture(message, capture, "vla")
         if self.pad_cycle(message["cycle"]):
             self.require_pad_approach(message["observation"])
         last = capture["frames"][-1]
@@ -228,6 +430,7 @@ class DecisionHost:
             if angle > 0
             else "forward-left"
         )
+        destination = "approved nearby goal" if feedback is not None else "delivery pad"
         request = dict(
             schema_version="yokohama_aerovla_request.v1",
             run_id=self.config["run_id"],
@@ -240,14 +443,14 @@ class DecisionHost:
             images_sha256={
                 k: __import__("hashlib").sha256(v).hexdigest() for k, v in images.items()
             },
-            prompt=f"<image>\nFly {direction} along the street toward the delivery pad. Maintain height.\nAction: ",
+            prompt=f"<image>\nFly {direction} along the street toward the {destination}. Maintain height.\nAction: ",
             direction_source="approved_goal_and_simulator_camera_pose",
             future_ground_truth_used=False,
             dispatch_allowed=False,
         )
         (output / "native-request.json").write_text(json.dumps(request, indent=2) + "\n")
         if self.backend == "native":
-            response = exchange(
+            response = self._exchange(
                 self.service_config["vla_port"],
                 "infer",
                 {
@@ -260,6 +463,7 @@ class DecisionHost:
                 response.get("request_sha256") != digest(request)
                 or response.get("service") != self.identity["services"]["vla"]
                 or response.get("vla_inference_invoked") is not True
+                or (feedback is not None and response.get("fixture") is True)
                 or response.get("input_images_sha256") != request["images_sha256"]
                 or response.get("dispatch_invoked") is not False
                 or response.get("physical_execution_invoked") is not False
@@ -269,9 +473,49 @@ class DecisionHost:
             ):
                 raise ValueError("Unbound native VLA result")
         else:
-            response = dict(generated_text="55 49 49", fixture=True, vla_inference_invoked=False)
+            forward_bin = 55
+            rejected_fixture = self.config.get("fixture_reject_second_candidate") and message["cycle"] == 2
+            if rejected_fixture:
+                forward_bin = 58
+            elif self.config.get("endpoint_adapter_trial") or self.config.get("delivery_trial"):
+                # The dedicated CPU double uses immutable actions, including a
+                # second overshoot that must pass through the explicit adapter.
+                # It does not choose bins from the known remaining goal distance.
+                forward_bin = 58 if message["cycle"] == 1 else 43
+            elif feedback is not None:
+                # Existing CPU fixture behavior remains unchanged.
+                forward_bin = min(58, math.floor(
+                    math.dist(row["vehicle"]["xyz"], feedback["goal_world_xyz_m"]) * 98 / 5
+                ))
+                if forward_bin < 20:
+                    raise ValueError("Fixture feedback goal needs no admissible translation")
+            response = dict(generated_text=f"{forward_bin} 49 49", fixture=True,
+                            vla_inference_invoked=False)
+            if rejected_fixture:
+                # Explicit CPU fault: repeat the full first-step distance even
+                # though only about one metre remains. The valid level action
+                # overshoots the goal and fails unchanged progress Rules.
+                response["generated_text"] = "58 49 49"
+        if (self.backend == "fixture" and self.config.get("delivery_trial")
+                and self.config.get("delivery_scenario") == "candidate_rejected"
+                and message["cycle"] == 2):
+            # A raw five-metre action is inadmissible before any shortening.
+            response["generated_text"] = "98 49 49"
         (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
         candidate = vla_candidate(response["generated_text"], row)
+        try:
+            candidate, adjustment = adapt_candidate(self.config, candidate, row, digest(response))
+        except ValueError as exc:
+            if self.config["decisions"].get("goal_distance_adapter") is not None:
+                (output / "vehicle-distance-adjustment-rejected.json").write_text(json.dumps({
+                    "original_candidate": candidate, "vla_response_sha256": digest(response),
+                    "input_observation_sha256": digest(row), "config_sha256": digest(self.config),
+                    "executed_candidate": None, "reason": str(exc),
+                    "grants_dispatch_authority": False,
+                }, indent=2, allow_nan=False) + "\n")
+            raise
+        if adjustment is not None:
+            (output / "vehicle-distance-adjustment.json").write_text(json.dumps(adjustment, indent=2, allow_nan=False) + "\n")
         rules = geometry_rules(
             row["vehicle"]["xyz"],
             candidate["target_world_xyz_m"],
@@ -279,21 +523,29 @@ class DecisionHost:
             self.config,
             self.bundle,
         )
+        self.feedback_rules(rules, row["vehicle"]["xyz"], candidate)
         result = dict(
             candidate=candidate,
             vla_response_sha256=digest(response),
             input_observation=row,
             preliminary_rules=rules,
-            native_vla_invoked=self.backend == "native",
+            native_vla_invoked=self.backend == "native" and not getattr(self, "mock_http", False),
         )
+        if adjustment is not None:
+            result["vehicle_distance_adjustment"] = adjustment
         self.pending[message["cycle"]] = result
         return result
 
     def wam(self, message, output):
+        if getattr(self, "detached", False) and (not self.active or self.closed):
+            raise ValueError("Detached model session revoked or not attached")
+        feedback = self.feedback_guard(message, model="wam")
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         if message["vla"] != proposal:
             raise ValueError("Cross-cycle VLA proposal")
-        _, _, arrays = self.capture(message)
+        _, capture, arrays = self.capture(message)
+        self.feedback_capture(message, capture, "wam")
         row, original = message["observation"], proposal["input_observation"]
         if (
             math.dist(row["vehicle"]["xyz"], original["vehicle"]["xyz"]) > 0.5
@@ -328,25 +580,33 @@ class DecisionHost:
             output / "input", arrays, self.config, candidate, proposal["vla_response_sha256"]
         )
         if self.backend == "native":
-            response = exchange(
+            payload = {
+                "request_id": uuid4().hex,
+                "request_base64": base64.b64encode(
+                    (output / "input/request.json").read_bytes()
+                ).decode(),
+                "history_base64": base64.b64encode(
+                    (output / "input/history.npz").read_bytes()
+                ).decode(),
+            }
+            response = self._exchange(
                 self.service_config["wam_port"],
                 "infer",
-                {
-                    "request_id": uuid4().hex,
-                    "request_base64": base64.b64encode(
-                        (output / "input/request.json").read_bytes()
-                    ).decode(),
-                    "history_base64": base64.b64encode(
-                        (output / "input/history.npz").read_bytes()
-                    ).decode(),
-                },
+                payload,
             )
             (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
             if (
                 response.get("identity") != self.identity["services"]["wam"]
                 or response.get("request_sha256") != ship_anwm.digest(output / "input/request.json")
                 or response.get("history_sha256") != request["history_sha256"]
-                or response.get("wam_inference_invoked") is not True
+                or response.get("wam_inference_invoked")
+                is not (not getattr(self, "mock_http", False))
+                or (getattr(self, "mock_http", False) and response.get("fixture") is not True)
+                or (feedback is not None and (
+                    response.get("fixture") is True
+                    or response.get("physical_execution_invoked") is not False
+                    or response.get("request_id") != payload["request_id"]
+                ))
                 or response.get("dispatch_allowed") is not False
                 or response.get("cuda_allocated_after_request_bytes") != 0
             ):
@@ -387,13 +647,17 @@ class DecisionHost:
             checks=checks,
             passed=all(c["passed"] for c in checks),
             vla_response_sha256=proposal["vla_response_sha256"],
-            native_wam_invoked=self.backend == "native",
+            native_wam_invoked=self.backend == "native" and not getattr(self, "mock_http", False),
         )
         proposal["wam"] = result
         return result
 
     def authorize(self, message, output):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host cannot authorize dispatch")
+        feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         if not proposal.get("wam", {}).get("passed"):
             raise ValueError("WAM prediction did not meet visible-structure bounds")
         row, old = message["observation"], proposal["input_observation"]
@@ -411,6 +675,10 @@ class DecisionHost:
             self.config,
             self.bundle,
             origin=self.proposal_origin(proposal),
+        )
+        self.feedback_rules(
+            rules, row["vehicle"]["xyz"], candidate, origin=self.proposal_origin(proposal),
+            final=feedback is not None and message["cycle"] == feedback["max_cycles"],
         )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(row, candidate["target_world_xyz_m"])
@@ -469,63 +737,67 @@ class DecisionHost:
                 if self.config.get("mission_upload_preparation") else None,
             )
         )
-        # Reconnect from the actual model endpoint, not the old authored stop.
-        expected_next = {1: "01-D2", 2: "02-D3", 3: "03-DELIVERY"}[message["cycle"]]
-        stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
-        if stage["target_world_xyz_m"] != message["next_target_world_xyz_m"]:
-            raise ValueError("City connector target is outside the approved stage")
-        connector_name = name + "-connect"
-        connector_items = []
-        next_xyz = stage["target_world_xyz_m"]
-        count = math.ceil(math.dist(xyz, next_xyz) / 20)
-        geod = Geod(ellps="WGS84")
-        for step in range(1, count + 1):
-            point = [a + (b - a) * step / count for a, b in zip(xyz, next_xyz)]
-            lng, lt, _ = geod.fwd(
-                lon, lat, math.degrees(math.atan2(point[0], point[1])), math.hypot(*point[:2])
-            )
+        # Intermediate feedback endpoints confer no authored AP continuation.
+        connector_name, connector = None, None
+        if feedback is None or message["cycle"] == feedback["max_cycles"]:
+            expected_next = (feedback["exit_phase"] if feedback is not None else
+                             {1: "01-D2", 2: "02-D3", 3: "03-DELIVERY"}[message["cycle"]])
+            expected_target = (feedback["exit_world_xyz_m"] if feedback is not None else
+                               message["next_target_world_xyz_m"])
+            stage = next(s for s in self.config["flight_stages"] if s["name"] == expected_next)
+            if stage["target_world_xyz_m"] != expected_target:
+                raise ValueError("City connector target is outside the approved stage")
+            connector_name = name + "-connect"
+            connector_items = []
+            next_xyz = stage["target_world_xyz_m"]
+            count = math.ceil(math.dist(xyz, next_xyz) / 20)
+            geod = Geod(ellps="WGS84")
+            for step in range(1, count + 1):
+                point = [a + (b - a) * step / count for a, b in zip(xyz, next_xyz)]
+                lng, lt, _ = geod.fwd(
+                    lon, lat, math.degrees(math.atan2(point[0], point[1])), math.hypot(*point[:2])
+                )
+                connector_items.append(
+                    dict(
+                        item,
+                        seq=step - 1,
+                        current=int(step == 1),
+                        longitude_deg=lng,
+                        latitude_deg=lt,
+                        altitude_m=executor_altitude(point[2], row) if offshore else point[2],
+                        param2=0.5,
+                        param4=math.degrees(math.atan2(next_xyz[0] - xyz[0], next_xyz[1] - xyz[1])),
+                    )
+                )
             connector_items.append(
                 dict(
-                    item,
-                    seq=step - 1,
-                    current=int(step == 1),
-                    longitude_deg=lng,
-                    latitude_deg=lt,
-                    altitude_m=executor_altitude(point[2], row) if offshore else point[2],
-                    param2=0.5,
-                    param4=math.degrees(math.atan2(next_xyz[0] - xyz[0], next_xyz[1] - xyz[1])),
+                    connector_items[-1],
+                    seq=len(connector_items),
+                    current=0,
+                    command=17,
+                    param4=stage["items"][-1]["param4"],
                 )
             )
-        connector_items.append(
-            dict(
-                connector_items[-1],
-                seq=len(connector_items),
-                current=0,
-                command=17,
-                param4=stage["items"][-1]["param4"],
-            )
-        )
-        connector = self.root / (connector_name + "-upload.py")
-        if mapped_contract:
-            # Freeze the approved connector geometry; bind transport to a fresh
-            # observation at its actual dispatch, after the model segment.
-            for index, connector_item in enumerate(connector_items):
-                connector_item.pop("altitude_m")
-                step = min(index + 1, count)
-                connector_item["world_z_m"] = xyz[2] + (next_xyz[2] - xyz[2]) * step / count
-            (self.root / (connector_name + "-world-items.json")).write_text(
-                json.dumps(connector_items, allow_nan=False) + "\n"
-            )
-            connector.write_text(
-                _inner_upload_script(
-                    reuse_mavlink_session=True,
-                    runtime_items_path="/mission/" + connector_name + "-altitude-items.json",
-                    prepared_binding_path="/mission/" + connector_name + "-upload-binding.json"
-                    if self.config.get("mission_upload_preparation") else None,
+            connector = self.root / (connector_name + "-upload.py")
+            if mapped_contract:
+                # Freeze exit geometry; transport binds again at actual dispatch.
+                for index, connector_item in enumerate(connector_items):
+                    connector_item.pop("altitude_m")
+                    step = min(index + 1, count)
+                    connector_item["world_z_m"] = xyz[2] + (next_xyz[2] - xyz[2]) * step / count
+                (self.root / (connector_name + "-world-items.json")).write_text(
+                    json.dumps(connector_items, allow_nan=False) + "\n"
                 )
-            )
-        else:
-            connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
+                connector.write_text(
+                    _inner_upload_script(
+                        reuse_mavlink_session=True,
+                        runtime_items_path="/mission/" + connector_name + "-altitude-items.json",
+                        prepared_binding_path="/mission/" + connector_name + "-upload-binding.json"
+                        if self.config.get("mission_upload_preparation") else None,
+                    )
+                )
+            else:
+                connector.write_text(_inner_upload_script(connector_items, reuse_mavlink_session=True))
         permit = dict(
             run_id=self.config["run_id"],
             config_sha256=digest(self.config),
@@ -542,9 +814,11 @@ class DecisionHost:
             upload_name=name,
             upload_sha256=ship_anwm.digest(script),
             connector_name=connector_name,
-            connector_sha256=ship_anwm.digest(connector),
+            connector_sha256=ship_anwm.digest(connector) if connector is not None else None,
             physical_execution_invoked=False,
         )
+        if proposal.get("vehicle_distance_adjustment") is not None:
+            permit["vehicle_distance_adjustment"] = copy.deepcopy(proposal["vehicle_distance_adjustment"])
         proposal["prepared_observation"] = row
         if message.get("attempt"):
             permit["attempt"] = message["attempt"]
@@ -553,15 +827,22 @@ class DecisionHost:
             permit["altitude_mapping_observation_sha256"] = digest(row)
         if altitude_mapping is not None:
             permit["altitude_transport_sha256"] = digest(altitude_mapping)
-            permit["connector_world_items_sha256"] = ship_anwm.digest(
-                self.root / (connector_name + "-world-items.json")
-            )
+            if connector_name is not None:
+                permit["connector_world_items_sha256"] = ship_anwm.digest(
+                    self.root / (connector_name + "-world-items.json")
+                )
         proposal["prepared_permit"] = permit
         return permit
 
     def activate(self, message, output):
+        if getattr(self, "detached", False):
+            raise ValueError("Detached shadow host cannot activate dispatch")
+        feedback = self.feedback_guard(message)
         proposal = self.pending[message["cycle"]]
+        validate_adaptation(self.config, proposal)
         prepared = proposal["prepared_permit"]
+        if prepared.get("vehicle_distance_adjustment") != proposal.get("vehicle_distance_adjustment"):
+            raise ValueError("Prepared permit vehicle adjustment changed")
         if message["prepared_permit_sha256"] != digest(prepared):
             raise ValueError("Activation does not bind the uploaded mission")
         current = message["observation"]
@@ -607,6 +888,11 @@ class DecisionHost:
             self.bundle,
             origin=self.proposal_origin(proposal),
         )
+        self.feedback_rules(
+            rules, current["vehicle"]["xyz"], prepared["candidate"],
+            origin=self.proposal_origin(proposal),
+            final=feedback is not None and message["cycle"] == feedback["max_cycles"],
+        )
         if self.pad_cycle(message["cycle"]):
             rules["pad"] = self.require_pad_approach(
                 current, prepared["candidate"]["target_world_xyz_m"]
@@ -619,6 +905,8 @@ class DecisionHost:
             expires_at_worker_wall_s=current["wall_s"] + 2,
         )
         del self.pending[message["cycle"]]
+        if feedback is not None:
+            self.feedback_activated[message["cycle"]] = copy.deepcopy(permit)
         return permit
 
     def revoked(self, message):
@@ -685,6 +973,10 @@ class DecisionHost:
                         if operation != "start" and self.revoked(message):
                             raise ValueError("Decision attempt revoked before processing")
                     delay = self.config["decisions"].get("fixture_delay_s", {}).get(operation, 0)
+                    if (self.backend == "fixture" and self.config.get("delivery_trial")
+                            and self.config.get("delivery_scenario") == "timeout"
+                            and operation == "vla" and message["cycle"] == 2):
+                        delay = 80  # Exercise the unchanged 75-second response limit.
                     if self.backend == "fixture" and delay:
                         time.sleep(delay)
                     if operation in {"start", "stop"}:
@@ -701,6 +993,10 @@ class DecisionHost:
                         result["attempt_revoked"] = True
                         raise ValueError("Late result from revoked decision attempt")
                 except Exception as exc:
+                    if feedback_policy(self.config) is not None and message.get("operation") != "stop":
+                        self.feedback_failed = True
+                        self.active = False
+                        self.pending.clear()
                     result["error"] = type(exc).__name__ + ": " + str(exc)
                 result["elapsed_s"] = time.monotonic() - start
                 temp = path.with_name(path.name.replace("-request.json", "-response.tmp"))
@@ -709,7 +1005,8 @@ class DecisionHost:
 
     def close(self):
         self.stop_event.set()
-        self.thread.join(timeout=self.config["decisions"].get("startup_timeout_s", 180) + 10)
-        if self.thread.is_alive():
-            raise RuntimeError("Decision host still running; remote cleanup must reconcile")
+        if self.thread is not None:
+            self.thread.join(timeout=self.config["decisions"].get("startup_timeout_s", 180) + 10)
+            if self.thread.is_alive():
+                raise RuntimeError("Decision host still running; remote cleanup must reconcile")
         return self.stop()

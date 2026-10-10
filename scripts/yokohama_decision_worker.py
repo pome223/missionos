@@ -5,11 +5,17 @@ this run/config, and closed before the AP completes the remaining route.
 """
 
 from __future__ import annotations
+from copy import deepcopy
 import hashlib
 import json
 import math
 from pathlib import Path
 import time
+
+if __package__:
+    from .yokohama_endpoint_feedback import feedback_policy, validate_feedback_request
+else:
+    from yokohama_endpoint_feedback import feedback_policy, validate_feedback_request
 
 
 def digest(value):
@@ -38,6 +44,9 @@ POINT_PHASES = {"D1": "00-D1", "D2": "01-D2", "D3": "02-D3"}
 
 def decision_phases(config):
     """Approved model-decision holds by cycle; D3 exists only for the pad approach."""
+    feedback = feedback_policy(config)
+    if feedback is not None:
+        return {cycle: feedback["entry_phase"] for cycle in range(1, feedback["max_cycles"] + 1)}
     points = config.get("decisions", {}).get("points", ["D1", "D2"])
     if points not in (["D1", "D2"], ["D1", "D2", "D3"]) or (
         "D3" in points and not config["decisions"].get("pad_approach")
@@ -52,6 +61,9 @@ def require_city_request(config, message):
     Stop is always permitted for cleanup; it never invokes model inference.
     """
     if message["operation"] == "stop":
+        return
+    if feedback_policy(config) is not None:
+        validate_feedback_request(config, message)
         return
     cycle = message.get("cycle")
     expected = decision_phases(config).get(cycle)
@@ -87,12 +99,18 @@ class CityDecisions:
         self.completed = []
         self.paired_view = None
         self.attempt = 0
+        self.feedback_deadline = None
+        self.feedback_model_requests = {"vla": 0, "wam": 0}
+        self.feedback_requested = set()
         # Optional executor-side check between a passing forecast and authority.
         self.before_authorize = None
         # Optional CPU fault-injection observer; it cannot change a request.
         self.on_request = None
 
     def held(self, anchor, *, require_stationary_view=True, max_view_drift_rad=0.03):
+        if (self.feedback_deadline is not None and time.monotonic() >= self.feedback_deadline
+                or self.clock() >= getattr(self, "endpoint_deadline", math.inf)):
+            raise TimeoutError("Endpoint feedback total deadline exceeded")
         row = self.sample()
         fatal = (
             row["nav_state"] != 4
@@ -152,7 +170,32 @@ class CityDecisions:
         )
         if self.attempt:
             message["attempt"] = self.attempt
+        feedback = feedback_policy(self.config)
+        if feedback is not None and operation != "stop":
+            if self.feedback_deadline is None:
+                if operation != "start":
+                    raise ValueError("Endpoint feedback needs a started session")
+                self.feedback_deadline = time.monotonic() + feedback["total_timeout_s"]
+            if (time.monotonic() >= self.feedback_deadline
+                    or self.clock() >= getattr(self, "endpoint_deadline", math.inf)):
+                raise TimeoutError("Endpoint feedback total deadline exceeded")
+            if self.cycle == 2:
+                if len(self.completed) != 1:
+                    raise ValueError("Endpoint feedback needs exactly one observed predecessor")
+                previous = self.completed[0]
+                message["previous_segment"] = deepcopy({
+                    "permit": previous["permit"], "arrival": previous["arrived"],
+                    "stable_since_sim_s": previous["stable_since_sim_s"],
+                    "stable_samples": previous["stable_samples"],
+                })
         require_city_request(self.config, message)
+        if feedback is not None and operation in self.feedback_model_requests:
+            key = (self.cycle, operation)
+            if (key in self.feedback_requested
+                    or self.feedback_model_requests[operation] >= feedback[f"max_{operation}_requests"]):
+                raise ValueError("Endpoint feedback model request budget exhausted")
+            self.feedback_requested.add(key)
+            self.feedback_model_requests[operation] += 1
         if self.on_request:
             self.on_request(operation, self.cycle)
         stem = self.root / "decisions" / f"{self.sequence:03d}"
@@ -172,6 +215,10 @@ class CityDecisions:
                 "activate": 2,
             }[operation]
         )
+        if feedback is not None and operation != "stop":
+            end = min(end, self.feedback_deadline)
+            if hasattr(self, "endpoint_deadline"):
+                end = min(end, time.monotonic() + self.endpoint_deadline - self.clock())
         self.event(
             "city_request",
             operation=operation,
@@ -336,6 +383,12 @@ class CityDecisions:
     def decide(self, obs, next_target, *, new_cycle=True, prepare_upload=None):
         if new_cycle:
             self.cycle += 1
+        feedback = feedback_policy(self.config)
+        if feedback is not None and (
+            not 1 <= self.cycle <= feedback["max_cycles"]
+            or list(next_target) != feedback["goal_world_xyz_m"]
+        ):
+            raise ValueError("Endpoint feedback cycle or goal differs from approval")
         anchor = self.sample()
         self.held(anchor)
         if not self.started:
@@ -356,6 +409,9 @@ class CityDecisions:
         vla = self.exchange(
             "vla", self.held(anchor), capture=capture, next_target_world_xyz_m=next_target
         )
+        if vla.get("vehicle_distance_adjustment") is not None:
+            self.event("vehicle_candidate_distance_adjusted", cycle=self.cycle,
+                       receipt=vla["vehicle_distance_adjustment"])
         if refresh:
             anchor = self.sample()
         # A new uninterrupted history follows the VLA call; old imagery is not
@@ -451,6 +507,7 @@ class CityDecisions:
             permit.get("prepared_permit_sha256") != digest(prepared)
             or permit.get("observation_sha256") != digest(current)
             or permit.get("candidate") != prepared["candidate"]
+            or permit.get("vehicle_distance_adjustment") != prepared.get("vehicle_distance_adjustment")
             or self.clock() > permit["expires_at_worker_wall_s"]
         ):
             raise ValueError("Activation permit is stale or unbound")
@@ -460,12 +517,12 @@ class CityDecisions:
 
     def stop(self):
         if self.closed:
-            return
+            return getattr(self, "stop_receipt", None)
         try:
             if self.started:
                 self.active = False
                 self.event("city_session_revoked", completed_updates=len(self.completed))
-                self.exchange("stop", self.sample())
+                self.stop_receipt = self.exchange("stop", self.sample())
         finally:
             self.closed = True
             self.active = False
@@ -476,3 +533,4 @@ class CityDecisions:
             self.event("city_late_response_rejected", session_revoked=True)
         else:
             raise AssertionError("Revoked session accepted new authority")
+        return getattr(self, "stop_receipt", None)

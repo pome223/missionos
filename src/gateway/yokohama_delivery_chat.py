@@ -26,6 +26,9 @@ import uuid
 from src.gateway.go2_delivery_chat import COMMANDS
 from src.runtime.task_store import TaskStore, get_task_store
 from src.runtime.yokohama_payload import digest
+from src.runtime import yokohama_execution_service as vehicle_service
+
+SOURCES = vehicle_service.SOURCES
 
 
 KIND = "yokohama_delivery_execution"
@@ -42,21 +45,6 @@ ROUTE = dict(
         "同じ経路で船へ戻り着陸",
     ],
     world="Yokohama urban 3D scene with harbour, ship, delivery pad and a scripted lead aircraft",
-)
-# Sources whose change after approval invalidates the plan.
-SOURCES = (
-    "scripts/yokohama_sitl.py",
-    "scripts/yokohama_pad_worker.py",
-    "scripts/yokohama_flight_worker.py",
-    "scripts/yokohama_altitude_contract.py",
-    "scripts/smoke_px4_gazebo_sitl_mission_upload.py",
-    "scripts/yokohama_decision_host.py",
-    "scripts/yokohama_pad_advisory_host.py",
-    "src/runtime/yokohama_pad_queue.py",
-    "src/runtime/yokohama_pad_advisory_contract.py",
-    "src/runtime/yokohama_native.py",
-    "docs/examples/yokohama-urban-scene/files.sha256.json",
-    "docs/examples/yokohama-pad-state/model/model.json",
 )
 VERIFIERS = ("decisions", "pad_queue", "pad_advisory", "payload", "sitl")
 STAGES = {
@@ -182,33 +170,11 @@ class YokohamaChatService:
         return dict(python=python, city_models=models, service=service)
 
     def input_hashes(self, inputs):
-        hashes = {name: sha256((self.root / name).read_bytes()).hexdigest() for name in SOURCES}
-        if inputs["service"]:
-            hashes["native_service_config"] = sha256(inputs["service"].read_bytes()).hexdigest()
-        return hashes
+        return vehicle_service.input_hashes(self.root, inputs["service"])
 
     @staticmethod
     def arguments(inputs):
-        args = [
-            "--phase",
-            "flight",
-            "--sea-round-trip",
-            "--deliver-payload",
-            "--occupied-pad",
-            "--pad-state-advisory",
-            "assist",
-            "--pad-mission-judge",
-            "gateway",
-            "--decision-backend",
-            inputs["city_models"],
-            "--wam-profile",
-            "motion-v4",
-            "--timeout-seconds",
-            "3000",
-        ]
-        if inputs["service"]:
-            args += ["--native-service-config", str(inputs["service"])]
-        return args
+        return vehicle_service.arguments(inputs["city_models"], inputs["service"])
 
     def plan(self, text, session_id):
         from src.intelligence import yokohama_delivery_agents as agents
@@ -475,8 +441,7 @@ class YokohamaChatService:
             env = {key: value for key, value in os.environ.items() if key in SIM_ENV}
             args = [
                 str(inputs["python"]),
-                str(self.root / "scripts/yokohama_sitl.py"),
-                *proposal["simulator_arguments"],
+                str(self.root / "scripts/run_yokohama_vehicle_service.py"),
                 "--approve-sitl",
                 "--approval-manifest",
                 str(manifest),
@@ -669,10 +634,14 @@ class YokohamaChatService:
                 verification[name] = (
                     json.loads(output.read_text()).get("status") if output.is_file() else "error"
                 )
+        artifacts = self.store.get(identity)["artifacts"]
+        verification["vehicle_service"] = vehicle_service.verify_receipt(
+            folder, artifacts["yokohama_delivery_proposal"], artifacts["yokohama_delivery_approval"]
+        )["status"]
         passed = (
             code == 0
             and result.get("status") == "passed"
-            and len(verification) == len(VERIFIERS)
+            and len(verification) == len(VERIFIERS) + 1
             and all(status == "passed" for status in verification.values())
         )
         with self.lock:

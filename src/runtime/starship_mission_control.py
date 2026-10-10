@@ -798,8 +798,8 @@ class StarshipMissionService:
                     or scope["maximum_observation_age_s"] != contract["maximum_observation_age_s"]
                     or scope["observation_collection_allowed"] is not contract["observation_collection_allowed"]
                     or scope["human_resolution_allowed"] is not contract["human_resolution_allowed"]
-                    or scope["original_simulation_deadline_s"]-scope["issued_simulation_time_s"] > contract["decision_expiry_s"]
-                    or scope["original_wall_deadline_s"]-scope["issued_wall_time_s"] > contract["decision_expiry_s"]
+                    or scope["original_simulation_deadline_s"] > scope["issued_simulation_time_s"]+contract["decision_expiry_s"]
+                    or scope["original_wall_deadline_s"] > scope["issued_wall_time_s"]+contract["decision_expiry_s"]
                     or broker._router._mode != contract["mode"]
                     or broker._root.resolve() != run_dir/"tower"
                     or Path(broker._ledger._store_path).resolve() != run_dir/"tower-resolution.sqlite3"
