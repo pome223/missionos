@@ -34,8 +34,12 @@ The pinned Deep Learning VM image has no additional image fee. No new service
 account, bucket, static address, key or permanent authentication is required.
 
 `scripts/yokohama_offline_vla_cloud.py` supplies bounded SDK reads/deletion and
-independent REST reads/deletion. It cannot create resources or discover
-credentials. Its REST token comes from the authorized controller in memory;
+independent REST reads/deletion. It performs no automatic provisioning or
+credential discovery. The generic
+SDK command wrapper executes caller-supplied commands; separate creation
+approval remains the caller's responsibility. Credential-bearing auth commands
+are handled separately in memory rather than passed to its receipt logger. Its
+REST token comes from the authorized controller in memory;
 headers and tokens are never logged. Only GET and DELETE to Compute Engine are
 accepted. The caller launches a separate watchdog process and passes its token
 through stdin, with independent resource observations and immutable ownership
