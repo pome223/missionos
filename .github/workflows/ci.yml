@@ -47,7 +47,31 @@ jobs:
             packages/missionos-gateway \
             scripts/smoke_missionos_real_hardware_arm_disarm_route.py \
             scripts/smoke_mission_designer_envelope_violation_advisory.py \
+            scripts/smoke_yokohama_vehicle_service_gateway.py \
+            scripts/run_yokohama_vehicle_service.py \
+            scripts/verify_yokohama_pad_queue.py \
+            scripts/yokohama_capacity_retry.py \
+            scripts/yokohama_cloud_lifecycle.py \
+            scripts/yokohama_local_preflight.py \
+            scripts/yokohama_native_trial.py \
             scripts/yokohama_sitl.py \
+            scripts/yokohama_delivery_contract.py \
+            scripts/yokohama_delivery_recovery.py \
+            scripts/verify_yokohama_delivery_trial.py \
+            scripts/verify_yokohama_endpoint_feedback.py \
+            scripts/yokohama_goal_distance_adapter.py \
+            scripts/yokohama_native_endpoint_trial.py \
+            tests/test_yokohama_delivery_trial.py \
+            tests/test_yokohama_candidate_recovery.py \
+            tests/test_yokohama_goal_distance_adapter.py \
+            tests/test_yokohama_native_endpoint.py \
+            tests/test_yokohama_capacity_retry.py \
+            tests/test_yokohama_cloud_lifecycle.py \
+            tests/test_yokohama_docker_cleanup_opt_in.py \
+            tests/test_yokohama_execution_service.py \
+            tests/test_yokohama_local_preflight.py \
+            tests/test_yokohama_native_trial.py \
+            tests/test_yokohama_pad_queue_verifier.py \
             tests/test_yokohama_sitl_cleanup.py \
             scripts/check_yokohama_pad_advisory.py \
             scripts/run_yokohama_pad_reentry.py \
@@ -88,6 +112,7 @@ jobs:
             src/config \
             src/gateway \
             src/runtime/runtime_claim_evidence.py \
+            src/runtime/yokohama_execution_service.py \
             src/runtime/yokohama_pad_advisory_contract.py \
             src/runtime/task_store.py \
             src/runtime/missionos_real_hardware_dispatch_runtime.py \
@@ -106,6 +131,11 @@ jobs:
         env:
           PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
         run: python -m pytest -q
+
+      - name: Verify Yokohama vehicle service through the Gateway with CPU fixtures
+        env:
+          PYTHONPATH: .:packages/missionos-cli/src:packages/missionos-gateway/src
+        run: python scripts/smoke_yokohama_vehicle_service_gateway.py
 
       - name: Verify urban-only decision control with CPU doubles
         run: python scripts/smoke_ship_urban_loop.py --output-dir /tmp/ship-urban-loop-ci

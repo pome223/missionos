@@ -411,6 +411,32 @@ def test_verifier_preserves_legacy_and_requires_new_binding(tmp_path):
     assert verify_transport_evidence(tmp_path, {}, [])["status"] == "legacy"
 
 
+def test_recovery_phase_commands_existing_approved_stage_without_rewriting_evidence(tmp_path):
+    cfg, events = evidence()
+    row = observation()
+    row["phase"] = "recovery_return"
+    mapped = mapping(row)
+    events[0].update(mapping=mapped, mapping_sha256=digest(mapped), phase="recovery_return")
+    events[2].update(mapping_sha256=digest(mapped), observation=row, phase="recovery_return")
+    snapshot = copy.deepcopy(events)
+    assert verify_transport_evidence(tmp_path, cfg, events)["status"] == "passed"
+    assert events == snapshot
+
+
+def test_city_phase_label_cannot_substitute_missing_approved_stage_command(tmp_path):
+    cfg, events = evidence()
+    mapped = mapping(name="city-01")
+    identity = digest(mapped)
+    events[0].update(mapping=mapped, mapping_sha256=identity, segment="city-01")
+    events[1]["segment"] = "city-01"
+    events[2].update(mapping_sha256=identity, segment="city-01")
+    events.append(dict(event="city_permit_consumed", permit=dict(
+        upload_name="city-01", connector_name="city-exit", altitude_transport_sha256=identity,
+        candidate=dict(target_world_xyz_m=[0, 0, items()[0]["world_z_m"]]))))
+    with pytest.raises(ValueError, match="Missing altitude mission phase"):
+        verify_transport_evidence(tmp_path, cfg, events)
+
+
 @pytest.mark.parametrize(
     "fault",
     [

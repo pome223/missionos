@@ -1,0 +1,81 @@
+{
+  "schema": "yokohama.visual-gust-qualification.v1",
+  "base_commit": "4424cbe4cb2d7237f5e59b3ab081fcce37a6b17d",
+  "flight_source_commit": "63e41e6ce95332c3203d6c5b168d2854e2b555c5",
+  "status": "blocked_after_single_CPU_reach_attempt",
+  "image_pair": {
+    "status": "passed",
+    "actual_Gazebo_RGB": true,
+    "same_pose_goal_prompt": true,
+    "raw_before_Rules": true,
+    "open_raw": "43 49 49",
+    "blocked_raw": "0 49 49",
+    "blocked_observations": 3,
+    "reobservations": 2,
+    "closed_without_authority": true,
+    "central_barrier_pixels": 57600,
+    "image_mean_absolute_difference": 59.02030526620371,
+    "backend": "CPU_color_double_not_AeroVLA",
+    "learned_visual_performance_proven": false
+  },
+  "map": {
+    "map_sha256": "494deab12304ac5f1f63eb7f7d45275b9aab642493df0526261f7f865eb3e37b",
+    "required_centerline_clearance_m": 3.5,
+    "minimum_clearance_m": 23.952552500292665
+  },
+  "CPU_flight": {
+    "attempts": 1,
+    "automatic_retries": 0,
+    "scenario": "reach",
+    "status": "failed_recovered",
+    "goal_8m_observed": false,
+    "gust_observed": false,
+    "actual_VLA_fixture_requests": 1,
+    "actual_WAM_fixture_requests": 1,
+    "settling_failure": "World-pose heading difference about 0.056 rad exceeded unchanged 0.05 rad; first-leg 20-second stable-settling timeout. Position/speed/height remained within limits.",
+    "recovery": {
+      "status": "passed",
+      "scope": "unexpected first-leg fault recovery only",
+      "original_mission": "failed",
+      "worker": "failed_recovered",
+      "first_leg_timeout_reason": "Phase timeout: 00-D1",
+      "model_authority_revoked": true,
+      "late_guard_replay_rejected": true,
+      "source_world_config_bound": true,
+      "eight_metre_goal_proven": false,
+      "weak_gust_invoked": false,
+      "recovery_duration_wall_s": 31.318610264,
+      "return_observed": true,
+      "landing_observed": true,
+      "disarm_observed": true,
+      "fresh_launch_pad_contact_observed": true,
+      "recovery_samples": 113
+    }
+  },
+  "not_run": [
+    "reject_flight",
+    "timeout_flight"
+  ],
+  "tests": {
+    "new_scope_cases_passed": 41,
+    "initial_related_passed": 182,
+    "full_passed_before_environment_repair": 7910,
+    "environment_only_failures_rechecked_passed": 25,
+    "new_pulse_guard_cases_added_and_passed": 4,
+    "unique_cases_confirmed_passed": 7939,
+    "full_skipped": 6,
+    "method": "A complete suite run, then only its 25 dependency-loader failures, plus four new guard cases; not a second full-suite pass.",
+    "lint": "passed"
+  },
+  "runtime_control_changed_after_flight": false,
+  "claims": {
+    "GPU_invoked": false,
+    "external_model_API": false,
+    "paid_resources": false,
+    "native_visual_qualification": false,
+    "eight_metre_gust_qualification": false,
+    "physical_execution": false,
+    "ship_delivery": false
+  },
+  "next_CPU_proposal": "Review initial Gazebo/PX4 heading stabilization and the fixed yaw-transport mapping, without enlarging 0.05 rad or existing waits/deadlines. A separately approved fresh attempt is required before native execution."
+}

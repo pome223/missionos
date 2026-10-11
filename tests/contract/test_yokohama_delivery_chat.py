@@ -57,6 +57,31 @@ def context(task):
     )
 
 
+def service_receipt(run, task):
+    """Evidence fixture for the independent service; no simulator is invoked."""
+    from hashlib import sha256
+    job = run.parent / "vehicle-service"
+    job.mkdir(exist_ok=True)
+    proposal = task["artifacts"]["yokohama_delivery_proposal"]
+    binding = chat._digest(proposal)
+    raw = json.dumps(dict(proposal=proposal,
+                          approval=task["artifacts"]["yokohama_delivery_approval"])).encode()
+    (job / "approved.json").write_bytes(raw)
+    result = json.loads((run / "result.json").read_text())
+    result.update(decision_backend=proposal["city_models"], cleanup=True)
+    (run / "result.json").write_text(json.dumps(result))
+    (run / "config.json").write_text(json.dumps({
+        "operator_approval_manifest_sha256": sha256(raw).hexdigest(),
+    }))
+    (job / "status.json").write_text(json.dumps(dict(
+        schema="missionos.yokohama-vehicle-service.v1", state="finished", exit_code=0,
+        proposal_sha256=binding, approval_manifest_sha256=sha256(raw).hexdigest(),
+        city_models=proposal["city_models"], proposal_id=proposal["proposal_id"],
+        physical_execution_invoked=False,
+        result_sha256=sha256((run / "result.json").read_bytes()).hexdigest(),
+    )))
+
+
 def test_only_yokohama_delivery_requests_are_claimed():
     assert requested("横浜の配送パッドへ荷物を届けて")
     assert requested("Deliver the parcel in Yokohama")
@@ -168,6 +193,8 @@ def test_simulator_receives_no_model_keys(service, monkeypatch):
     service._worker(task["task_id"], service.inputs(), base / "run", base / "approved.json")
     assert "DEEPSEEK_API_KEY" not in seen["env"]
     assert "--approve-sitl" in seen["args"] and "--approval-manifest" in seen["args"]
+    assert seen["args"][1].endswith("run_yokohama_vehicle_service.py")
+    assert "--decision-backend" not in seen["args"]
 
 
 def judge_request(folder, observation_id="pad_judge_1"):
@@ -231,7 +258,7 @@ def test_forged_judge_request_stops_the_relay(service, tmp_path):
         )
 
 
-@pytest.mark.parametrize("failing", [None, "payload"])
+@pytest.mark.parametrize("failing", [None, "payload", "vehicle_service"])
 def test_completion_requires_run_and_every_verifier(service, monkeypatch, tmp_path, failing):
     run = tmp_path / "run"
     run.mkdir()
@@ -245,10 +272,13 @@ def test_completion_requires_run_and_every_verifier(service, monkeypatch, tmp_pa
     monkeypatch.setattr(service, "_verify", verifier)
     task = service.approve(plan(service), "one")
     service.store.update(task["task_id"], status="running")
+    service_receipt(run, task)
+    if failing == "vehicle_service":
+        (run.parent / "vehicle-service/status.json").write_text("{}")
     service._finish(task["task_id"], run, service.inputs(), 0)
     done = service.store.get(task["task_id"])
     assert done["status"] == ("completed" if failing is None else "needs_attention")
-    assert set(done["artifacts"]["yokohama_verification"]) == set(chat.VERIFIERS)
+    assert set(done["artifacts"]["yokohama_verification"]) == set(chat.VERIFIERS) | {"vehicle_service"}
 
 
 def test_chat_turns_plan_approve_and_run(service, monkeypatch):
@@ -373,7 +403,7 @@ def test_close_reaps_real_cpu_worker(service, tmp_path):
     scripts = root / "scripts"
     scripts.mkdir(parents=True)
     marker = root / "started"
-    (scripts / "yokohama_sitl.py").write_text(
+    (scripts / "run_yokohama_vehicle_service.py").write_text(
         "from pathlib import Path\nimport time\n"
         f"Path({str(marker)!r}).write_text('ready')\n"
         "while True: time.sleep(0.05)\n"
@@ -456,7 +486,8 @@ def test_stop_reaps_real_process_group_with_stubborn_descendant(
         + f"subprocess.Popen([sys.executable,'-c',{child!r}])\n"
         + "while True: time.sleep(.05)\n"
     )
-    filename = f"verify_yokohama_{chat.VERIFIERS[0]}.py" if verification else "yokohama_sitl.py"
+    filename = (f"verify_yokohama_{chat.VERIFIERS[0]}.py" if verification
+                else "run_yokohama_vehicle_service.py")
     (scripts / filename).write_text(parent)
     base = service.outputs / task["task_id"]
     base.mkdir(parents=True)

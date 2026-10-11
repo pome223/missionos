@@ -68,3 +68,16 @@ def test_actual_cli_passes_selected_resource_to_transport(tmp_path):
         assert argv[argv.index("--project") + 1] == "example-project"
         assert argv[argv.index("--zone") + 1] == "us-west1-a"
         assert operation in argv[-1] and len(receipt["resource_sha256"]) == 64
+
+
+def test_explicit_existing_key_and_task_host_cache_are_forwarded(tmp_path):
+    key = tmp_path / "fixture-key"
+    key.write_text("not a credential; argv-only fixture")
+    spec = dict(resource(), ssh_key_file=str(key), known_hosts_file=str(tmp_path / "known_hosts"))
+    argv = command(spec, "stop")
+    assert argv[argv.index("--ssh-key-file") + 1] == str(key)
+    assert "--ssh-flag=-oUserKnownHostsFile=" + str(tmp_path / "known_hosts") in argv
+    assert argv[argv.index("--ssh-key-expire-after") + 1] == "2h"
+    key.unlink()
+    with pytest.raises(ValueError, match="Existing SSH key"):
+        command(spec, "start")

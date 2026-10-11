@@ -129,8 +129,13 @@ def verify(root):
         assert vr["capture"] != wr["capture"]
         vfolder = vpath.with_name(vpath.name.removesuffix("-request.json"))
         raw_vla = read(vfolder / "native-response.json")
-        candidate = vla_candidate(raw_vla["generated_text"], vr["observation"])
+        from scripts.yokohama_goal_distance_adapter import adapt_candidate
+        raw_candidate = vla_candidate(raw_vla["generated_text"], vr["observation"])
+        candidate, adjustment = adapt_candidate(config, raw_candidate, vr["observation"], digest(raw_vla))
         assert candidate == vs["value"]["candidate"]
+        assert vs["value"].get("vehicle_distance_adjustment") == adjustment
+        if adjustment is not None:
+            assert read(vfolder / "vehicle-distance-adjustment.json") == adjustment
         assert digest(raw_vla) == vs["value"]["vla_response_sha256"]
         if native:
             assert raw_vla["vla_inference_invoked"] is True
@@ -183,6 +188,8 @@ def verify(root):
         assert recomputed == ws["value"]["checks"] and all(c["passed"] for c in recomputed)
         permit = ars["value"]
         assert permit["prepared_permit_sha256"] == digest(group["authorize"][2]["value"])
+        assert permit.get("vehicle_distance_adjustment") == adjustment
+        assert group["authorize"][2]["value"].get("vehicle_distance_adjustment") == adjustment
         assert permit["candidate"] == candidate
         assert permit["vla_response_sha256"] == digest(raw_vla)
         assert permit["wam_assessment_sha256"] == digest(ws["value"])
@@ -336,7 +343,8 @@ def verify(root):
         status="passed" if all(checks.values()) else "failed",
         checks=checks,
         cycles=details,
-        native_model_flight_verified=native and all(checks.values()),
+        native_model_flight_verified=native and all(checks.values()) and not config["decisions"].get("goal_distance_adapter"),
+        native_with_vehicle_distance_adapter_verified=native and all(checks.values()) and bool(config["decisions"].get("goal_distance_adapter")),
         generic_obstacle_recognition_verified=False,
         payload_delivery_verified=False,
         sea_leg_verified=False,

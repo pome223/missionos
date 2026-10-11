@@ -55,6 +55,7 @@ def stamp(message):
 
 class Observer:
     def __init__(self, config):
+        self.config = config
         self.node = Node()
         self.wind_publisher = (
             self.node.advertise("/world/default/wind", Wind)
@@ -82,6 +83,10 @@ class Observer:
         self.callbacks = []
         self.topics = []
         self.sensor_file = (ROOT / "sensor-events.jsonl").open("w", buffering=1)
+        self.recovery_pose_file = (
+            (ROOT / "recovery-poses.jsonl").open("w", buffering=1)
+            if config.get("candidate_recovery") or config.get("delivery_trial") else None)
+        self.last_recovery_pose_sim_s = -1
         self.subscribe(Pose_V, "/world/default/pose/info", self.receive_poses)
         self.subscribe(WorldStatistics, "/world/default/stats", self.receive_stats)
         if config["world"].get("payload_delivery"):
@@ -122,6 +127,8 @@ class Observer:
         self.node = None
         time.sleep(0.1)
         self.sensor_file.close()
+        if self.recovery_pose_file:
+            self.recovery_pose_file.close()
         if self.joint_file:
             self.joint_file.close()
         if self.motion:
@@ -199,6 +206,16 @@ class Observer:
                     self.pose_history.append(
                         dict(self.poses[p.name], raw_pose=p.SerializeToString())
                     )
+                if (p.name == "x500_0" and self.recovery_pose_file
+                        and stamp(m) - self.last_recovery_pose_sim_s >= 0.1):
+                    self.recovery_pose_file.write(json.dumps({
+                        "run_id": self.config["run_id"], "sensor_sim_s": stamp(m),
+                        "xyz": [p.position.x, p.position.y, p.position.z],
+                        "quat_wxyz": [p.orientation.w, p.orientation.x,
+                                      p.orientation.y, p.orientation.z],
+                        "source_topic": "/world/default/pose/info",
+                    }) + "\n")
+                    self.last_recovery_pose_sim_s = stamp(m)
 
     def receive_camera_info(self, m):
         with self.lock:

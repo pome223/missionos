@@ -35,7 +35,9 @@ clear route; this controller refuses entry outside the corridor or wrong phase.
    a single-use segment permit. The AP executor must validate/consume it, record
    ACK, and move. ACK alone is not arrival.
 4. Observe segment tracking and stable arrival. Repeat from fresh images after
-   arrival, at least twice. Reused images, old cycles and mixed runs reject.
+   arrival, at least twice in the default mode. The opt-in
+   [observed-goal fixture](ship-urban-goal-loop.md) stops at observed goal arrival
+   within its update budget. Reused images, old cycles and mixed runs reject.
 5. Observe AP hold before exit, revoke the session and pending requests, stop
    owned model processes, and require observed shutdown before AP return handoff.
    Late responses cannot restore authority. No automatic re-entry is supported.
@@ -67,7 +69,8 @@ Fixture tests explicitly shorten time bounds; they never qualify native latency.
 - Rules: `authorize(start, target, observation)` returns a binding to all three,
   together with an explicit allowed result. Geometry and obstacle clearance
   cannot be replaced by a model's confidence. The included double explicitly
-  represents an empty corridor; it is not an obstacle-perception implementation.
+  represents an empty corridor by default. The observed-goal fixture supplies
+  explicit synthetic boxes; neither mode implements obstacle perception.
 - Process ownership: `ManagedUrbanModels` starts only caller-supplied argv,
   never shell strings, cloud VMs or model downloads. Loopback workers use fresh
   process nonces. Cancellation locks out future startup and terminates/reaps

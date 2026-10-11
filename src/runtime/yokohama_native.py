@@ -31,9 +31,12 @@ def read_asset(root, entry):
     if not isinstance(name, str) or Path(name).name != name or name in {".", ".."}:
         raise ValueError("Invalid capture asset path")
     path = root / name
-    if path.is_symlink() or ship_anwm.digest(path) != entry["sha256"]:
+    if path.is_symlink():
         raise ValueError("Capture asset hash mismatch")
-    return path.read_bytes()
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+        raise ValueError("Capture asset hash mismatch")
+    return data
 
 
 def load_capture(path, *, appearance=False):
