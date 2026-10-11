@@ -208,6 +208,74 @@ def test_existing_motion_parser_still_rejects_hold():
         vla_candidate("0 49 49", {})
 
 
+@pytest.mark.parametrize("fault", [None, "unconfirmed", "drift", "duplicate"])
+def test_pulse_transport_and_finite_settling_guards(tmp_path, monkeypatch, fault):
+    from tests.test_yokohama_candidate_recovery import row
+
+    c = config(tmp_path)
+    home = c["decisions"]["endpoint_feedback"]["entry_world_xyz_m"]
+    current = [0]
+    transports, events = [], []
+
+    def observation(t):
+        r = row(t, list(home))
+        r.update(
+            run_id=c["run_id"],
+            world_sha256=c["world"]["world_sha256"],
+            heading_ned_rad=0,
+            nav_state=4,
+            phase="00-D1",
+        )
+        r["vehicle"]["quat_wxyz"] = [1, 0, 0, 0]
+        if fault == "drift" and len(transports) == 2:
+            r["vehicle"]["xyz"][0] += 0.6
+        return r
+
+    def activate(velocity):
+        transports.append(velocity)
+        return dict(
+            confirmed=fault != "unconfirmed",
+            requested_enu_mps=velocity,
+            start_sim_s=current[0],
+            end_sim_s=current[0],
+        )
+
+    def wait_for(predicate, timeout):
+        assert timeout in (15, 20)
+        for _ in range(8):
+            if fault != "duplicate" or len(transports) != 2:
+                current[0] += 1
+            r = observation(current[0])
+            if predicate(r):
+                return r
+        raise TimeoutError("Finite mocked observation window exhausted")
+
+    monkeypatch.setattr(contract, "Path", lambda _: tmp_path)
+
+    def call():
+        return contract.pulse(
+            c,
+            SimpleNamespace(activate_wind=activate),
+            lambda: observation(current[0]),
+            wait_for,
+            lambda name, **data: events.append(name),
+            lambda: current[0],
+            lambda: None,
+        )
+
+    if fault:
+        with pytest.raises((ValueError, TimeoutError)):
+            call()
+        assert not (tmp_path / "weak-gust.json").exists()
+    else:
+        final = call()
+        assert transports == [[0.5, 0, 0], [0, 0, 0]]
+        record = json.loads((tmp_path / "weak-gust.json").read_text())
+        assert record["pulse_count"] == 1 and record["stable_samples"] == 3
+        assert final["sim_s"] == 5
+        assert events[-1] == "weak_gust_settled_before_reobservation"
+
+
 def test_CLI_rejects_new_native_and_extra_wind_before_any_subprocess(tmp_path, monkeypatch):
     from scripts import yokohama_sitl as sitl
 
