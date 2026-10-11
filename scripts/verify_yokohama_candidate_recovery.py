@@ -74,7 +74,9 @@ def stable_observed(tail, predicate):
     raise ValueError("missing_distinct_stable_terminal_observations")
 
 
-def verify_observations(config, trajectory, poses, contacts, rejection, returned, landed):
+def verify_observations(
+    config, trajectory, poses, contacts, rejection, returned, landed, *, already_home_AP_fault=False
+):
     """Check measurements without consulting the worker's verdict or cleanup."""
     import numpy as np
 
@@ -179,10 +181,46 @@ def verify_observations(config, trajectory, poses, contacts, rejection, returned
         ),
     )
     require(return_row["wall_s"] < final["wall_s"], "terminal_order_invalid")
-    require(
-        math.dist(anchor["vehicle"]["xyz"][:2], home[:2]) >= 0.5,
-        "no_observed_translation_to_return",
-    )
+    if already_home_AP_fault:
+        from scripts.yokohama_visual_gust_contract import validate_config
+
+        validate_config(config)
+        require(
+            config["visual_gust_trial"]["scenario"] == "return_fault"
+            and anchor["phase"] == "01-FEEDBACK-EXIT",
+            "already_home_scope_not_AP_fault",
+        )
+        prehome = stable_observed(
+            [r for r in trajectory if r["phase"] == "01-FEEDBACK-EXIT" and r["wall_s"] <= begin],
+            lambda r: (
+                math.dist(r["vehicle"]["xyz"][:2], home[:2]) <= 0.25
+                and abs(r["vehicle"]["xyz"][2] - home[2]) <= 0.15
+                and math.hypot(*r["velocity_ned"]) <= 0.3
+                and r["nav_state"] == 4
+                and r["arming_state"] == 2
+                and r["landed"] is False
+                and r["position_valid"] is True
+                and r["battery_fraction"] >= 0.2
+                and 0 <= r["vehicle"]["age_s"] <= 2
+                and raw_field(r["raw_px4"]["vehicle_status"], "arming_state") == 2
+                and raw_field(r["raw_px4"]["vehicle_land_detected"], "landed") is False
+            ),
+        )
+        pose = min(poses, key=lambda p: abs(p["sensor_sim_s"] - prehome["vehicle"]["sensor_sim_s"]))
+        require(
+            pose["run_id"] == config["run_id"]
+            and pose["source_topic"] == "/world/default/pose/info"
+            and abs(pose["sensor_sim_s"] - prehome["vehicle"]["sensor_sim_s"]) <= 0.15
+            and math.dist(pose["xyz"], prehome["vehicle"]["xyz"]) <= 0.5
+            and math.dist(anchor["vehicle"]["xyz"][:2], home[:2]) <= 0.25
+            and abs(anchor["vehicle"]["xyz"][2] - home[2]) <= 0.15,
+            "already_home_independent_pose_missing",
+        )
+    else:
+        require(
+            math.dist(anchor["vehicle"]["xyz"][:2], home[:2]) >= 0.5,
+            "no_observed_translation_to_return",
+        )
     require(
         any(
             c["topic"] == "launch_pad"

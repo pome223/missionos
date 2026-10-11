@@ -1,0 +1,318 @@
+{
+  "schema": "yokohama.return-settling-qualification.v1",
+  "status": "CPU_qualification_passed_with_failures_retained",
+  "flight_source_commit": "d2e734fa6cfb1daaea41f195f4b345cce0d8f904",
+  "source_correspondence": {
+    "status": "passed",
+    "flight_source_commit": "d2e734fa6cfb1daaea41f195f4b345cce0d8f904",
+    "flown_closure_sha256": "42ce901f5b3322d626a81681c4f6c130ac9072addc90e2befaa6fdfba63f873d",
+    "final_offline_verifier_closure_sha256": "e101034bfcf5db550962a837bc8dd6d84a785be2372f871e1a16c454cba965d2",
+    "source_files": 1029,
+    "changed_since_flight": [
+      "scripts/verify_yokohama_candidate_recovery.py",
+      "scripts/verify_yokohama_visual_gust.py"
+    ],
+    "runtime_control_generator_decoder_config_source_unchanged": true,
+    "full_final_closure_identical_to_flown": false,
+    "explanation": "Only two offline verification modules changed after flight. Historical source checkpoints and failed original verdicts are retained. The AP fault is already home; stable home measurements replace the unrelated translation requirement only in this separate scope."
+  },
+  "actual_flights": 4,
+  "automatic_retries": 0,
+  "cases": {
+    "cpu-calm-final": {
+      "worker": "passed",
+      "original_mission": "passed",
+      "actual_flight_attempts": 1,
+      "automatic_retries": 0,
+      "arrivals_observed": 4,
+      "original_full_verdict": {
+        "status": "passed",
+        "scenario": "calm",
+        "checks": {
+          "source_world_config_CPU_bound": true,
+          "distinct_ground_alignment_before_arm": true,
+          "altitude_upload_binding": true,
+          "all_admitted_segments_observed": true,
+          "distinct_return_settling_then_fixed_30s_hold": true,
+          "measured_corridor_altitude_freshness": true,
+          "calm_without_wind": true,
+          "revoked_late_guard_return_land_disarm": true
+        },
+        "requests": {
+          "vla": 4,
+          "wam": 4
+        },
+        "mission_outcome": "passed",
+        "interpretation": "CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance"
+      },
+      "final_full_verdict": {
+        "status": "passed",
+        "scenario": "calm",
+        "checks": {
+          "source_world_config_CPU_bound": true,
+          "distinct_ground_alignment_before_arm": true,
+          "altitude_upload_binding": true,
+          "all_admitted_segments_observed": true,
+          "distinct_return_settling_then_fixed_30s_hold": true,
+          "measured_corridor_altitude_freshness": true,
+          "calm_without_wind": true,
+          "revoked_late_guard_return_land_disarm": true
+        },
+        "requests": {
+          "vla": 4,
+          "wam": 4
+        },
+        "mission_outcome": "passed",
+        "interpretation": "CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance"
+      },
+      "goal_8m_observed": true,
+      "independent_heading": "passed",
+      "negative_controls": {
+        "status": "passed",
+        "all_negative_controls_rejected": {
+          "return_hold_outside_25cm": "ValueError: missing_distinct_stable_terminal_observations",
+          "return_pose_replay": "ValueError: missing_distinct_stable_terminal_observations",
+          "raw_arming_not_disarmed": "ValueError: missing_distinct_stable_terminal_observations",
+          "launch_contact_missing": "ValueError: fresh_launch_contact"
+        },
+        "original_trajectory_unchanged": true
+      },
+      "return_settling_wall_s": 3.0949093340000218,
+      "return_hold": {
+        "duration_sim_s": 30.135999999999996,
+        "samples": 90,
+        "max_horizontal_error_m": 0.0782906804853119,
+        "max_vertical_error_m": 0.042447851460041264,
+        "max_px4_speed_mps": 0.06190803340439753,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.021221958999973367,
+        "max_sample_gap_sim_s": 0.4159999999999968,
+        "start_sim_s": 173.508,
+        "end_sim_s": 203.644,
+        "point": "01-FEEDBACK-EXIT",
+        "target_world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ],
+        "passed": true
+      }
+    },
+    "cpu-gust-final": {
+      "worker": "passed",
+      "original_mission": "passed",
+      "actual_flight_attempts": 1,
+      "automatic_retries": 0,
+      "arrivals_observed": 4,
+      "original_full_verdict": {
+        "status": "passed",
+        "scenario": "reach",
+        "checks": {
+          "source_world_config_CPU_bound": true,
+          "distinct_ground_alignment_before_arm": true,
+          "altitude_upload_binding": true,
+          "all_admitted_segments_observed": true,
+          "distinct_return_settling_then_fixed_30s_hold": true,
+          "measured_corridor_altitude_freshness": true,
+          "one_physical_pulse_and_fresh_reobservation": true,
+          "revoked_late_guard_return_land_disarm": true
+        },
+        "requests": {
+          "vla": 4,
+          "wam": 4
+        },
+        "mission_outcome": "passed",
+        "interpretation": "CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance"
+      },
+      "final_full_verdict": {
+        "status": "passed",
+        "scenario": "reach",
+        "checks": {
+          "source_world_config_CPU_bound": true,
+          "distinct_ground_alignment_before_arm": true,
+          "altitude_upload_binding": true,
+          "all_admitted_segments_observed": true,
+          "distinct_return_settling_then_fixed_30s_hold": true,
+          "measured_corridor_altitude_freshness": true,
+          "one_physical_pulse_and_fresh_reobservation": true,
+          "revoked_late_guard_return_land_disarm": true
+        },
+        "requests": {
+          "vla": 4,
+          "wam": 4
+        },
+        "mission_outcome": "passed",
+        "interpretation": "CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance"
+      },
+      "goal_8m_observed": true,
+      "independent_heading": "passed",
+      "negative_controls": {
+        "status": "passed",
+        "all_negative_controls_rejected": {
+          "return_hold_outside_25cm": "ValueError: missing_distinct_stable_terminal_observations",
+          "return_pose_replay": "ValueError: missing_distinct_stable_terminal_observations",
+          "raw_arming_not_disarmed": "ValueError: missing_distinct_stable_terminal_observations",
+          "launch_contact_missing": "ValueError: fresh_launch_contact",
+          "extra_gust": "ValueError: one_confirmed_weak_pulse"
+        },
+        "original_trajectory_unchanged": true
+      },
+      "return_settling_wall_s": 6.563286044999984,
+      "return_hold": {
+        "duration_sim_s": 30.00799999999998,
+        "samples": 89,
+        "max_horizontal_error_m": 0.13624645029470958,
+        "max_vertical_error_m": 0.04491758573675142,
+        "max_px4_speed_mps": 0.04515656652138202,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.020320541999979014,
+        "max_sample_gap_sim_s": 0.4159999999999968,
+        "start_sim_s": 188.276,
+        "end_sim_s": 218.284,
+        "point": "01-FEEDBACK-EXIT",
+        "target_world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ],
+        "passed": true
+      }
+    },
+    "cpu-return-fault-final": {
+      "worker": "failed_recovered",
+      "original_mission": "failed",
+      "actual_flight_attempts": 1,
+      "automatic_retries": 0,
+      "arrivals_observed": 3,
+      "original_full_verdict": {
+        "status": "failed",
+        "reason": "ValueError: observed_segment_count"
+      },
+      "full_qualification": false,
+      "goal_8m_observed": false,
+      "intended_AP_fault_reached": false,
+      "failure_reason": "Fourth WAM history age 3.508s exceeded unchanged 2s",
+      "independent_partial_recovery": {
+        "status": "passed",
+        "scope": "unexpected fourth-cycle stale-history recovery only",
+        "original_mission": "failed",
+        "worker": "failed_recovered",
+        "stale_history_rejection_reason": "ValueError: History does not end at a fresh observation",
+        "model_authority_revoked": true,
+        "late_guard_replay_rejected": true,
+        "source_world_config_bound": true,
+        "eight_metre_goal_proven": false,
+        "weak_gust_invoked": true,
+        "recovery_duration_wall_s": 39.1484601840001,
+        "return_observed": true,
+        "landing_observed": true,
+        "disarm_observed": true,
+        "fresh_launch_pad_contact_observed": true,
+        "recovery_samples": 136
+      },
+      "recovery_duration_worker_wall_s": 39.15818243400008,
+      "recovery_duration_independent_observation_wall_s": 39.1484601840001,
+      "fixed_recovery_limit_s": 220,
+      "original_mission_remains_failed": true
+    },
+    "cpu-return-fault-retry01": {
+      "worker": "failed_recovered",
+      "original_mission": "failed",
+      "actual_flight_attempts": 1,
+      "automatic_retries": 0,
+      "arrivals_observed": 4,
+      "original_full_verdict": {
+        "status": "failed",
+        "reason": "ValueError: no_observed_translation_to_return"
+      },
+      "final_full_verdict": {
+        "status": "passed",
+        "scenario": "return_fault",
+        "checks": {
+          "source_world_config_CPU_bound": true,
+          "distinct_ground_alignment_before_arm": true,
+          "altitude_upload_binding": true,
+          "all_admitted_segments_observed": true,
+          "distinct_return_settling_then_fixed_30s_hold": true,
+          "measured_corridor_altitude_freshness": true,
+          "one_physical_pulse_and_fresh_reobservation": true,
+          "AP_fault_fixed_recovery_independently_observed": true,
+          "revoked_late_guard_return_land_disarm": true
+        },
+        "requests": {
+          "vla": 4,
+          "wam": 4
+        },
+        "mission_outcome": "failed",
+        "interpretation": "CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance"
+      },
+      "goal_8m_observed": true,
+      "independent_heading": "passed",
+      "negative_controls": {
+        "status": "passed",
+        "all_negative_controls_rejected": {
+          "return_hold_outside_25cm": "ValueError: missing_distinct_stable_terminal_observations",
+          "return_pose_replay": "ValueError: missing_distinct_stable_terminal_observations",
+          "raw_arming_not_disarmed": "ValueError: parsed_px4_state_mismatch",
+          "launch_contact_missing": "ValueError: fresh_launch_contact_missing",
+          "extra_gust": "ValueError: one_confirmed_weak_pulse"
+        },
+        "original_trajectory_unchanged": true
+      },
+      "return_settling_wall_s": 6.856587920000038,
+      "return_hold": {
+        "duration_sim_s": 30.24000000000001,
+        "samples": 90,
+        "max_horizontal_error_m": 0.11484489334814461,
+        "max_vertical_error_m": 0.06075311927811278,
+        "max_px4_speed_mps": 0.04527844851582263,
+        "all_auto_loiter": true,
+        "all_airborne_armed": true,
+        "max_pose_age_s": 0.02045266699997228,
+        "max_sample_gap_sim_s": 0.4159999999999968,
+        "start_sim_s": 190.88,
+        "end_sim_s": 221.12,
+        "point": "01-FEEDBACK-EXIT",
+        "target_world_xyz_m": [
+          0.0,
+          0.0,
+          15.110143087104275
+        ],
+        "passed": true
+      },
+      "recovery_duration_worker_wall_s": 27.39476367899988,
+      "recovery_duration_independent_observation_wall_s": 27.384971886999892,
+      "fixed_recovery_limit_s": 220,
+      "original_mission_remains_failed": true
+    }
+  },
+  "diagnosis": "Previous return hold started outside its 0.25m bound. Entry now requires distinct stable home observations within the same existing 20s settling wait; the 30s hold and all geometry, heading, freshness and deadline limits remain unchanged.",
+  "tests": {
+    "full_passed_before_offline_correction": 7954,
+    "full_skipped": 6,
+    "full_warnings": 3,
+    "targeted_final_passed": 200,
+    "six_new_offline_cases_passed": true,
+    "lint": "passed",
+    "method": "Complete suite followed by focused final verification after offline-only correction; not a second full suite pass."
+  },
+  "previous_failures_retained": true,
+  "current_stale_history_failure_retained": true,
+  "original_AP_fault_verifier_failure_retained": true,
+  "scope": {
+    "CPU_fixture": true,
+    "learned_visual_performance": false,
+    "real_VLA_WAM": false,
+    "GPU": false,
+    "external_model_API": false,
+    "paid_resources": false,
+    "physical_flight": false,
+    "ship_delivery": false,
+    "push": false,
+    "PR_update": false,
+    "merge": false,
+    "deploy": false
+  }
+}

@@ -324,6 +324,7 @@ def verify(root):
                 rejected,
                 returned,
                 final,
+                already_home_AP_fault=scenario == "return_fault",
             )
             if scenario == "return_fault":
                 injected = next(e for e in events if e["event"] == "CPU_AP_return_fault_injected")

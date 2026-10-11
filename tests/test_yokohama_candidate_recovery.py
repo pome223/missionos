@@ -109,6 +109,59 @@ def test_terminal_measurements_pass_without_worker_verdict():
     assert result["disarm_observed"] and result["recovery_duration_wall_s"] == 6
 
 
+@pytest.mark.parametrize("fault", [None, "scope", "position", "replay", "raw_arming", "pose"])
+def test_already_home_AP_fault_requires_separate_prehome_evidence(tmp_path, fault):
+    from tests.test_yokohama_visual_gust import config as visual_config
+
+    cfg = visual_config(tmp_path)
+    cfg["visual_gust_trial"]["scenario"] = "return_fault"
+    home = cfg["decisions"]["endpoint_feedback"]["entry_world_xyz_m"]
+    trajectory = [
+        *[row(t, home.copy()) for t in (7, 8, 9, 10)],
+        *[row(t, home.copy()) for t in (11, 12, 13)],
+        *[row(t, [0, 0, 0.2], land=True) for t in (14, 15, 16)],
+    ]
+    for r in trajectory:
+        r.update(run_id=cfg["run_id"], world_sha256=cfg["world"]["world_sha256"], nav_state=4)
+        if r["wall_s"] <= 10:
+            r["phase"] = "01-FEEDBACK-EXIT"
+    poses = [
+        dict(
+            run_id=cfg["run_id"],
+            sensor_sim_s=r["sim_s"],
+            xyz=r["vehicle"]["xyz"].copy(),
+            source_topic="/world/default/pose/info",
+        )
+        for r in trajectory
+    ]
+    rejection = dict(
+        recovery_begin_wall_s=10, recovery_deadline_wall_s=230, observation=trajectory[3]
+    )
+    contact = [
+        dict(topic="launch_pad", sensor_sim_s=16, collision1="launch_pad", collision2="x500_0")
+    ]
+    if fault == "scope":
+        cfg["visual_gust_trial"]["scenario"] = "reach"
+    if fault == "pose":
+        for p in poses[:4]:
+            p["xyz"][0] = 1
+    for r in trajectory[:4]:
+        if fault == "position":
+            r["vehicle"]["xyz"][0] = 0.251
+        if fault == "replay":
+            r["vehicle"]["sensor_sim_s"] = 7
+        if fault == "raw_arming":
+            r["raw_px4"]["vehicle_status"] = "arming_state: 1"
+    args = (cfg, trajectory, poses, contact, rejection, {"wall_s": 13}, {"wall_s": 16})
+    if fault is None:
+        assert verify_observations(*args, already_home_AP_fault=True)["disarm_observed"]
+        with pytest.raises(ValueError, match="translation"):
+            verify_observations(*args)
+    else:
+        with pytest.raises(ValueError):
+            verify_observations(*args, already_home_AP_fault=True)
+
+
 @pytest.mark.parametrize(
     "fault",
     [

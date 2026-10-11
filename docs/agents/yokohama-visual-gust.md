@@ -47,6 +47,11 @@ use the existing separately approved 220-second recovery, with no new model
 authority or relaxed envelope. The `return_fault` fixture follows the identical
 route/pulse and deliberately fails after the measured return hold to exercise
 this failure path. Successful recovery preserves the failed mission outcome.
+For this deliberately injected AP fault, the aircraft is already home after the
+measured hold. The independent verifier requires fresh stable home observations
+and matching Gazebo pose instead of requiring another half-metre translation.
+Other candidate-recovery scenarios retain the translation check. This is an
+offline verification correction; flown control code and safety limits are unchanged.
 
 After the first stable leg, Gazebo receives exactly one 0.5 m/s eastward wind
 pulse lasting two simulation seconds, followed by confirmed zero wind. PX4 hold
