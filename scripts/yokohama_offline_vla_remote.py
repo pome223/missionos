@@ -7,14 +7,18 @@ has no cloud provisioning, download, retry, dispatch or flight capability.
 import argparse
 import base64
 import hashlib
-import json
 from pathlib import Path
 import time
 from uuid import uuid4
 
 
 def write(path, value):
-    path.write_text(json.dumps(value, indent=2, allow_nan=False) + "\n")
+    if __package__:
+        from .yokohama_offline_vla_lifecycle import write_json
+    else:
+        from yokohama_offline_vla_lifecycle import write_json
+
+    write_json(path, value)
 
 
 def deadline_check(deadline):
@@ -26,15 +30,18 @@ def run(base, adapter, inputs, output, preparation_deadline, comparison_deadline
     from PIL import Image
 
     if __package__:
+        from .yokohama_offline_vla_lifecycle import DurableEvents
         from .ship_aerovla_server import NativeModel
         from . import ship_aerovla as native
         from .yokohama_offline_vla_pair import GENERATION, PROMPT, model_payload, analyze_raw
     else:
+        from yokohama_offline_vla_lifecycle import DurableEvents
         from ship_aerovla_server import NativeModel
         import ship_aerovla as native
         from yokohama_offline_vla_pair import GENERATION, PROMPT, model_payload, analyze_raw
 
     output.mkdir(exist_ok=True)
+    events = DurableEvents(output, display=lambda value: print(value, flush=True))
     counts = {
         "warmup_started": 0,
         "warmup_completed": 0,
@@ -88,9 +95,9 @@ def run(base, adapter, inputs, output, preparation_deadline, comparison_deadline
     deadline_check(preparation_deadline)
     ready = time.time()
     write(output / "ready.json", {"ready_unix_s": ready})
-    print(json.dumps({"stage": "model_ready", "unix_s": ready}), flush=True)
-    # Early readiness starts the 90-second comparison allowance immediately.
-    deadline = min(comparison_deadline, ready + 90)
+    events.emit("model_ready", ready_unix_s=ready)
+    # Match the guest supervisor: readiness starts the 45-second comparison allowance.
+    deadline = min(comparison_deadline, ready + 45)
     receipts = []
     for index, payload in enumerate(payloads, 1):
         deadline_check(deadline)

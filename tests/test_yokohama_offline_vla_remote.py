@@ -11,8 +11,8 @@ def test_deadline_rejects_expired():
         remote.deadline_check(time.time() - 1)
 
 
-@pytest.mark.parametrize("fail_first", [False, True])
-def test_fixed_pair_no_retry(monkeypatch, tmp_path, fail_first):
+@pytest.mark.parametrize("fail_first,broken_tty", [(False, False), (True, False), (False, True)])
+def test_fixed_pair_no_retry(monkeypatch, tmp_path, fail_first, broken_tty):
     from PIL import Image
     from scripts.yokohama_offline_vla_pair import PROMPT
 
@@ -45,6 +45,12 @@ def test_fixed_pair_no_retry(monkeypatch, tmp_path, fail_first):
             }, b"CPU_TEST_FIXTURE"
 
     monkeypatch.setattr(server, "NativeModel", Model)
+    if broken_tty:
+
+        def display(*args, **kwargs):
+            raise OSError(5, "CPU fixture broken stdout")
+
+        monkeypatch.setattr(remote, "print", display, raising=False)
     args = (tmp_path, tmp_path, source, tmp_path / "out", time.time() + 100, time.time() + 150)
     if fail_first:
         with pytest.raises(RuntimeError):
@@ -54,6 +60,8 @@ def test_fixed_pair_no_retry(monkeypatch, tmp_path, fail_first):
     else:
         remote.run(*args)
         assert len(calls) == 3
+        if broken_tty:
+            assert (tmp_path / "out/log-channel-errors.jsonl").exists()
         assert len({c[0] for c in calls}) == 1
         result = json.loads((tmp_path / "out/result.json").read_text())
         assert not result["raw_text_differs"]
