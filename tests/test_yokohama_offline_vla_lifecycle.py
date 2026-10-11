@@ -432,10 +432,12 @@ def test_wall_clock_jump_cannot_extend_ready_comparison(tmp_path, monkeypatch):
     assert clock["mono"] == 50
 
 
-def test_guest_failure_retains_failed_status_and_duplicate_guard(tmp_path, monkeypatch):
+@pytest.mark.parametrize("maximum", [600, 900])
+def test_guest_failure_retains_failed_status_and_duplicate_guard(tmp_path, monkeypatch, maximum):
     import hashlib
 
     begin = time.time()
+    prep, compare = (420, 465) if maximum == 900 else (330, 375)
     for name in guest.REQUIRED_SOURCES:
         path = tmp_path / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -443,8 +445,9 @@ def test_guest_failure_retains_failed_status_and_duplicate_guard(tmp_path, monke
     value = {
         "approved_execution_reference": "CPU_FIXTURE_ONLY",
         "submission_unix_s": begin,
-        "preparation_deadline_unix_s": begin + 330,
-        "comparison_deadline_unix_s": begin + 375,
+        "preparation_deadline_unix_s": begin + prep,
+        "comparison_deadline_unix_s": begin + compare,
+        "maximum_elapsed_s": maximum,
         "source_sha256": {
             name: hashlib.sha256((tmp_path / name).read_bytes()).hexdigest()
             for name in guest.REQUIRED_SOURCES
@@ -462,9 +465,9 @@ def test_guest_failure_retains_failed_status_and_duplicate_guard(tmp_path, monke
             "--output",
             str(tmp_path / "evidence"),
             "--preparation-deadline",
-            str(begin + 330),
+            str(begin + prep),
             "--comparison-deadline",
-            str(begin + 375),
+            str(begin + compare),
         ],
     }
     monkeypatch.setattr(guest, "counters", lambda: {"rx_bytes": 100, "tx_bytes": 20})
@@ -487,6 +490,18 @@ def test_guest_failure_retains_failed_status_and_duplicate_guard(tmp_path, monke
     with pytest.raises(FileExistsError):
         guest.run_guest(tmp_path, value, execute=True)
     assert len(quota_calls) == calls_before
+    quotas = [int(c[c.index("--quota") + 1]) for c in quota_calls if "--quota" in c]
+    assert quotas[-1] == (448 * 1024**2 if maximum == 900 else guest.TX_LIMIT) - 20
+
+
+def test_guest_hashing_works_without_python_311_file_digest(tmp_path, monkeypatch):
+    monkeypatch.delattr(safety.hashlib, "file_digest", raising=False)
+    path = tmp_path / "payload.py"
+    path.write_bytes(b"CPU Python 3.10 compatibility fixture")
+    assert safety.sha256_file(path) == safety.hashlib.sha256(path.read_bytes()).hexdigest()
+    events = safety.DurableEvents(tmp_path / "evidence")
+    events.emit("CPU_fixture")
+    assert len(events.archive(tmp_path / "evidence.tar.gz")) == 64
 
 
 def _independent_watchdog_fixture(output):

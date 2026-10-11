@@ -5,7 +5,6 @@ and native runner must be provided locally by a separately authorized controller
 """
 
 import argparse
-import hashlib
 import json
 import math
 import os
@@ -14,9 +13,19 @@ import subprocess
 import time
 
 if __package__:
-    from .yokohama_offline_vla_lifecycle import DurableEvents, supervise_guest, write_json
+    from .yokohama_offline_vla_lifecycle import (
+        DurableEvents,
+        sha256_file,
+        supervise_guest,
+        write_json,
+    )
 else:
-    from yokohama_offline_vla_lifecycle import DurableEvents, supervise_guest, write_json
+    from yokohama_offline_vla_lifecycle import (
+        DurableEvents,
+        sha256_file,
+        supervise_guest,
+        write_json,
+    )
 
 
 RX_LIMIT = 31 * 1024**3
@@ -48,14 +57,16 @@ def counters():
     return totals
 
 
-def packet_quota_arguments(initial):
+def packet_quota_arguments(initial, *, tx_limit=TX_LIMIT):
+    if tx_limit not in (TX_LIMIT, 448 * 1024**2):
+        raise ValueError("Unreviewed transmit threshold")
     if any(type(initial.get(k)) is not int or initial[k] < 0 for k in ("rx_bytes", "tx_bytes")):
         raise ValueError("Unqualified network counters")
-    if initial["rx_bytes"] >= RX_LIMIT or initial["tx_bytes"] >= TX_LIMIT:
+    if initial["rx_bytes"] >= RX_LIMIT or initial["tx_bytes"] >= tx_limit:
         raise ValueError("Initial network traffic exceeds conservative threshold")
     commands = []
     for family in ("iptables", "ip6tables"):
-        for direction, key, limit in (("RX", "rx_bytes", RX_LIMIT), ("TX", "tx_bytes", TX_LIMIT)):
+        for direction, key, limit in (("RX", "rx_bytes", RX_LIMIT), ("TX", "tx_bytes", tx_limit)):
             chain = "YOKOHAMA_" + direction
             commands.append([family, "-w", "-N", chain])
             if family == "iptables":
@@ -92,9 +103,15 @@ def run_guest(workdir, control, *, execute=False):
     if not control.get("approved_execution_reference"):
         raise ValueError("Separate explicit guest execution approval required")
     begin = control["submission_unix_s"]
+    maximum = control.get("maximum_elapsed_s", 600)
+    if maximum not in (600, 900):
+        raise ValueError("Unreviewed total elapsed limit")
+    preparation_s, comparison_end_s, tx_limit = (
+        (420, 465, 448 * 1024**2) if maximum == 900 else (330, 375, TX_LIMIT)
+    )
     if not math.isfinite(begin) or (
-        control["preparation_deadline_unix_s"] != begin + 330
-        or control["comparison_deadline_unix_s"] != begin + 375
+        control["preparation_deadline_unix_s"] != begin + preparation_s
+        or control["comparison_deadline_unix_s"] != begin + comparison_end_s
     ):
         raise ValueError("Unexpected reviewed stage limits")
     if set(control["source_sha256"]) != REQUIRED_SOURCES:
@@ -124,9 +141,8 @@ def run_guest(workdir, control, *, execute=False):
         path = workdir / name
         if not path.resolve().is_relative_to(workdir) or path.is_symlink():
             raise ValueError("Unexpected guest source path")
-        with path.open("rb") as stream:
-            if hashlib.file_digest(stream, "sha256").hexdigest() != sha:
-                raise ValueError("Guest source differs from approved payload")
+        if sha256_file(path) != sha:
+            raise ValueError("Guest source differs from approved payload")
     events = DurableEvents(workdir / "evidence", display=lambda text: print(text, flush=True))
     # Exclusive creation survives repeated metadata startup invocations and clock changes.
     with (events.output / "attempt-reserved.json").open("x") as receipt:
@@ -135,7 +151,7 @@ def run_guest(workdir, control, *, execute=False):
         os.fsync(receipt.fileno())
     try:
         initial = counters()
-        for argv in packet_quota_arguments(initial):
+        for argv in packet_quota_arguments(initial, tx_limit=tx_limit):
             subprocess.run(argv, check=True, capture_output=True)
         events.emit("packet_quotas_installed", initial_counters=initial)
     except Exception as exc:
@@ -146,7 +162,7 @@ def run_guest(workdir, control, *, execute=False):
     def healthy():
         current = counters()
         write_json(events.output / "network.json", current)
-        return current["rx_bytes"] < RX_LIMIT and current["tx_bytes"] < TX_LIMIT
+        return current["rx_bytes"] < RX_LIMIT and current["tx_bytes"] < tx_limit
 
     try:
         return supervise_guest(

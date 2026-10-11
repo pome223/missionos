@@ -21,6 +21,15 @@ import traceback
 from uuid import uuid4
 
 
+def sha256_file(path):
+    """Streaming hash also supports the reviewed Ubuntu guest's Python 3.10."""
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def write_json(path, value):
     path = Path(path)
     data = json.dumps(value, indent=2, allow_nan=False) + "\n"
@@ -74,8 +83,7 @@ class DurableEvents:
         with tarfile.open(destination, "w:gz") as archive:
             for path in members:
                 archive.add(path, arcname=path.name, recursive=False)
-        with destination.open("rb") as stream:
-            sha = hashlib.file_digest(stream, "sha256").hexdigest()
+        sha = sha256_file(destination)
         write_json(
             destination.with_suffix(destination.suffix + ".receipt.json"),
             {
