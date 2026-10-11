@@ -23,7 +23,7 @@ CONTRACT = {
     "gust_after_cycle": 1,
     "maximum_gusts": 1,
 }
-SCENARIOS = ("calm", "reach", "reject", "timeout")
+SCENARIOS = ("calm", "reach", "reject", "timeout", "return_fault")
 
 
 def build_config(base, scenario):
@@ -371,7 +371,19 @@ def pulse(config, obs, sample, wait_for, event, clock, check_deadline):
     return after
 
 
-def distinct_landing_predicate(config, anchor, *, landing=True):
+def return_hold_ready(config, anchor):
+    """Earn arrival stability inside the existing 20s wait, before the fixed hold."""
+    validate_config(config)
+    stable = distinct_landing_predicate(config, anchor, landing=False, require_loiter=True)
+
+    def check(row):
+        ready = stable(row)
+        return ready and row["sim_s"] - anchor["sim_s"] >= 3
+
+    return check
+
+
+def distinct_landing_predicate(config, anchor, *, landing=True, require_loiter=False):
     """The new reach scenario requires the same distinct terminal evidence as recovery."""
     if __package__:
         from .yokohama_candidate_recovery import validate_sample
@@ -397,7 +409,11 @@ def distinct_landing_predicate(config, anchor, *, landing=True):
                 and abs(row["vehicle"]["xyz"][2] - home[2]) <= 0.15
             )
         )
-        if not (at_target and math.hypot(*row["velocity_ned"]) <= 0.3):
+        if not (
+            at_target
+            and math.hypot(*row["velocity_ned"]) <= 0.3
+            and (not require_loiter or row["nav_state"] == 4)
+        ):
             first = last = None
             count = 0
             return False

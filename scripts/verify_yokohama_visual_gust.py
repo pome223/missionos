@@ -6,7 +6,11 @@ import math
 from pathlib import Path
 
 from scripts.yokohama_visual_gust_contract import validate_config
-from scripts.verify_yokohama_candidate_recovery import stable_observed, raw_field
+from scripts.verify_yokohama_candidate_recovery import (
+    stable_observed,
+    raw_field,
+    verify_observations,
+)
 from scripts.yokohama_altitude_contract import verify_transport_evidence
 
 
@@ -85,14 +89,13 @@ def verify(root):
         ]
         counts = {op: sum(r["operation"] == op for r in requests) for op in ("vla", "wam")}
         scenario = config["visual_gust_trial"]["scenario"]
-        expected_counts = (
-            {"vla": 4, "wam": 4} if scenario in ("calm", "reach") else {"vla": 3, "wam": 2}
-        )
+        complete_route = scenario in ("calm", "reach", "return_fault")
+        expected_counts = {"vla": 4, "wam": 4} if complete_route else {"vla": 3, "wam": 2}
         require(counts == expected_counts, "finite_actual_request_budget")
         dispatch = [e for e in events if e["event"] == "city_segment_dispatched"]
         arrivals = [e for e in events if e["event"] == "city_segment_arrived"]
         require(
-            len(dispatch) == len(arrivals) == (4 if scenario in ("calm", "reach") else 2),
+            len(dispatch) == len(arrivals) == (4 if complete_route else 2),
             "observed_segment_count",
         )
         for index, e in enumerate(arrivals):
@@ -121,8 +124,97 @@ def verify(root):
                 and min(response["rules"]["minimum_centerline_clearances_m"]) > 2,
                 "geometry_gate",
             )
+
+            def at_arrival(r):
+                return (
+                    math.dist(r["vehicle"]["xyz"], target) <= 0.25
+                    and abs(r["vehicle"]["xyz"][2] - target[2]) <= 0.15
+                    and math.hypot(*r["velocity_ned"]) <= 0.3
+                    and r["nav_state"] == 4
+                    and r["arming_state"] == 2
+                    and 0 <= r["vehicle"]["age_s"] <= 2
+                    and r["position_valid"] is True
+                    and abs(
+                        math.remainder(
+                            camera_heading(r)
+                            - response["candidate"]["target_heading_world_ned_rad"],
+                            2 * math.pi,
+                        )
+                    )
+                    <= 0.05
+                    and abs(
+                        math.remainder(
+                            r["heading_ned_rad"] - response["executor_heading_ned_rad"], 2 * math.pi
+                        )
+                    )
+                    <= 0.05
+                )
+
+            stable_observed(
+                [r for r in rows if dispatch[index]["wall_s"] <= r["wall_s"] <= row["wall_s"]],
+                at_arrival,
+            )
+            require(at_arrival(row), "arrival_heading_or_state")
         checks["all_admitted_segments_observed"] = True
         a, b = p["entry_world_xyz_m"], p["goal_world_xyz_m"]
+        if complete_route:
+            settling = next(e for e in events if e["event"] == "AP_return_settling_started")
+            ready = next(e for e in events if e["event"] == "AP_return_settled_before_hold")
+            first = settling["observation"]
+            last = ready["observation"]
+            require(
+                settling["wait_limit_wall_s"] == 20
+                and 0 <= last["wall_s"] - first["wall_s"] <= 20
+                and last["sim_s"] - first["sim_s"] >= 3,
+                "return_settling_deadline_or_minimum",
+            )
+            stable_observed(
+                [r for r in rows if first["wall_s"] <= r["wall_s"] <= last["wall_s"]],
+                lambda r: (
+                    math.dist(r["vehicle"]["xyz"][:2], a[:2]) <= 0.25
+                    and abs(r["vehicle"]["xyz"][2] - a[2]) <= 0.15
+                    and math.hypot(*r["velocity_ned"]) <= 0.3
+                    and r["nav_state"] == 4
+                    and r["arming_state"] == 2
+                    and 0 <= r["vehicle"]["age_s"] <= 2
+                    and r["reset_counters"] == first["reset_counters"]
+                ),
+            )
+            hold = next(
+                e
+                for e in events
+                if e["event"] == "hold_measured" and e["phase"] == "01-FEEDBACK-EXIT"
+            )
+            measured = [
+                r
+                for r in rows
+                if r["phase"] == "01-FEEDBACK-EXIT"
+                and last["wall_s"] <= r["wall_s"] <= hold["wall_s"]
+            ]
+            require(
+                measured[0]["sim_s"] == last["sim_s"]
+                and measured[-1]["sim_s"] - measured[0]["sim_s"] >= 30,
+                "fixed_return_hold_duration",
+            )
+            require(
+                all(
+                    math.dist(r["vehicle"]["xyz"][:2], a[:2]) <= 0.25
+                    and abs(r["vehicle"]["xyz"][2] - a[2]) <= 0.6
+                    and math.hypot(*r["velocity_ned"]) <= 0.5
+                    and r["nav_state"] == 4
+                    and r["arming_state"] == 2
+                    and r["landed"] is False
+                    and 0 <= r["vehicle"]["age_s"] <= 2
+                    for r in measured
+                )
+                and all(0 < y["sim_s"] - x["sim_s"] <= 2 for x, y in zip(measured, measured[1:])),
+                "return_hold_outside_frozen_bounds",
+            )
+            require(
+                math.dist(arrivals[-1]["observation"]["vehicle"]["xyz"], b) <= 0.5,
+                "eight_metre_goal_not_observed",
+            )
+            checks["distinct_return_settling_then_fixed_30s_hold"] = True
         model_started_wall_s = min(r["observation"]["wall_s"] for r in requests)
         d = [b[i] - a[i] for i in (0, 1)]
         for row in rows:
@@ -224,6 +316,33 @@ def verify(root):
                 and result["observed"]["status"] == "failed_recovered",
                 "failed_mission_not_preserved",
             )
+            verify_observations(
+                config,
+                rows,
+                [json.loads(x) for x in (root / "recovery-poses.jsonl").read_text().splitlines()],
+                [json.loads(x) for x in (root / "sensor-events.jsonl").read_text().splitlines()],
+                rejected,
+                returned,
+                final,
+            )
+            if scenario == "return_fault":
+                injected = next(e for e in events if e["event"] == "CPU_AP_return_fault_injected")
+                failed = next(
+                    e for e in events if e["event"] == "AP_return_failed_after_model_revocation"
+                )
+                closed = next(e for e in events if e["event"] == "city_session_revoked")
+                require(
+                    closed["wall_s"] < injected["wall_s"] <= failed["wall_s"] <= rejected["wall_s"],
+                    "AP_fault_revocation_order",
+                )
+                require(
+                    not any(
+                        e["event"] == "city_segment_dispatched" and e["wall_s"] >= closed["wall_s"]
+                        for e in events
+                    ),
+                    "dispatch_after_revocation",
+                )
+                checks["AP_fault_fixed_recovery_independently_observed"] = True
         require(
             any(e["event"] == "city_late_response_rejected" for e in events),
             "late_response_guard_not_observed",

@@ -259,12 +259,13 @@ def test_closed_worker_cannot_reauthorize_start_or_model(tmp_path):
             worker.exchange(operation, {})
 
 
-def test_recovery_waits_for_revocation_and_observed_return_before_land():
+@pytest.mark.parametrize("already_revoked", [False, True])
+def test_recovery_waits_for_revocation_and_observed_return_before_land(already_revoked):
     cfg = config()
     now = [10.0]
     calls = []
     phase = ["00-D1"]
-    decisions = SimpleNamespace(closed=False, active=True, cycle=2)
+    decisions = SimpleNamespace(closed=already_revoked, active=not already_revoked, cycle=2)
 
     def stop():
         calls.append("stop")

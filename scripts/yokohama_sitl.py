@@ -395,7 +395,7 @@ def main(argv=None):
     )
     parser.add_argument("--delivery-trial", choices=["delivery", "wait", "candidate_rejected", "timeout"],
                         help="Separately approved full ship/cargo/return simulation with bounded D1 feedback")
-    parser.add_argument("--visual-gust-trial", choices=["calm", "reach", "reject", "timeout"],
+    parser.add_argument("--visual-gust-trial", choices=["calm", "reach", "reject", "timeout", "return_fault"],
                         help="Separate CPU-only eight-metre inland trial with one weak wind pulse")
     args = parser.parse_args(argv)
     if args.endpoint_adapter_trial and (

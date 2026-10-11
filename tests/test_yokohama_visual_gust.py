@@ -237,6 +237,61 @@ def test_terminal_predicate_needs_distinct_pose_and_elapsed_stability(tmp_path):
     assert check(observation(2))
 
 
+@pytest.mark.parametrize("fault", [None, "replay", "moving", "altitude", "not_loiter"])
+def test_return_hold_waits_for_actual_convergence_not_just_three_seconds(tmp_path, fault):
+    from tests.test_yokohama_candidate_recovery import row
+
+    c = config(tmp_path)
+    home = c["decisions"]["endpoint_feedback"]["entry_world_xyz_m"]
+
+    def observation(t, offset):
+        r = row(t, [offset, 0, home[2]])
+        r.update(run_id=c["run_id"], world_sha256=c["world"]["world_sha256"], nav_state=4)
+        return r
+
+    check = contract.return_hold_ready(c, observation(0, 0.5))
+    assert not check(observation(0, 0.5))
+    assert not check(observation(3, 0.394))
+    outcomes = []
+    for t in (4, 5, 6):
+        r = observation(t, 0.20)
+        if fault == "replay":
+            r["vehicle"]["sensor_sim_s"] = 4
+        if fault == "moving":
+            r["velocity_ned"] = [0.31, 0, 0]
+        if fault == "altitude":
+            r["vehicle"]["xyz"][2] += 0.16
+        if fault == "not_loiter":
+            r["nav_state"] = 3
+        outcomes.append(check(r))
+    assert outcomes[-1] is (fault is None)
+
+
+def test_return_hold_has_minimum_three_seconds_and_rejects_stale_or_reset(tmp_path):
+    from tests.test_yokohama_candidate_recovery import row
+
+    c = config(tmp_path)
+    home = c["decisions"]["endpoint_feedback"]["entry_world_xyz_m"]
+
+    def observation(t):
+        r = row(t, home.copy())
+        r.update(run_id=c["run_id"], world_sha256=c["world"]["world_sha256"], nav_state=4)
+        return r
+
+    check = contract.return_hold_ready(c, observation(0))
+    for t in (0, 1, 2):
+        assert not check(observation(t))
+    assert check(observation(3))
+    for fault in ("age", "reset"):
+        r = observation(4)
+        if fault == "age":
+            r["vehicle"]["age_s"] = 2.1
+        else:
+            r["reset_counters"][0] += 1
+        with pytest.raises(ValueError):
+            check(r)
+
+
 def test_terminal_predicate_resets_after_a_gap_and_rejects_stale_pose(tmp_path):
     from tests.test_yokohama_candidate_recovery import row
 

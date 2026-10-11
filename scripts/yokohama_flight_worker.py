@@ -976,9 +976,20 @@ def flight_trial(config, obs, run, field):
             run([BIN + "commander", "mode", "auto:loiter"])
             wait_for(lambda r: r["nav_state"] == 4, 10)
             # Settling is separate from the fixed, uninterrupted measured hold.
-            settle = sample()["sim_s"]
-            wait_for(lambda r: r["sim_s"] - settle >= 3, 20)
-            rows = [sample()]
+            if config.get("visual_gust_trial") and phase == "01-FEEDBACK-EXIT":
+                if __package__:
+                    from .yokohama_visual_gust_contract import return_hold_ready
+                else:
+                    from yokohama_visual_gust_contract import return_hold_ready
+                settle = sample()
+                event("AP_return_settling_started", observation=settle, wait_limit_wall_s=20)
+                ready = wait_for(return_hold_ready(config, settle), 20)
+                event("AP_return_settled_before_hold", observation=ready)
+                rows = [ready]
+            else:
+                settle = sample()["sim_s"]
+                wait_for(lambda r: r["sim_s"] - settle >= 3, 20)
+                rows = [sample()]
             event("hold_started", sim_s=rows[0]["sim_s"], target=target)
             while rows[-1]["sim_s"] - rows[0]["sim_s"] < config["hold_duration_sim_s"]:
                 time.sleep(0.3)
@@ -997,6 +1008,10 @@ def flight_trial(config, obs, run, field):
             frames.append(obs.images_to_disk(phase, ["onboard_rgb", "onboard_depth", "down_rgb"]))
             if not metrics["passed"]:
                 raise RuntimeError("AP hold did not meet frozen bounds at " + phase)
+            if (phase == "01-FEEDBACK-EXIT"
+                    and config.get("visual_gust_trial", {}).get("scenario") == "return_fault"):
+                event("CPU_AP_return_fault_injected", fixture=True, observation=sample())
+                raise RuntimeError("CPU injected AP-return failure after measured hold")
             if pad_queue and phase == "02-D3":
                 pad_queue.await_clearance(sample)
             if config["world"].get("payload_delivery") and phase == "SEA-TAKEOFF":
@@ -1221,6 +1236,26 @@ def flight_trial(config, obs, run, field):
                 if endpoint_feedback and decisions and decisions.completed
                 else {}
             ),
+        )
+    except Exception as failure:
+        if not (config.get("visual_gust_trial") and phase == "01-FEEDBACK-EXIT"
+                and decisions and decisions.closed and not decisions.active):
+            raise
+        if __package__:
+            from .yokohama_candidate_recovery import recover
+        else:
+            from yokohama_candidate_recovery import recover
+        event("AP_return_failed_after_model_revocation", reason=str(failure), observation=sample())
+
+        def recovery_phase(name):
+            nonlocal phase
+            phase = name
+
+        return recover(
+            config, decisions, failure, sample=sample, upload=upload, activate=activate,
+            wait_for=wait_for, land=lambda: run([BIN + "commander", "land"]),
+            contacts=lambda: obs.contacts, event=event,
+            clock=lambda: time.monotonic() - started, set_phase=recovery_phase,
         )
     finally:
         primary_failure = sys.exc_info()[0] is not None

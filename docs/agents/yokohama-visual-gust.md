@@ -20,7 +20,7 @@ the session without dispatch authority. LAND and rotation remain excluded.
 The enabled CPU color double detects only the staged red panel. An image-dependent
 CPU output proves interface wiring, not learned AeroVLA perception or avoidance.
 
-`--visual-gust-trial {calm,reach,reject,timeout}` requires a separately source-bound
+`--visual-gust-trial {calm,reach,reject,timeout,return_fault}` requires a separately source-bound
 approval, the pinned local image, the exact CPU fixture argument catalog and a
 new output directory. Each immutable approval admits one flight and has an atomic
 attempt claim. It uses four observations toward an eight-metre goal along the
@@ -37,6 +37,16 @@ only; it does not add continuous ground-truth heading compensation. The previous
 unaligned run failed its first-leg settling deadline and safely recovered. Its
 evidence remains retained. A gust run requires a passing calm run of the same
 runtime source closure and pinned image.
+
+After AP return, the fixed thirty-second hold starts only after fresh in-envelope
+stationarity: three distinct pose/time observations spanning two seconds, within
+0.25 m horizontally and 0.15 m vertically, speed at most 0.3 m/s and AUTO_LOITER.
+The existing minimum three-second settling and maximum twenty-second settling
+wait remain unchanged. Return failures after model revocation in this CPU scope
+use the existing separately approved 220-second recovery, with no new model
+authority or relaxed envelope. The `return_fault` fixture follows the identical
+route/pulse and deliberately fails after the measured return hold to exercise
+this failure path. Successful recovery preserves the failed mission outcome.
 
 After the first stable leg, Gazebo receives exactly one 0.5 m/s eastward wind
 pulse lasting two simulation seconds, followed by confirmed zero wind. PX4 hold
