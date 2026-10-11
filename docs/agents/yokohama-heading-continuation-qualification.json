@@ -1,0 +1,68 @@
+{
+  "schema": "yokohama.heading-continuation-qualification.v1",
+  "base_commit": "4424cbe4cb2d7237f5e59b3ab081fcce37a6b17d",
+  "flight_source_commit": "206e8c127588ca7e03d196af086807b377308c88",
+  "source_closure_sha256": "6eea383751346b1b1fd9f4f262881cd404803d9000ee2a0d1a84cbc7b62242ae",
+  "source_files": 1029,
+  "status": "blocked_after_single_gust_attempt",
+  "initial_alignment": {
+    "route_aligned_launch_takeoff_hold": true,
+    "existing_45s_startup_wait": true,
+    "heading_limit_rad": 0.05,
+    "continuous_ground_truth_control": false
+  },
+  "calm": {
+    "attempts": 1,
+    "status": "passed",
+    "independent_verification": "passed",
+    "goal_8m_observed": true,
+    "return_landing_disarm": true,
+    "actual_VLA_fixture_requests": 4,
+    "actual_WAM_fixture_requests": 4,
+    "goal_error_m": 0.046433975824891616
+  },
+  "gust": {
+    "attempts": 1,
+    "status": "failed",
+    "independent_full_verification": "failed",
+    "partial_gust_goal_verification": "passed",
+    "goal_8m_observed": true,
+    "goal_error_m": 0.12257193550185123,
+    "wind_pulses": 1,
+    "duration_sim_s": 2.0319999999999965,
+    "witness_displacement_x_m": 0.9655346148358017,
+    "post_gust_speed_mps": 0.06880316053787064,
+    "fresh_post_gust_image_count": 24,
+    "return_hold_maximum_horizontal_error_m": 0.3938675452421684,
+    "unchanged_return_hold_limit_m": 0.25,
+    "landing_observed": false,
+    "disarm_observed": false,
+    "final_record_armed": true,
+    "simulator_stopped": true,
+    "model_authority_revoked": true,
+    "late_guard_observed": true
+  },
+  "tests": {
+    "full_passed": 7947,
+    "full_skipped": 6,
+    "targeted_passed": 187,
+    "lint": "passed",
+    "independent_arrival_audit": "passed for all four arrivals in each flight",
+    "negative_controls_rejected": [
+      "heading_out_of_bounds",
+      "replayed_pose_stamp"
+    ]
+  },
+  "previous_failure_retained": true,
+  "additional_flights": 0,
+  "claims": {
+    "complete_eight_metre_gust_qualification": false,
+    "native_visual_qualification": false,
+    "GPU": false,
+    "external_model_API": false,
+    "paid_resources": false,
+    "physical_execution": false,
+    "delivery": false
+  },
+  "next_proposal": "Review return settling: current <0.65m arrival plus fixed 3s settling can begin the 30s hold outside its unchanged 0.25m envelope. Require fresh distinct in-envelope stability within the existing 20s settling wait before starting the unchanged 30s hold; review failure recovery outside the model segment. No additional flight authorized in this phase."
+}
