@@ -61,6 +61,23 @@ def verify(root):
             "container_network_GPU_boundary",
         )
         checks["source_world_config_CPU_bound"] = True
+        alignment = json.loads((root / "initial-alignment.json").read_text())
+        from src.runtime.yokohama_native import camera_heading
+
+        desired = math.radians(config["simulator_initial_heading_deg"])
+        stable_observed(
+            alignment,
+            lambda r: (
+                r["landed"] is True
+                and r["arming_state"] == 1
+                and 0 <= r["vehicle"]["age_s"] <= 2
+                and math.hypot(*r["velocity_ned"]) <= 0.3
+                and abs(math.remainder(camera_heading(r) - desired, 2 * math.pi)) <= 0.03
+                and abs(math.remainder(r["heading_ned_rad"] - camera_heading(r), 2 * math.pi))
+                <= 0.03
+            ),
+        )
+        checks["distinct_ground_alignment_before_arm"] = True
         verify_transport_evidence(root, config, events)
         checks["altitude_upload_binding"] = True
         requests = [
@@ -68,12 +85,14 @@ def verify(root):
         ]
         counts = {op: sum(r["operation"] == op for r in requests) for op in ("vla", "wam")}
         scenario = config["visual_gust_trial"]["scenario"]
-        expected_counts = {"vla": 4, "wam": 4} if scenario == "reach" else {"vla": 3, "wam": 2}
+        expected_counts = (
+            {"vla": 4, "wam": 4} if scenario in ("calm", "reach") else {"vla": 3, "wam": 2}
+        )
         require(counts == expected_counts, "finite_actual_request_budget")
         dispatch = [e for e in events if e["event"] == "city_segment_dispatched"]
         arrivals = [e for e in events if e["event"] == "city_segment_arrived"]
         require(
-            len(dispatch) == len(arrivals) == (4 if scenario == "reach" else 2),
+            len(dispatch) == len(arrivals) == (4 if scenario in ("calm", "reach") else 2),
             "observed_segment_count",
         )
         for index, e in enumerate(arrivals):
@@ -128,42 +147,55 @@ def verify(root):
             if row["phase"] not in ("recovery_land", "return_land"):
                 require(abs(xyz[2] - a[2]) <= 0.5, "measured_altitude_envelope")
         checks["measured_corridor_altitude_freshness"] = True
-        gust = json.loads((root / "weak-gust.json").read_text())
-        receipts = gust["receipts"]
-        require(
-            gust["pulse_count"] == 1
-            and len(receipts) == 2
-            and [r["requested_enu_mps"] for r in receipts] == [[0.5, 0, 0], [0, 0, 0]]
-            and all(r["confirmed"] for r in receipts),
-            "one_confirmed_weak_pulse",
-        )
-        require(2 <= receipts[1]["start_sim_s"] - receipts[0]["end_sim_s"] <= 3, "pulse_duration")
-        samples = gust["rows"]
-        witnesses = [
-            (r["wind_probe"]["wind_witness"], r["wind_probe"]["wind_control"]) for r in samples
-        ]
-        require(
-            len(witnesses) >= 3 and all(0 <= v["age_s"] <= 2 for pair in witnesses for v in pair),
-            "wind_witness_freshness",
-        )
-        require(
-            witnesses[-1][0]["xyz"][0] - witnesses[0][0]["xyz"][0] > 0.05
-            and all(math.dist(pair[1]["xyz"], [0, 3010, 100]) < 0.001 for pair in witnesses),
-            "physical_force_against_control",
-        )
-        settled = next(e for e in events if e["event"] == "weak_gust_settled_before_reobservation")
-        second = next(r for r in requests if r["operation"] == "vla" and r["cycle"] == 2)
-        capture = json.loads((root / second["capture"]["file"]).read_text())
-        require(
-            capture["frames"][0]["stamp_ns"] / 1e9 > settled["observation"]["sim_s"],
-            "fresh_images_after_gust",
-        )
-        require(
-            math.hypot(*gust["after"]["velocity_ned"]) <= 0.3 and gust["after"]["nav_state"] == 4,
-            "PX4_settled_before_model",
-        )
-        checks["one_physical_pulse_and_fresh_reobservation"] = True
-        if scenario == "reach":
+        if scenario == "calm":
+            require(
+                not (root / "weak-gust.json").exists() and not config["world"].get("wind"),
+                "calm_has_wind",
+            )
+            checks["calm_without_wind"] = True
+        else:
+            gust = json.loads((root / "weak-gust.json").read_text())
+            receipts = gust["receipts"]
+            require(
+                gust["pulse_count"] == 1
+                and len(receipts) == 2
+                and [r["requested_enu_mps"] for r in receipts] == [[0.5, 0, 0], [0, 0, 0]]
+                and all(r["confirmed"] for r in receipts),
+                "one_confirmed_weak_pulse",
+            )
+            require(
+                2 <= receipts[1]["start_sim_s"] - receipts[0]["end_sim_s"] <= 3, "pulse_duration"
+            )
+            samples = gust["rows"]
+            witnesses = [
+                (r["wind_probe"]["wind_witness"], r["wind_probe"]["wind_control"]) for r in samples
+            ]
+            require(
+                len(witnesses) >= 3
+                and all(0 <= v["age_s"] <= 2 for pair in witnesses for v in pair),
+                "wind_witness_freshness",
+            )
+            require(
+                witnesses[-1][0]["xyz"][0] - witnesses[0][0]["xyz"][0] > 0.05
+                and all(math.dist(pair[1]["xyz"], [0, 3010, 100]) < 0.001 for pair in witnesses),
+                "physical_force_against_control",
+            )
+            settled = next(
+                e for e in events if e["event"] == "weak_gust_settled_before_reobservation"
+            )
+            second = next(r for r in requests if r["operation"] == "vla" and r["cycle"] == 2)
+            capture = json.loads((root / second["capture"]["file"]).read_text())
+            require(
+                capture["frames"][0]["stamp_ns"] / 1e9 > settled["observation"]["sim_s"],
+                "fresh_images_after_gust",
+            )
+            require(
+                math.hypot(*gust["after"]["velocity_ned"]) <= 0.3
+                and gust["after"]["nav_state"] == 4,
+                "PX4_settled_before_model",
+            )
+            checks["one_physical_pulse_and_fresh_reobservation"] = True
+        if scenario in ("calm", "reach"):
             require(
                 result["status"] == "passed"
                 and result["observed"]["model_goal_reached"] is True
@@ -242,7 +274,7 @@ def verify(root):
             scenario=scenario,
             checks=checks,
             requests=counts,
-            mission_outcome="passed" if scenario == "reach" else "failed",
+            mission_outcome="passed" if scenario in ("calm", "reach") else "failed",
             interpretation="CPU fixture wiring, measured PX4/Gazebo wind/return only; no learned visual performance",
         )
     except Exception as exc:

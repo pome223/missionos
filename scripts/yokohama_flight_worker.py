@@ -322,7 +322,7 @@ def execute_model_segments(
         event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
         decisions.record_arrival(obs, permit, arrived)
         check_deadline()
-        if config.get("visual_gust_trial") and len(decisions.completed) == 1:
+        if config.get("visual_gust_trial", {}).get("scenario") not in (None, "calm") and len(decisions.completed) == 1:
             try:
                 from .yokohama_visual_gust_contract import pulse
             except ImportError:
@@ -893,13 +893,19 @@ def flight_trial(config, obs, run, field):
                 source=config["simulator_heading_runtime"]["source"],
                 observation=before,
             )
+            ground_check = None
+            if config.get("visual_gust_trial"):
+                from yokohama_visual_gust_contract import initial_alignment_check
+                ground_check = initial_alignment_check(config)
             aligned = wait_for(
-                lambda r: (
+                ground_check or (lambda r: (
                     abs(math.remainder(r["heading_ned_rad"] - physical_heading(r), 2 * math.pi))
                     <= 0.03
-                ),
+                )),
                 45,
             )
+            if ground_check:
+                (ROOT / "initial-alignment.json").write_text(json.dumps(ground_check.rows, indent=2) + "\n")
             event(
                 "simulator_initial_heading_observed",
                 observation=aligned,

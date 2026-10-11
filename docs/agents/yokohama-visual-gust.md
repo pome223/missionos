@@ -20,12 +20,23 @@ the session without dispatch authority. LAND and rotation remain excluded.
 The enabled CPU color double detects only the staged red panel. An image-dependent
 CPU output proves interface wiring, not learned AeroVLA perception or avoidance.
 
-`--visual-gust-trial {reach,reject,timeout}` requires a separately source-bound
+`--visual-gust-trial {calm,reach,reject,timeout}` requires a separately source-bound
 approval, the pinned local image, the exact CPU fixture argument catalog and a
 new output directory. Each immutable approval admits one flight and has an atomic
 attempt claim. It uses four observations toward an eight-metre goal along the
 frozen D1/D2 direction. Before flight, the full tracking corridor and vertical
 landing column must pass the existing mapped clearance check.
+
+The CPU continuation first qualifies the complete eight-metre route without
+wind (`calm`). Initial spawn, takeoff and D1 hold use the approved D1/D2 heading;
+the zero horizontal takeoff displacement must not introduce a zero-degree
+bearing. Before arming, three distinct fresh ground observations spanning two
+simulation seconds must show stationarity and world/estimator heading agreement
+within the existing 45-second startup alignment wait. This changes initialization
+only; it does not add continuous ground-truth heading compensation. The previous
+unaligned run failed its first-leg settling deadline and safely recovered. Its
+evidence remains retained. A gust run requires a passing calm run of the same
+runtime source closure and pinned image.
 
 After the first stable leg, Gazebo receives exactly one 0.5 m/s eastward wind
 pulse lasting two simulation seconds, followed by confirmed zero wind. PX4 hold

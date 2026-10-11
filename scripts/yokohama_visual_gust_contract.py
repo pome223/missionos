@@ -23,7 +23,7 @@ CONTRACT = {
     "gust_after_cycle": 1,
     "maximum_gusts": 1,
 }
-SCENARIOS = ("reach", "reject", "timeout")
+SCENARIOS = ("calm", "reach", "reject", "timeout")
 
 
 def build_config(base, scenario):
@@ -46,6 +46,15 @@ def build_config(base, scenario):
     )
     a, b = p["entry_world_xyz_m"], p["goal_world_xyz_m"]
     p["goal_world_xyz_m"] = [x + 2 * (y - x) for x, y in zip(a, b)]
+    config["simulator_initial_heading_deg"] = math.degrees(math.atan2(b[0] - a[0], b[1] - a[1]))
+    # D1's zero horizontal takeoff displacement has no meaningful bearing.
+    # Keep launch, takeoff and D1 hold aligned in this separate scope only.
+    for item in config["flight_stages"][0]["items"]:
+        item["param4"] = config["simulator_initial_heading_deg"]
+    if "simulator_heading_runtime" in config:
+        config["simulator_heading_runtime"]["source"] = (
+            "approved_D1_D2_route_heading_spawn_alignment"
+        )
     return config
 
 
@@ -88,6 +97,8 @@ def validate_config(config):
     ):
         raise ValueError("Unapproved eight-metre CPU experiment")
     wind = config["world"].get("wind")
+    if marker["scenario"] == "calm" and (wind or config.get("wind_mps")):
+        raise ValueError("Calm preflight does not admit wind physics")
     if wind and (
         wind.get("velocity_enu_mps") != [0.5, 0, 0]
         or wind.get("after_takeoff") is not True
@@ -112,7 +123,79 @@ def validate_config(config):
     goal = [x + 8 * (y - x) / length for x, y in zip(a, target)]
     if math.dist(goal, p["goal_world_xyz_m"]) > 1e-8:
         raise ValueError("Eight-metre goal differs from the frozen D1/D2 direction")
+    heading = math.degrees(math.atan2(goal[0] - a[0], goal[1] - a[1]))
+    if not math.isclose(
+        config.get("simulator_initial_heading_deg", math.inf), heading, abs_tol=1e-8
+    ):
+        raise ValueError("CPU launch must align with the approved route")
+    if any(
+        not math.isclose(item.get("param4", math.inf), heading, abs_tol=1e-8)
+        for item in config["flight_stages"][0]["items"]
+    ):
+        raise ValueError("CPU takeoff/hold must retain the approved initial alignment")
     return p
+
+
+def spawn_yaw(config):
+    validate_config(config)
+    return math.remainder(
+        math.pi / 2 - math.radians(config["simulator_initial_heading_deg"]), 2 * math.pi
+    )
+
+
+def initial_alignment_check(config):
+    """Ground alignment with distinct fresh observations inside the existing 45s wait."""
+    validate_config(config)
+    if __package__:
+        from .yokohama_decision_worker import physical_heading
+    else:
+        from yokohama_decision_worker import physical_heading
+    home = config["decisions"]["endpoint_feedback"]["entry_world_xyz_m"]
+    desired = math.radians(config["simulator_initial_heading_deg"])
+    first = last = None
+    count = 0
+
+    def check(row):
+        nonlocal first, last, count
+        pose = row["vehicle"]
+        world = physical_heading(row)
+        good = (
+            row["landed"] is True
+            and row["arming_state"] == 1
+            and row["position_valid"] is True
+            and row["battery_fraction"] >= 0.2
+            and 0 <= pose["age_s"] <= 2
+            and math.dist(pose["xyz"][:2], home[:2]) <= 0.25
+            and -0.2 <= pose["xyz"][2] <= 0.5
+            and math.hypot(*row["velocity_ned"]) <= 0.3
+            and abs(math.remainder(world - desired, 2 * math.pi)) <= 0.03
+            and abs(math.remainder(row["heading_ned_rad"] - world, 2 * math.pi)) <= 0.03
+        )
+        check.rows.append(row)
+        if not good:
+            first = last = None
+            count = 0
+            return False
+        if last is not None:
+            if (
+                row["sim_s"] <= last["sim_s"]
+                or pose["sensor_sim_s"] <= last["vehicle"]["sensor_sim_s"]
+            ):
+                return False
+            if (
+                row["sim_s"] - last["sim_s"] > 2
+                or row["wall_s"] - last["wall_s"] > 3
+                or row["reset_counters"] != last["reset_counters"]
+            ):
+                first = None
+                count = 0
+        first = row if first is None else first
+        last = row
+        count += 1
+        return count >= 3 and row["sim_s"] - first["sim_s"] >= 2
+
+    check.rows = []
+    return check
 
 
 def arguments(image, scenario):

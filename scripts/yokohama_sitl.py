@@ -395,7 +395,7 @@ def main(argv=None):
     )
     parser.add_argument("--delivery-trial", choices=["delivery", "wait", "candidate_rejected", "timeout"],
                         help="Separately approved full ship/cargo/return simulation with bounded D1 feedback")
-    parser.add_argument("--visual-gust-trial", choices=["reach", "reject", "timeout"],
+    parser.add_argument("--visual-gust-trial", choices=["calm", "reach", "reject", "timeout"],
                         help="Separate CPU-only eight-metre inland trial with one weak wind pulse")
     args = parser.parse_args(argv)
     if args.endpoint_adapter_trial and (
@@ -905,9 +905,10 @@ def main(argv=None):
             from scripts.yokohama_candidate_recovery import map_clearance
             from src.runtime.yokohama_wind import add_wind
             config = build_config(config, args.visual_gust_trial)
-            config["world"] = add_wind(root, config["world"], 0.5, after_takeoff=True)
+            if args.visual_gust_trial != "calm":
+                config["world"] = add_wind(root, config["world"], 0.5, after_takeoff=True)
             world = config["world"]
-            config["wind_mps"] = 0.5
+            config["wind_mps"] = 0 if args.visual_gust_trial == "calm" else 0.5
             validate_config(config)
             config["recovery_map_qualification"] = map_clearance(config, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson")
             shutil.copy2(REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson", root / "collision-footprints.geojson")
@@ -1116,7 +1117,7 @@ def main(argv=None):
                             0.3,
                             0,
                             0,
-                            0,
+                            __import__("scripts.yokohama_visual_gust_contract", fromlist=["spawn_yaw"]).spawn_yaw(config) if args.visual_gust_trial else 0,
                         ],
                     )
                 ),

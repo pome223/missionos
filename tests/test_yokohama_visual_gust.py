@@ -2,6 +2,7 @@
 
 import io
 import json
+import math
 from types import SimpleNamespace
 
 from PIL import Image
@@ -51,6 +52,69 @@ def test_actual_map_eight_metre_corridor_includes_landing_volume(tmp_path):
         c, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson"
     )
     assert result["minimum_clearance_m"] > result["required_centerline_clearance_m"]
+
+
+def test_route_aligned_spawn_is_world_ENU_yaw_and_leaves_old_plan_east(tmp_path):
+    c = config(tmp_path)
+    heading = math.radians(c["simulator_initial_heading_deg"])
+    assert math.remainder(
+        math.pi / 2 - contract.spawn_yaw(c) - heading, 2 * math.pi
+    ) == pytest.approx(0)
+    assert c["simulator_initial_heading_deg"] == pytest.approx(
+        c["flight_stages"][0]["items"][-1]["param4"]
+    )
+    p = c["decisions"]["endpoint_feedback"]
+    yaw = contract.spawn_yaw(c)
+    a, b = p["entry_world_xyz_m"], p["goal_world_xyz_m"]
+    assert [math.cos(yaw), math.sin(yaw)] == pytest.approx([(b[i] - a[i]) / 8 for i in (0, 1)])
+    original = json.loads((tmp_path / "plan/config.json").read_text())
+    assert original.get("simulator_initial_heading_deg", 90) == 90
+    assert all(
+        item["param4"] == c["simulator_initial_heading_deg"]
+        for item in c["flight_stages"][0]["items"]
+    )
+    c["simulator_initial_heading_deg"] = 90
+    with pytest.raises(ValueError, match="align"):
+        contract.validate_config(c)
+
+
+@pytest.mark.parametrize("fault", [None, "replay", "heading", "moving", "stale", "reset"])
+def test_initial_alignment_requires_distinct_ground_stationarity(tmp_path, fault):
+    from tests.test_yokohama_candidate_recovery import row
+
+    c = config(tmp_path)
+    yaw = contract.spawn_yaw(c)
+    check = contract.initial_alignment_check(c)
+    rows = []
+    for t in (0, 1, 2):
+        r = row(t, [0, 0, 0.2], land=True)
+        r.update(
+            run_id=c["run_id"],
+            world_sha256=c["world"]["world_sha256"],
+            heading_ned_rad=math.radians(c["simulator_initial_heading_deg"]),
+        )
+        r["vehicle"]["quat_wxyz"] = [math.cos(yaw / 2), 0, 0, math.sin(yaw / 2)]
+        if fault == "replay":
+            r["vehicle"]["sensor_sim_s"] = 0
+        if fault == "heading":
+            r["heading_ned_rad"] += 0.04
+        if fault == "moving":
+            r["velocity_ned"] = [0.31, 0, 0]
+        if fault == "stale":
+            r["vehicle"]["age_s"] = 2.1
+        if fault == "reset":
+            r["reset_counters"][2] = t
+        rows.append(check(r))
+    assert rows[-1] is (fault is None)
+
+
+def test_calm_catalog_cannot_admit_a_pulse(tmp_path):
+    c = config(tmp_path)
+    c["visual_gust_trial"]["scenario"] = "calm"
+    assert contract.validate_config(c)
+    c["wind_mps"] = 0.5
+    with pytest.raises(ValueError, match="Calm"):
+        contract.validate_config(c)
 
 
 @pytest.mark.parametrize(
