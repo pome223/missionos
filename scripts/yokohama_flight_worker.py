@@ -322,11 +322,17 @@ def execute_model_segments(
         event("city_segment_arrived", permit_id=permit["permit_id"], observation=arrived)
         decisions.record_arrival(obs, permit, arrived)
         check_deadline()
+        if config.get("visual_gust_trial") and len(decisions.completed) == 1:
+            try:
+                from .yokohama_visual_gust_contract import pulse
+            except ImportError:
+                from yokohama_visual_gust_contract import pulse
+            pulse(config, obs, decisions.sample, wait_for, event, clock, check_deadline)
         if feedback and goal_reached(config, arrived):
             break
     if feedback:
-        if config.get("endpoint_adapter_trial") and not goal_reached(config, arrived):
-            raise ValueError("Approved goal not observed after two endpoint candidates")
+        if (config.get("endpoint_adapter_trial") or config.get("visual_gust_trial")) and not goal_reached(config, arrived):
+            raise ValueError("Approved goal not observed within the endpoint candidate budget")
         decisions.stop()
         check_deadline()
         if not decisions.closed or decisions.active:
@@ -350,7 +356,7 @@ def ap_exit_connector(config, permit):
     This preserves its altitude, yaw and transport identity instead of replacing
     it with the city's differently named dynamic connector.
     """
-    if config.get("endpoint_adapter_trial") is not None or config.get("delivery_trial") is not None:
+    if config.get("endpoint_adapter_trial") is not None or config.get("delivery_trial") is not None or config.get("visual_gust_trial"):
         feedback_policy(config)  # exact separate approval and fixed route contract
         return None
     return permit["connector_name"]
@@ -1151,14 +1157,22 @@ def flight_trial(config, obs, run, field):
                     pad_queue.move_hold(candidate["target_world_xyz_m"], permit["permit_id"])
                 if phase == model_phases[-1]:
                     decisions.stop()
+        if config.get("visual_gust_trial"):
+            from yokohama_visual_gust_contract import distinct_landing_predicate
+            returned = wait_for(distinct_landing_predicate(config, sample(), landing=False), 30)
+            event("visual_gust_return_observed", observation=returned)
         phase = "return_land"
+        terminal_check = None
+        if config.get("visual_gust_trial"):
+            from yokohama_visual_gust_contract import distinct_landing_predicate
+            terminal_check = distinct_landing_predicate(config, sample())
         run([BIN + "commander", "land"])
         final = wait_for(
-            lambda r: (
+            terminal_check or (lambda r: (
                 r["landed"] is True
                 and r["arming_state"] == 1
                 and math.dist(r["vehicle"]["xyz"][:2], landing_xy) < 1.5
-            ),
+            )),
             90,
         )
         event("landing_observed", observation=final)

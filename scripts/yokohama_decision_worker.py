@@ -179,10 +179,11 @@ class CityDecisions:
             if (time.monotonic() >= self.feedback_deadline
                     or self.clock() >= getattr(self, "endpoint_deadline", math.inf)):
                 raise TimeoutError("Endpoint feedback total deadline exceeded")
-            if self.cycle == 2:
-                if len(self.completed) != 1:
+            extended = bool(self.config.get("visual_gust_trial"))
+            if (extended and self.cycle >= 2) or (not extended and self.cycle == 2):
+                if len(self.completed) != (self.cycle - 1 if extended else 1):
                     raise ValueError("Endpoint feedback needs exactly one observed predecessor")
-                previous = self.completed[0]
+                previous = self.completed[-1] if extended else self.completed[0]
                 message["previous_segment"] = deepcopy({
                     "permit": previous["permit"], "arrival": previous["arrived"],
                     "stable_since_sim_s": previous["stable_since_sim_s"],

@@ -46,6 +46,12 @@ def feedback_policy(config):
     """Validate the entire narrow policy, or preserve the legacy path if absent."""
     if not isinstance(config, dict) or not isinstance(config.get("decisions", {}), dict):
         raise ValueError("Invalid feedback configuration")
+    if config.get("visual_gust_trial") is not None:
+        if __package__:
+            from .yokohama_visual_gust_contract import validate_config
+        else:
+            from yokohama_visual_gust_contract import validate_config
+        return validate_config(config)
     if config.get("delivery_trial") is not None:
         if __package__:
             from .yokohama_delivery_contract import validate_config
@@ -224,7 +230,7 @@ def validate_feedback_request(config, message):
     row = message.get("observation", {})
     validate_feedback_observation(config, row, held=True)
     if (
-        type(cycle) is not int or cycle not in (1, 2)
+        type(cycle) is not int or cycle not in (range(1, 5) if config.get("visual_gust_trial") else (1, 2))
         or operation not in {"start", "vla", "wam", "authorize", "activate"}
         or (operation == "start" and cycle != 1)
         or row.get("phase") != policy["entry_phase"]
@@ -235,6 +241,13 @@ def validate_feedback_request(config, message):
             and message["next_target_world_xyz_m"] != policy["goal_world_xyz_m"])
     ):
         raise ValueError("Unapproved feedback cycle/goal/phase")
+    if config.get("visual_gust_trial"):
+        if __package__:
+            from .yokohama_visual_gust_contract import validate_previous
+        else:
+            from yokohama_visual_gust_contract import validate_previous
+        validate_previous(config, message)
+        return
     previous = message.get("previous_segment")
     if cycle == 1:
         if previous is not None or math.dist(row["vehicle"]["xyz"], policy["entry_world_xyz_m"]) > 0.25:

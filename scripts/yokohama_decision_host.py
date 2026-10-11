@@ -502,6 +502,10 @@ class DecisionHost:
             # A raw five-metre action is inadmissible before any shortening.
             response["generated_text"] = "98 49 49"
         (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
+        if self.config.get("visual_gust_trial") and self.backend == "fixture":
+            scenario = self.config["visual_gust_trial"]["scenario"]
+            response["generated_text"] = "98 49 49" if scenario == "reject" and message["cycle"] == 3 else "43 49 49"
+            (output / "native-response.json").write_text(json.dumps(response, indent=2) + "\n")
         candidate = vla_candidate(response["generated_text"], row)
         try:
             candidate, adjustment = adapt_candidate(self.config, candidate, row, digest(response))
@@ -977,6 +981,9 @@ class DecisionHost:
                             and self.config.get("delivery_scenario") == "timeout"
                             and operation == "vla" and message["cycle"] == 2):
                         delay = 80  # Exercise the unchanged 75-second response limit.
+                    if (self.backend == "fixture" and self.config.get("visual_gust_trial", {}).get("scenario") == "timeout"
+                            and operation == "vla" and message["cycle"] == 3):
+                        delay = 80
                     if self.backend == "fixture" and delay:
                         time.sleep(delay)
                     if operation in {"start", "stop"}:

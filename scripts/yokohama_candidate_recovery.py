@@ -29,6 +29,13 @@ def policy(config):
     value = config.get("candidate_recovery")
     if value is None:
         return None
+    if config.get("visual_gust_trial"):
+        if __package__:
+            from .yokohama_visual_gust_contract import validate_config
+        else:
+            from yokohama_visual_gust_contract import validate_config
+        validate_config(config)
+        return LIMITS
     from_scripts = config["decisions"]["endpoint_feedback"]
     adapted = config.get("endpoint_adapter_trial") is not None
     if adapted:

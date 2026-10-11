@@ -395,6 +395,8 @@ def main(argv=None):
     )
     parser.add_argument("--delivery-trial", choices=["delivery", "wait", "candidate_rejected", "timeout"],
                         help="Separately approved full ship/cargo/return simulation with bounded D1 feedback")
+    parser.add_argument("--visual-gust-trial", choices=["reach", "reject", "timeout"],
+                        help="Separate CPU-only eight-metre inland trial with one weak wind pulse")
     args = parser.parse_args(argv)
     if args.endpoint_adapter_trial and (
         not args.endpoint_feedback or not args.goal_distance_adapter or args.plan_only
@@ -521,6 +523,18 @@ def main(argv=None):
             parser.error(str(exc))
     admitted_service_bytes = None
     admitted_approval_bytes = None
+    if args.visual_gust_trial:
+        from scripts.yokohama_visual_gust_contract import admit, arguments
+        if not args.approve_sitl or not args.approval_manifest or not args.local_image_id:
+            parser.error("CPU gust trial requires exact approval and fixed image")
+        expected = arguments(args.local_image_id, args.visual_gust_trial)
+        canonical = parser.parse_args(expected + ["--approve-sitl", "--approval-manifest", str(args.approval_manifest), "--output-dir", str(args.output_dir)])
+        if vars(args) != vars(canonical):
+            parser.error("CPU gust arguments differ from the separate catalog")
+        admitted_approval_bytes = args.approval_manifest.read_bytes()
+        admit(admitted_approval_bytes, REPO, expected)
+        with (args.approval_manifest.parent / "flight-attempt-claimed.json").open("x") as stream:
+            json.dump({"approval": __import__("hashlib").sha256(admitted_approval_bytes).hexdigest(), "flight_attempt": 1}, stream)
     if args.delivery_trial:
         from scripts.yokohama_delivery_contract import admit, arguments
         if not args.approve_sitl or not args.approval_manifest or not args.local_image_id:
@@ -703,8 +717,8 @@ def main(argv=None):
         if args.approval_manifest:
             import hashlib
 
-            manifest = admitted_approval_bytes if (args.endpoint_adapter_trial or args.delivery_trial) else args.approval_manifest.read_bytes()
-            if (args.endpoint_adapter_trial or args.delivery_trial) and args.approval_manifest.read_bytes() != manifest:
+            manifest = admitted_approval_bytes if (args.endpoint_adapter_trial or args.delivery_trial or args.visual_gust_trial) else args.approval_manifest.read_bytes()
+            if (args.endpoint_adapter_trial or args.delivery_trial or args.visual_gust_trial) and args.approval_manifest.read_bytes() != manifest:
                 raise ValueError("Endpoint approval changed after admission")
             approval = json.loads(manifest)["approval"]
             config["operator_approval"] = (
@@ -886,6 +900,22 @@ def main(argv=None):
                     reuse_mavlink_session=index > 0,
                     runtime_items_path="/mission/" + name + "-altitude-items.json",
                     prepared_binding_path="/mission/" + name + "-upload-binding.json"))
+        if args.visual_gust_trial:
+            from scripts.yokohama_visual_gust_contract import build_config, validate_config
+            from scripts.yokohama_candidate_recovery import map_clearance
+            from src.runtime.yokohama_wind import add_wind
+            config = build_config(config, args.visual_gust_trial)
+            config["world"] = add_wind(root, config["world"], 0.5, after_takeoff=True)
+            world = config["world"]
+            config["wind_mps"] = 0.5
+            validate_config(config)
+            config["recovery_map_qualification"] = map_clearance(config, REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson")
+            shutil.copy2(REPO / "docs/examples/yokohama-urban-scene/collision-footprints.geojson", root / "collision-footprints.geojson")
+            shutil.copy2(root / "collision-footprints.geojson", root / "recovery-map.geojson")
+            from scripts.smoke_px4_gazebo_sitl_mission_upload import _inner_upload_script
+            for index, stage in enumerate(config["flight_stages"]):
+                name = stage["name"]
+                (root / (name + "-upload.py")).write_text(_inner_upload_script(reuse_mavlink_session=index > 0, runtime_items_path="/mission/" + name + "-altitude-items.json", prepared_binding_path="/mission/" + name + "-upload-binding.json"))
         if args.delivery_trial:
             from scripts.yokohama_delivery_contract import build_config
             config = build_config(config, args.delivery_trial)
@@ -940,6 +970,8 @@ def main(argv=None):
                 ])
             if args.altitude_diagnostics:
                 sources.append(REPO / "scripts/yokohama_altitude.py")
+        if args.visual_gust_trial:
+            sources.extend([REPO / "scripts/yokohama_candidate_recovery.py", REPO / "scripts/yokohama_visual_gust_contract.py"])
         if args.delivery_trial:
             sources.extend([REPO / "scripts/yokohama_delivery_contract.py",
                             REPO / "scripts/yokohama_delivery_recovery.py",
@@ -1133,8 +1165,8 @@ def main(argv=None):
             if worker.returncode == 0 and result.get("observed", {}).get("status") == "passed"
             else "failed"
         )
-        if args.candidate_recovery or args.endpoint_adapter_trial or args.delivery_trial:
-            result["mission_outcome"] = "passed" if (args.endpoint_adapter_trial or args.delivery_trial) and result["status"] == "passed" else "failed"
+        if args.candidate_recovery or args.endpoint_adapter_trial or args.delivery_trial or args.visual_gust_trial:
+            result["mission_outcome"] = "passed" if (args.endpoint_adapter_trial or args.delivery_trial or args.visual_gust_trial) and result["status"] == "passed" else "failed"
             result["recovery_outcome"] = result.get("observed", {}).get(
                 "recovery_outcome", "unverified")
     except Exception as exc:
@@ -1181,7 +1213,7 @@ def main(argv=None):
             raise
         finally:
             cleanup_owned(root, result, created=created, container=container, worker=worker,
-                          preserve_container=args.candidate_recovery)
+                          preserve_container=args.candidate_recovery or bool(args.visual_gust_trial))
     print(
         json.dumps(
             {
