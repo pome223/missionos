@@ -65,7 +65,14 @@ The four roles cover nominal operation, deployment failure, an approval
 extension, and uncertain recovery comparisons. These are development cases,
 not an estimate of model reliability on unknown missions.
 
-[The complete M3 record and boundaries](../agents/starship-m3-final-validation.md)
+The authority-extension role was exercised across four development iterations:
+the first resolved within existing authority, the next hit its output cap, and
+the deadline-aware follow-up remained unresolved. After deadline visibility,
+output de-duplication and authority-gap routing changes, the fourth completed
+the approval chain. The successful trial reused the preceding unresolved trial's
+scenario; this is an in-sample capability regression, not a success-rate estimate
+for unseen cases. The [complete M3 record and retained earlier outcomes](../agents/starship-m3-final-validation.md)
+keep those results separate.
 
 ## Scope of the result
 
