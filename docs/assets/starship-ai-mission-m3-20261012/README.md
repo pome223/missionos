@@ -1,6 +1,6 @@
 # M3: AI mission control, one complete flight
 
-[Watch the full 112-second video](https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418) · [Higher-bitrate repository copy](mission.mp4) · [Open the offline replay](index.html)
+[Watch the full 112-second video](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12) · [Higher-bitrate repository copy](mission.mp4) · [Open the offline replay](index.html)
 
 ![Recorded M3 flight and AI decision](mission-poster.jpg)
 
@@ -47,8 +47,29 @@ exchanges, and internal reasoning are excluded. Satellite motion is shown only
 within each body's saved samples; tracks are not extrapolated past their end.
 Position interpolation and quaternion slerp are display operations only.
 
-The procedural renderer files are byte-identical copies of the earlier public
-Starship replay renderer. The old media bundle is unchanged.
+The procedural renderer adds an illustrative ocean, sun glint, cloud bands and
+horizon haze. The launch coast and orbital geography are illustrative, not a
+reconstruction of the actual sites or weather. A sea-level depth plane occludes
+geometry below the water; waves do not apply forces. There is no post-contact
+buoyancy, toppling, survival or catch animation. The old media bundle is unchanged.
+
+The revised edit gives the saved belly descent and flip six seconds each.
+`data.json` and all its physical states are unchanged. The overlay derives tilt
+from body +Z versus geodetic up and vertical velocity from the recorded velocity.
+Mesh +Y (nose) maps to body +Z; mesh −Z (heat-shield side) maps to body +Y.
+All 5,211 Ship and 243 booster samples retain a right-handed orientation.
+
+In this saved flight, Ship reaches 87.64° tilt at 6.40 km, begins the terminal
+flip near T+10,311.05 s, and contacts at about 2.40° tilt. At higher entry altitude
+its nose is more upright relative to the horizon while its velocity is nearly
+horizontal. That is different from its angle to the airflow. These are model
+states, not validation against a particular real flight.
+
+SpaceX describes flap-controlled aerodynamic descent followed by a powered
+landing flip in its [SN15 flight account](https://www.spacex.com/updates/reusability).
+The same source describes Super Heavy using its landing engines to maneuver to
+the tower. This replay establishes neither real flight accuracy nor a catch.
+[Launch-derived catch remains incomplete](../../examples/starship-sixdof.md).
 
 ## Reproduce presentation from the public bundle
 

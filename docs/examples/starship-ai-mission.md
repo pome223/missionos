@@ -11,7 +11,7 @@ original execution. The video replays that saved execution and its decisions.
 orbit raising are outside this model. The geometry and exhaust are illustrative;
 the displayed motion and metrics come from saved simulation states.*
 
-**[Watch the complete mission video](https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418)** ·
+**[Watch the complete mission video](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12)** ·
 [Interactive replay](../assets/starship-ai-mission-m3-20261012/index.html)
 
 ## What the AI does
@@ -36,6 +36,17 @@ Playback is compressed and its scale changes by phase. The simulation clock and
 playback rate stay visible. Launch, deployment and return are from one execution,
 with matching states at their boundary; the video does not splice a different
 successful return onto a launch.
+
+## Reading the descent view
+
+The Ship descends nearly horizontally late in the recorded aerodynamic descent,
+then rotates for its landing burn. The updated video slows those two stages and
+shows tilt from upright and vertical velocity. The booster is a separate body:
+its terminal return is engine-end first. The ocean, clouds and coastline are
+illustrative scenery; saved positions and attitudes are unchanged.
+
+A correct replay is not a claim that the attitude history matches a real Starship
+flight. Launch-to-tower catch remains incomplete; this record shows splashdown.
 
 ## Approval and verification
 

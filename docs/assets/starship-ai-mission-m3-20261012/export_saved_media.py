@@ -215,7 +215,7 @@ def serve(port):
 
 def media(manifest):
     webm=HERE/'captures'/(BASENAME+'.webm');mp4=HERE/(BASENAME+'.mp4')
-    subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-n','-i',str(webm),'-an','-c:v','libx264','-preset','medium','-crf','24','-maxrate','1200k','-bufsize','2400k','-pix_fmt','yuv420p','-r','24','-t','112','-movflags','+faststart',str(mp4)],check=True)
+    subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-n','-i',str(webm),'-an','-c:v','libx264','-preset','medium','-crf','24','-maxrate','1200k','-bufsize','2400k','-vf','tpad=stop_mode=clone:stop_duration=1','-pix_fmt','yuv420p','-r','24','-t','112','-movflags','+faststart',str(mp4)],check=True)
     if mp4.stat().st_size>manifest['media_maximum_mp4_bytes']:raise ValueError('mp4_exceeds_budget')
     poster=HERE/'mission-poster.jpg'
     subprocess.run(['ffmpeg','-hide_banner','-loglevel','error','-n','-ss','60','-i',str(mp4),'-frames:v','1','-q:v','2',str(poster)],check=True)
@@ -227,6 +227,7 @@ def media(manifest):
         entry={'filename':p.name,'bytes':p.stat().st_size,'sha256':digest(p.read_bytes())}
         if p.suffix=='.mp4':
             probe=json.loads(subprocess.check_output(['ffprobe','-v','error','-show_streams','-show_format','-of','json',str(p)]));entry['video']={k:probe['streams'][0].get(k) for k in ('codec_name','width','height','pix_fmt','avg_frame_rate','nb_frames')};entry['duration_s']=float(probe['format']['duration'])
+            if entry['duration_s']!=112.0 or entry['video']['nb_frames']!='2688':raise ValueError('fixed_movie_frame_count_required')
         manifest['media'].append(entry)
     manifest['capture_sha256']=digest(webm.read_bytes())
     manifest['capture_page_sha256']=digest((HERE/'index.html').read_bytes())

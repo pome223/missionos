@@ -143,7 +143,7 @@
     void main() {
       vec3 n = normalize(vNormal);
       if (!gl_FrontFacing) n = -n;
-      vec3 sun = normalize(vec3(-0.60, 0.75, 0.28));
+      vec3 sun = normalize(vec3(-0.60, 0.42, 0.68));
       float lambert = max(dot(n, sun), 0.0);
       vec3 eye = normalize(uEye-vWorld);
       vec3 halfway = normalize(sun+eye);
@@ -166,8 +166,13 @@
         float cloud=smoothstep(0.47,0.67,cloudDetail)*smoothstep(0.28,0.64,cloudField);
         base=mix(base,vec3(0.80,0.86,0.90),cloud*0.92);
       }
-      float ambient = mix(0.26,0.46,clamp(n.y*0.5+0.5,0.0,1.0));
-      vec3 color = base*(ambient+0.72*lambert)+vec3(0.84,0.9,1.0)*specular;
+      // Readable steel/charcoal under illustrative sky and camera fill. These
+      // are presentation lights, not measured radiance or material calibration.
+      float ambient = mix(0.43,0.64,clamp(n.y*0.5+0.5,0.0,1.0));
+      float fill=max(dot(n,normalize(eye+vec3(0.15,0.45,0.10))),0.0);
+      vec3 litBase=uEarth>0.5?base:max(base,vec3(0.085,0.096,0.11));
+      vec3 color = litBase*(ambient+0.72*lambert+0.42*fill)+vec3(0.84,0.9,1.0)*specular;
+      if(uEarth<0.5)color+=vec3(0.09,0.12,0.16)*pow(1.0-max(dot(n,eye),0.0),2.7);
       if (uEarth > 0.5) color=mix(color,vec3(0.19,0.39,0.62),pow(1.0-max(dot(n,eye),0.0),5.0)*0.42);
       color = mix(color,base*1.35,clamp(uEmissive,0.0,1.0));
       gl_FragColor = vec4(color,uAlpha);
@@ -187,6 +192,95 @@
     void main() {
       float radial = length(gl_PointCoord-vec2(0.5));
       gl_FragColor = vec4(0.67,0.76,0.91,uOpacity*(1.0-smoothstep(0.1,0.5,radial)));
+    }`;
+
+  // Screen-space procedural atmosphere and sea. Wave normals change lighting
+  // only: the water datum remains at recorded altitude, with no impact/survival
+  // animation and no ocean force fed back to the saved numerical flight.
+  const ENVIRONMENT_VERTEX = `
+    attribute vec2 aPosition;
+    varying vec2 vScreen;
+    void main() { vScreen=aPosition; gl_Position=vec4(aPosition,1.0,1.0); }`;
+  const ENVIRONMENT_FRAGMENT = `
+    precision highp float;
+    varying vec2 vScreen;
+    uniform vec3 uEye, uRight, uUp, uForward;
+    uniform float uAspect, uTanHalfFov, uFloor, uTime, uAltitude, uCoastal;
+    float hash21(vec2 p) { return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+    float noise21(vec2 p) {
+      vec2 i=floor(p), f=fract(p), u=f*f*(3.0-2.0*f);
+      return mix(mix(hash21(i),hash21(i+vec2(1.0,0.0)),u.x),
+        mix(hash21(i+vec2(0.0,1.0)),hash21(i+vec2(1.0,1.0)),u.x),u.y);
+    }
+    float fbm(vec2 p) {
+      float v=0.0, a=0.5;
+      for(int i=0;i<5;i++){v+=a*noise21(p);p=p*2.01+vec2(5.4,12.7);a*=0.5;}
+      return v;
+    }
+    vec3 skyColor(vec3 ray) {
+      float elevation=max(ray.y,0.0), upper=pow(elevation,0.45);
+      float thin=smoothstep(6000.0,35000.0,uAltitude);
+      vec3 horizon=mix(vec3(0.67,0.79,0.84),vec3(0.17,0.36,0.56),thin);
+      vec3 zenith=mix(vec3(0.13,0.39,0.69),vec3(0.017,0.07,0.18),thin);
+      vec3 color=mix(horizon,zenith,upper);
+      vec3 sun=normalize(vec3(-0.60,0.42,0.68));
+      float sunDot=max(dot(ray,sun),0.0);
+      color+=vec3(1.0,0.80,0.56)*(pow(sunDot,160.0)*0.45+pow(sunDot,1600.0)*1.0);
+      // Receding cloud layers, aligned to the illustrative local horizon.
+      vec2 q=ray.xz/max(ray.y+0.12,0.12);
+      float field=fbm(q*2.7+vec2(uTime*0.0008,0.0));
+      float detail=fbm(q*8.5+field*2.0);
+      float cloud=smoothstep(0.49,0.73,field*0.78+detail*0.22);
+      cloud*=smoothstep(0.008,0.10,ray.y)*(1.0-smoothstep(0.7,1.0,ray.y));
+      color=mix(color,mix(vec3(0.70,0.77,0.81),vec3(0.97,0.97,0.94),detail),cloud*(1.0-thin)*0.88);
+      return color;
+    }
+    void main() {
+      vec3 ray=normalize(uForward+uRight*vScreen.x*uAspect*uTanHalfFov+uUp*vScreen.y*uTanHalfFov);
+      vec3 sky=skyColor(ray);
+      float distance=(uFloor-uEye.y)/min(ray.y,-0.00001);
+      if(ray.y>=0.0||distance<0.0) {gl_FragColor=vec4(sky,1.0);return;}
+      vec3 hit=uEye+ray*distance;
+      vec2 p=hit.xz;
+      float visible=1.0-smoothstep(1200.0,16000.0,distance);
+      vec2 warp=vec2(fbm(p*0.016+vec2(uTime*0.013,1.7)),fbm(p*0.021+vec2(5.9,-uTime*0.01)));
+      vec2 wavePoint=p+(warp-0.5)*22.0;
+      float waveA=wavePoint.x*0.18+wavePoint.y*0.075+uTime*0.55;
+      float waveB=wavePoint.x*0.067-wavePoint.y*0.24-uTime*0.39;
+      float waveC=(wavePoint.x+wavePoint.y)*0.63+uTime*1.15;
+      vec2 slope=vec2(0.15*cos(waveA)+0.10*cos(waveB),0.08*cos(waveA)-0.17*cos(waveB));
+      slope+=vec2(cos(waveC),sin(waveC))*0.045;
+      vec3 n=normalize(vec3(-slope.x*visible,1.0,-slope.y*visible));
+      vec3 reflection=reflect(ray,n), sun=normalize(vec3(-0.60,0.42,0.68));
+      float fresnel=0.035+0.70*pow(1.0-max(dot(n,-ray),0.0),4.5);
+      vec3 deep=vec3(0.025,0.19,0.28), shallow=vec3(0.025,0.34,0.39);
+      vec3 water=mix(deep,shallow,0.20+0.15*sin(waveA)*visible);
+      water=mix(water,skyColor(reflection),fresnel);
+      water*=0.92+0.16*warp.x;
+      float sparkle=pow(max(dot(normalize(sun-ray),n),0.0),56.0);
+      water+=vec3(1.0,0.86,0.62)*sparkle*0.48;
+      float crest=sin(waveA)*0.5+sin(waveB)*0.35+sin(waveC)*0.15;
+      float foam=smoothstep(0.73,0.96,crest)*smoothstep(0.49,0.75,fbm(p*0.25))*visible;
+      water=mix(water,vec3(0.62,0.79,0.80),foam*0.55);
+      // The launch coastline is deliberately a procedural setting, not a map.
+      if(uCoastal>0.5) {
+        float shore=220.0+90.0*sin(p.y*0.0015)+32.0*sin(p.y*0.0041);
+        float inland=shore-p.x;
+        float sand=smoothstep(-16.0,7.0,inland), plants=smoothstep(35.0,95.0,inland);
+        float vegetation=fbm(p*0.017);
+        vec3 terrain=mix(vec3(0.57,0.53,0.36),vec3(0.20,0.29,0.19),plants);
+        terrain*=0.85+vegetation*0.35;
+        float accessRoad=1.0-smoothstep(8.0,11.0,abs(p.x+68.0));
+        terrain=mix(terrain,vec3(0.24,0.27,0.27),accessRoad*smoothstep(25.0,60.0,inland));
+        float surf=(1.0-smoothstep(0.0,22.0,abs(inland+9.0)))
+          *smoothstep(0.0,0.8,sin(inland*0.24+uTime*0.6));
+        water=mix(water,vec3(0.83,0.89,0.85),surf*0.5);
+        water=mix(water,terrain,sand);
+      }
+      float haze=1.0-exp(-distance/19000.0);
+      vec3 horizon=skyColor(normalize(vec3(ray.x,0.002,ray.z)));
+      water=mix(water,horizon,haze*0.90);
+      gl_FragColor=vec4(water,1.0);
     }`;
 
   function createProgram(gl, vertexSource, fragmentSource) {
@@ -227,8 +321,8 @@
     try { gl=canvas.getContext("webgl",{alpha:false,antialias:true,preserveDrawingBuffer:false}); } catch (error) { return fallback(canvas,String(error)); }
     if (!gl) return fallback(canvas,"WebGL context unavailable");
     if (!window.MissionOSStarshipModels) return fallback(canvas,"Model library unavailable");
-    let meshProgram, starProgram;
-    try { meshProgram=createProgram(gl,MESH_VERTEX,MESH_FRAGMENT); starProgram=createProgram(gl,STAR_VERTEX,STAR_FRAGMENT); }
+    let meshProgram, starProgram, environmentProgram;
+    try { meshProgram=createProgram(gl,MESH_VERTEX,MESH_FRAGMENT); starProgram=createProgram(gl,STAR_VERTEX,STAR_FRAGMENT); environmentProgram=createProgram(gl,ENVIRONMENT_VERTEX,ENVIRONMENT_FRAGMENT); }
     catch (error) { return fallback(canvas,String(error)); }
 
     const modelSet = window.MissionOSStarshipModels.build();
@@ -244,10 +338,18 @@
     let integratedOrientationAccepted=false, actualEngineInputsAccepted=false, actualFlapInputsAccepted=false;
     let engineActuation=[], flapActuation=[], actuatorInputErrors=[];
     let catchGeometryAccepted=false,catchGeometryDiagnostics=null;
+    let sceneryDiagnostics=null;
     let eye=[130,50,200], projection=identity(), view=identity(), cameraFov=36*Math.PI/180;
     const locations={};
     for (const name of ["uProjection","uView","uModel","uNormal","uColor","uEye","uEmissive","uAlpha","uMetal","uEarth"]) locations[name]=gl.getUniformLocation(meshProgram,name);
     const positionLocation=gl.getAttribLocation(meshProgram,"aPosition"), normalLocation=gl.getAttribLocation(meshProgram,"aNormal");
+    const environmentLocations={};
+    for(const name of ["uEye","uRight","uUp","uForward","uAspect","uTanHalfFov","uFloor","uTime","uAltitude","uCoastal"])
+      environmentLocations[name]=gl.getUniformLocation(environmentProgram,name);
+    const environmentPosition=gl.getAttribLocation(environmentProgram,"aPosition");
+    const environmentBuffer=gl.createBuffer(); resources.push(environmentBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER,environmentBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
     const starLocations={};
     for (const name of ["uProjection","uView","uEye","uPixelRatio","uOpacity"]) starLocations[name]=gl.getUniformLocation(starProgram,name);
     const starPosition=gl.getAttribLocation(starProgram,"aPosition");
@@ -436,6 +538,24 @@
       gl.drawArrays(gl.POINTS,0,stars.length/3); gl.disable(gl.BLEND); gl.enable(gl.DEPTH_TEST);
     }
 
+    function environment(frame, altitude, floor, aspect, coastal) {
+      gl.useProgram(environmentProgram); gl.disable(gl.DEPTH_TEST); gl.depthMask(false);
+      gl.bindBuffer(gl.ARRAY_BUFFER,environmentBuffer);
+      gl.enableVertexAttribArray(environmentPosition); gl.vertexAttribPointer(environmentPosition,2,gl.FLOAT,false,0,0);
+      gl.uniform3fv(environmentLocations.uEye,eye);
+      gl.uniform3fv(environmentLocations.uRight,[view[0],view[4],view[8]]);
+      gl.uniform3fv(environmentLocations.uUp,[view[1],view[5],view[9]]);
+      gl.uniform3fv(environmentLocations.uForward,[-view[2],-view[6],-view[10]]);
+      gl.uniform1f(environmentLocations.uAspect,aspect); gl.uniform1f(environmentLocations.uTanHalfFov,Math.tan(cameraFov/2));
+      gl.uniform1f(environmentLocations.uFloor,floor); gl.uniform1f(environmentLocations.uTime,number(frame.time_s));
+      gl.uniform1f(environmentLocations.uAltitude,altitude); gl.uniform1f(environmentLocations.uCoastal,coastal?1:0);
+      gl.drawArrays(gl.TRIANGLES,0,6); drawing+=1;
+      gl.depthMask(true); gl.enable(gl.DEPTH_TEST);
+      sceneryDiagnostics={kind:coastal?"procedural_coastal_launch":"procedural_open_ocean",waterDatumLocalM:floor,
+        lightingTimeS:number(frame.time_s),waveGeometryDisplacementM:0,physicsModified:false,
+        realGeographicMap:false,impactOrSurvivalAnimation:false};
+    }
+
     function camera(height, frame, aspect) {
       const satellite=bodyKind(frame.bodyId)==="satellite";
       cameraFov=36*Math.PI/180;
@@ -468,6 +588,16 @@
       if (mode==="ground") { localYaw=-0.66+yaw-0.88; localPitch=clamp(-0.10+pitch-0.23,-0.6,1.1); distance*=1.14; }
       if (mode==="chase") { localYaw=2.45+yaw-0.88; localPitch=clamp(0.48+pitch-0.23,-1.3,1.3); }
       if (mode==="payload") { localYaw=0.8+yaw-0.88; localPitch=clamp(0.32+pitch-0.23,-1.3,1.3); distance*=satellite?1:0.9; }
+      // Present terminal descent with a visible sea horizon. This changes the
+      // camera alone; craft pose and the sea datum remain the recorded values.
+      const surfaceView=!frame.stacked&&!frame.catch_geometry&&!satellite&&number(frame.altitude_m)<1800;
+      if(surfaceView&&(mode==="chase"||mode==="orbit")) {
+        const blend=1-clamp(number(frame.altitude_m)/1800,0,1);
+        localPitch=localPitch*(1-blend)+0.035*blend;
+        // Oblique surface view exposes steel flank alongside the dark shield.
+        localYaw+=0.65*blend;
+        distance*=1+0.08*blend;
+      }
       const target=[0,mode==="payload"&&!satellite?height*0.21:0,0];
       eye=[Math.sin(localYaw)*Math.cos(localPitch)*distance,Math.sin(localPitch)*distance+target[1],Math.cos(localYaw)*Math.cos(localPitch)*distance];
       // Wide far range includes the actual Earth-scale visual sphere and satellites.
@@ -511,7 +641,7 @@
       if (disposed||contextLost) return;
       integratedOrientationAccepted=false;actualEngineInputsAccepted=false;actualFlapInputsAccepted=false;
       engineActuation=[];flapActuation=[];actuatorInputErrors=[];
-      catchGeometryAccepted=false;catchGeometryDiagnostics=null;
+      catchGeometryAccepted=false;catchGeometryDiagnostics=null;sceneryDiagnostics=null;
       if (!frame) {
         lastFrame=null;lastBody="";lastStacked=null;drawing=0;plumeVisible=false;flameCount=0;
         gl.clearColor(0.003,0.006,0.016,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);return;
@@ -533,6 +663,9 @@
       const sky=clamp(altitude/85000,0,1);
       gl.clearColor(0.025*(1-sky)+0.003,0.075*(1-sky)+0.006,0.145*(1-sky)+0.016,1);
       gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT); gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL); gl.disable(gl.CULL_FACE);
+      const localFloor=-altitude-altitudeOffset-(stacked&&frame.attitude_source!=="integrated_quaternion"?number(metadata.launchMountHeightM,12.1):0);
+      const coastal=stacked&&altitude<15000;
+      if(altitude<=15000)environment(frame,altitude,localFloor,width/height,coastal);
       drawStars(altitude,pixelRatio);
       gl.useProgram(meshProgram);
       gl.uniformMatrix4fv(locations.uProjection,false,projection); gl.uniformMatrix4fv(locations.uView,false,view); gl.uniform3fv(locations.uEye,eye);
@@ -553,9 +686,11 @@
         gl.clear(gl.DEPTH_BUFFER_BIT);
         gl.uniformMatrix4fv(locations.uProjection,false,projection);
       } else {
-        // A schematic local sea/terrain surface; launch pad placement uses recorded coordinates.
-        const floor=-altitude-altitudeOffset-(stacked&&frame.attitude_source!=="integrated_quaternion"?number(metadata.launchMountHeightM,12.1):0);
-        draw(ground,multiply(translation([0,floor,0]),scale([180000,1,180000])),[0.025,0.09,0.12],{metal:0.13});
+        // Depth-only datum preserves proper hull occlusion at the actual saved
+        // surface. Ocean waves are lighting detail, not invented vertical motion.
+        gl.colorMask(false,false,false,false);
+        draw(ground,multiply(translation([0,localFloor,0]),scale([180000,1,180000])),[0,0,0],{metal:0});
+        gl.colorMask(true,true,true,true);
       }
 
       const launch=frame.launch_relative_m;
@@ -563,6 +698,17 @@
         const base=[launch[0],launch[1]-craftHeight/2-number(metadata.launchMountHeightM,12.1),launch[2]];
         parts(modelSet.pad,translation(base));
         parts(modelSet.tower,translation([base[0]+30,base[1],base[2]-13]));
+      }
+
+      if(!frame.catch_geometry&&!Array.isArray(launch)&&stacked&&altitude<3500) {
+        // Illustrative launch-site context in the local floating frame; no
+        // geographic anchoring or pad-clearance measurement is asserted.
+        const base=[0,localFloor+0.04,0];
+        parts(modelSet.pad,translation(base));
+        parts(modelSet.tower,translation([base[0]+30,base[1],base[2]-13]));
+        for(let i=0;i<4;i+=1) {
+          draw(catchBox,multiply(translation([-100-i*24,localFloor+6,-65]),scale([17,12,22])),[.62,.68,.68],{metal:.15});
+        }
       }
 
       catchMechanism(frame.catch_geometry);
@@ -650,9 +796,9 @@
         if(disposed)return;disposed=true;
         if(resizeObserver)resizeObserver.disconnect();
         listeners.forEach(([target,name,callback,options])=>target.removeEventListener(name,callback,options));
-        resources.forEach((buffer)=>gl.deleteBuffer(buffer));gl.deleteProgram(meshProgram);gl.deleteProgram(starProgram);
+        resources.forEach((buffer)=>gl.deleteBuffer(buffer));gl.deleteProgram(meshProgram);gl.deleteProgram(starProgram);gl.deleteProgram(environmentProgram);
       },
-      getDiagnostics(){return {available:!disposed&&!contextLost,frameCount,drawCalls:drawing,plumeVisible,flameCount,bodyId:lastBody,stacked:lastStacked,camera:mode,time_s:lastFrame?lastFrame.time_s:null,coordinateFrame:"east_up_minus_north",independentMissionClock:false,physicalMeshValidation:false,cameraPoseValidation:false,integratedOrientationAccepted,actualEngineInputsAccepted,actualGimbalInputsAccepted:actualEngineInputsAccepted,actualFlapInputsAccepted,activeMainEngineIndices:engineActuation.filter(e=>e.lit).map(e=>e.index),recordedNonzeroMainEngineIndices:engineActuation.filter(e=>e.recordedNonzeroThrust).map(e=>e.index),flameCountMeaning:"visible_illustrative_flames_not_nonzero_recorded_force",flameVisibilityMinimumThrottle:FLAME_VISIBILITY_MIN_THROTTLE,flameVisibilityIsPhysicalThreshold:false,engineActuation,flapActuation,actuatorInputErrors,catchGeometryAccepted,catchGeometry:catchGeometryDiagnostics,hingeGeometry:"illustrative_proxy",plumeShape:"illustrative_not_flow_solution"};}
+      getDiagnostics(){return {available:!disposed&&!contextLost,frameCount,drawCalls:drawing,plumeVisible,flameCount,bodyId:lastBody,stacked:lastStacked,camera:mode,time_s:lastFrame?lastFrame.time_s:null,coordinateFrame:"east_up_minus_north",independentMissionClock:false,physicalMeshValidation:false,cameraPoseValidation:false,integratedOrientationAccepted,actualEngineInputsAccepted,actualGimbalInputsAccepted:actualEngineInputsAccepted,actualFlapInputsAccepted,activeMainEngineIndices:engineActuation.filter(e=>e.lit).map(e=>e.index),recordedNonzeroMainEngineIndices:engineActuation.filter(e=>e.recordedNonzeroThrust).map(e=>e.index),flameCountMeaning:"visible_illustrative_flames_not_nonzero_recorded_force",flameVisibilityMinimumThrottle:FLAME_VISIBILITY_MIN_THROTTLE,flameVisibilityIsPhysicalThreshold:false,engineActuation,flapActuation,actuatorInputErrors,catchGeometryAccepted,catchGeometry:catchGeometryDiagnostics,scenery:sceneryDiagnostics,hingeGeometry:"illustrative_proxy",plumeShape:"illustrative_not_flow_solution"};}
     };
   };
 })();

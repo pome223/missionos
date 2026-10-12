@@ -126,14 +126,14 @@ model surface contact, with 26 payloads released.
 *Generic rigid-body payloads: array deployment, communications and orbit raising
 are not modeled. Saved simulation replay with illustrative geometry.*
 
-**[Watch the complete mission, with AI decisions and metrics](https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418)** ·
+**[Watch the complete mission, with AI decisions and metrics](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12)** ·
 [Interactive replay](docs/assets/starship-ai-mission-m3-20261012/index.html) ·
 [What ran and how it was verified](docs/examples/starship-ai-mission.md)
 
 <details>
 <summary>Play the complete AI-supervised flight (1 min 52 sec)</summary>
 
-https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418
+https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12
 
 </details>
 

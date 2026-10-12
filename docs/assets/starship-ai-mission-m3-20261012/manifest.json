@@ -34,8 +34,8 @@
   "media": [
     {
       "filename": "mission.mp4",
-      "bytes": 11034297,
-      "sha256": "7f85d433771e40bc1b5cc245a4f180e29088cb2717cf3deb40463bdbad0bb4fe",
+      "bytes": 13939057,
+      "sha256": "a58ecc6017b8c416f694afe56cd5f2ac307bdf480ef42ccd4f18c5780d0366b7",
       "video": {
         "codec_name": "h264",
         "width": 1280,
@@ -48,26 +48,24 @@
     },
     {
       "filename": "mission-poster.jpg",
-      "bytes": 205794,
-      "sha256": "eceab0bdc1cb439f4e1fa04b50e5ae0a15a047aeccb3b00f9e7db88283b5bba6"
+      "bytes": 216436,
+      "sha256": "1dcaa2cb6cb955e718854603b141568d20f54ee559f5353974b21f9d6281520b"
     },
     {
       "filename": "mission-preview.gif",
-      "bytes": 4634121,
-      "sha256": "ecb922558b98b4f3c46f4e602af8e8b83fba7a90f8751691b3d5b6c343b082d2"
+      "bytes": 8030488,
+      "sha256": "c98e3242cfe86832877b681883bbee20831aaf18e1ebeb47b65ac4a9e8a549df"
     }
   ],
   "dataset_sha256": "36d184109a9315bc712cad0bdb03c3192fdf9bd4b671d350b8c0b4d85b4f4536",
   "render_sources_sha256": {
     "starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
-    "starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
-    "replay.js": "669d3aa778799827dff33ace61f08287fafedd986290c276068aabdf9f6ce84b",
-    "page-template.html": "48385e0709ad3015b4c314792570b8623cc78aa585d0b07f0ef24d0dbcc36d61",
-    "export_saved_media.py": "62390cdd26a679cfd33fe7f73a2ed241151a75728a75029c3c1f86f40c00a12e"
+    "starship_cg_renderer.js": "e7b41bc9a449167cb7d34c74480cf9916e2434d76b6f1f358e5b8850d16df6b0",
+    "replay.js": "97f106153fac194089823adf8b58af2c3b24c1c8b07cfbddde629603f50e3487",
+    "page-template.html": "77a0bb28cd10dbf4ddfd22d61f177ef99ddde3069833e74438fb9671d7cea0f2",
+    "export_saved_media.py": "b9a7f5ae4ba8801ba81957cb7526bda0c9e1a4c4a9a6409787bcb2635a741f6b"
   },
-  "page_sha256": "d19ba48b622750ad798ddf72ace1511e027f6764997ab04eecafc43b55a23dd6",
-  "capture_sha256": "86214077a47b4e96a6e64ad14f4e4ff759f3f37506329ccfbe16221819c97fd6",
-  "capture_page_sha256": "d19ba48b622750ad798ddf72ace1511e027f6764997ab04eecafc43b55a23dd6",
+  "page_sha256": "a4b83f0200c7fb093dbb563e5d95b14423c63696489c22859866c1438eef7f5c",
   "capture_kind": "user-triggered browser canvas MediaRecorder; same saved page, no physics/model invocation",
   "preview_segments_video_s": [
     [
@@ -84,12 +82,99 @@
     ]
   ],
   "preview_is_excerpt": true,
+  "previous_publications": [
+    {
+      "dataset_sha256": "36d184109a9315bc712cad0bdb03c3192fdf9bd4b671d350b8c0b4d85b4f4536",
+      "page_sha256": "d19ba48b622750ad798ddf72ace1511e027f6764997ab04eecafc43b55a23dd6",
+      "capture_page_sha256": "d19ba48b622750ad798ddf72ace1511e027f6764997ab04eecafc43b55a23dd6",
+      "capture_sha256": "86214077a47b4e96a6e64ad14f4e4ff759f3f37506329ccfbe16221819c97fd6",
+      "media": [
+        {
+          "filename": "mission.mp4",
+          "bytes": 11034297,
+          "sha256": "7f85d433771e40bc1b5cc245a4f180e29088cb2717cf3deb40463bdbad0bb4fe",
+          "video": {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 720,
+            "pix_fmt": "yuvj420p",
+            "avg_frame_rate": "24/1",
+            "nb_frames": "2688"
+          },
+          "duration_s": 112.0
+        },
+        {
+          "filename": "mission-poster.jpg",
+          "bytes": 205794,
+          "sha256": "eceab0bdc1cb439f4e1fa04b50e5ae0a15a047aeccb3b00f9e7db88283b5bba6"
+        },
+        {
+          "filename": "mission-preview.gif",
+          "bytes": 4634121,
+          "sha256": "ecb922558b98b4f3c46f4e602af8e8b83fba7a90f8751691b3d5b6c343b082d2"
+        }
+      ],
+      "github_attachment": {
+        "url": "https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418",
+        "bytes": 6151404,
+        "sha256": "e6383eba1f6df28aaad3e5cdfd05cc55c8456b82cf3298229bd2709ae650eb02",
+        "source_filename": "mission.mp4",
+        "source_sha256": "7f85d433771e40bc1b5cc245a4f180e29088cb2717cf3deb40463bdbad0bb4fe",
+        "duration_s": 112.0,
+        "width": 1280,
+        "height": 720,
+        "frames": 2688,
+        "same_saved_timeline": true,
+        "new_physics_or_model_calls": 0
+      }
+    }
+  ],
+  "presentation_revision": {
+    "kind": "ocean_scenery_and_readable_descent_v2",
+    "dataset_unchanged": true,
+    "recorded_attitude_changed": false,
+    "scenery": "procedural ocean, clouds, coastline, sun glint; illustrative, not observed weather/geography",
+    "wave_forces_modeled": false,
+    "post_contact_dynamics_added": false,
+    "view_only_descent_edit": [
+      {
+        "start_s": 9900,
+        "end_s": 10264.85,
+        "video_s": 4
+      },
+      {
+        "start_s": 10264.85,
+        "end_s": 10311.05,
+        "video_s": 6
+      },
+      {
+        "start_s": 10311.05,
+        "end_s": 10330.55,
+        "video_s": 6
+      },
+      {
+        "start_s": 10330.55,
+        "end_s": 10378.626705202787,
+        "video_s": 6
+      }
+    ],
+    "attitude_mapping_audit": {
+      "ship_samples": 5211,
+      "booster_samples": 243,
+      "right_handed": true,
+      "mesh_nose": "body +Z",
+      "mesh_heatshield_outward": "body +Y"
+    }
+  },
+  "capture_sha256": "234dc36f948c8cbd54c38da777c05070d6d6b3548ea43e5b0ca831cee1431704",
+  "capture_page_sha256": "a4b83f0200c7fb093dbb563e5d95b14423c63696489c22859866c1438eef7f5c",
+  "encoding_final_frame_padding": "Clone the last saved presentation frame only to complete exactly 112 seconds; no mission time added.",
   "github_attachment": {
-    "url": "https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418",
-    "bytes": 6151404,
-    "sha256": "e6383eba1f6df28aaad3e5cdfd05cc55c8456b82cf3298229bd2709ae650eb02",
+    "url": "https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12",
+    "bytes": 7505864,
+    "sha256": "2f291804ee5fb77c7362cd4fdd1a0839d628dfdb3b8114ec574452fa5899dee6",
     "source_filename": "mission.mp4",
-    "source_sha256": "7f85d433771e40bc1b5cc245a4f180e29088cb2717cf3deb40463bdbad0bb4fe",
+    "source_sha256": "a58ecc6017b8c416f694afe56cd5f2ac307bdf480ef42ccd4f18c5780d0366b7",
     "duration_s": 112.0,
     "width": 1280,
     "height": 720,
