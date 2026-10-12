@@ -121,21 +121,17 @@ to a recovery-area closure by selecting a next-orbit return and requesting the
 needed approval extension. The approved plan is executed and checked through
 model surface contact, with 26 payloads released.
 
-![Recorded launch, deployment and return with AI decisions and telemetry](docs/assets/starship-ai-mission-m3-20261012/mission-preview.gif)
-
-*Generic rigid-body payloads: array deployment, communications and orbit raising
-are not modeled. Saved simulation replay with illustrative geometry.*
-
-**[Watch the complete mission, with AI decisions and metrics](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12)** ·
-[Interactive replay](docs/assets/starship-ai-mission-m3-20261012/index.html) ·
-[What ran and how it was verified](docs/examples/starship-ai-mission.md)
-
-<details>
-<summary>Play the complete AI-supervised flight (1 min 52 sec)</summary>
+**Play the complete mission — 1 min 52 sec, with AI decisions and metrics.**
 
 https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12
 
-</details>
+*Generic rigid-body payloads: array deployment, communications and orbit raising
+are not modeled. Saved simulation replay with illustrative geometry and ocean.*
+
+[Open video](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12) ·
+[Animated preview](docs/assets/starship-ai-mission-m3-20261012/mission-preview.gif) ·
+[Interactive replay](docs/assets/starship-ai-mission-m3-20261012/index.html) ·
+[What ran and how it was verified](docs/examples/starship-ai-mission.md)
 
 The video shows the observations, returned decision summary, cited numbers,
 selected operation, approval/Rules result and later telemetry on one simulation
