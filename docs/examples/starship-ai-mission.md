@@ -11,7 +11,7 @@ original execution. The video replays that saved execution and its decisions.
 orbit raising are outside this model. The geometry and exhaust are illustrative;
 the displayed motion and metrics come from saved simulation states.*
 
-**[Watch the complete mission video](../assets/starship-ai-mission-m3-20261012/mission.mp4)** ·
+**[Watch the complete mission video](https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418)** ·
 [Interactive replay](../assets/starship-ai-mission-m3-20261012/index.html)
 
 ## What the AI does

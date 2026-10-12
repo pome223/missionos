@@ -1,6 +1,6 @@
 # M3: AI mission control, one complete flight
 
-[Watch the full 112-second video](mission.mp4) · [Open the offline replay](index.html)
+[Watch the full 112-second video](https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418) · [Higher-bitrate repository copy](mission.mp4) · [Open the offline replay](index.html)
 
 ![Recorded M3 flight and AI decision](mission-poster.jpg)
 
@@ -79,3 +79,16 @@ use the MP4 for the complete timeline. No output is overwritten automatically.
 Curation from a new private source requires its independently reviewed completed
 M3 summary, matching study digest, and exact launch/return state handoff; it is
 not needed to replay or validate this public bundle.
+
+## GitHub inline attachment
+
+The inline player uses a smaller encode of the same 112-second, 2,688-frame
+movie to fit GitHub's 10 MB attachment limit. It has the same dimensions and
+timeline. The manifest records its URL, byte count and digest. To reproduce the
+attachment encode from the repository MP4:
+
+```sh
+ffmpeg -hide_banner -loglevel error -n -i mission.mp4 -an -c:v libx264 \
+  -preset medium -crf 26 -maxrate 600k -bufsize 1200k -pix_fmt yuv420p \
+  -r 24 -t 112 -movflags +faststart mission-github.mp4
+```

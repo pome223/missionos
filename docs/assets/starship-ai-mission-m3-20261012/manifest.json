@@ -83,5 +83,18 @@
       112
     ]
   ],
-  "preview_is_excerpt": true
+  "preview_is_excerpt": true,
+  "github_attachment": {
+    "url": "https://github.com/user-attachments/assets/a7cce1eb-ab3e-437e-8d0b-ac6c05bf0418",
+    "bytes": 6151404,
+    "sha256": "e6383eba1f6df28aaad3e5cdfd05cc55c8456b82cf3298229bd2709ae650eb02",
+    "source_filename": "mission.mp4",
+    "source_sha256": "7f85d433771e40bc1b5cc245a4f180e29088cb2717cf3deb40463bdbad0bb4fe",
+    "duration_s": 112.0,
+    "width": 1280,
+    "height": 720,
+    "frames": 2688,
+    "same_saved_timeline": true,
+    "new_physics_or_model_calls": 0
+  }
 }
