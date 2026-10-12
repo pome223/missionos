@@ -115,13 +115,36 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
-**M1: AI-directed return replanning now has an executed simulation record.**
-After a recovery-area update, Jev requested forecasts, waited for fresh status
-and selected a later orbital return inside a once-approved scope. The Ship then
-met the fixed study area's time and contact limits. Normal operation preserved
-the original result, and a persistent decision-service outage used a checked
-fallback. [Three flights, decisions and limits](docs/examples/starship-m1-operations.md).
+**Live AI supervision now runs from launch and payload deployment through return.**
+In the recorded M3 flight below, Jev monitors the mission and DeepSeek responds
+to a recovery-area closure by selecting a next-orbit return and requesting the
+needed approval extension. The approved plan is executed and checked through
+model surface contact, with 26 payloads released.
 
+![Recorded launch, deployment and return with AI decisions and telemetry](docs/assets/starship-ai-mission-m3-20261012/mission-preview.gif)
+
+*Generic rigid-body payloads: array deployment, communications and orbit raising
+are not modeled. Saved simulation replay with illustrative geometry.*
+
+**[Watch the complete mission, with AI decisions and metrics](docs/assets/starship-ai-mission-m3-20261012/mission.mp4)** ·
+[Interactive replay](docs/assets/starship-ai-mission-m3-20261012/index.html) ·
+[What ran and how it was verified](docs/examples/starship-ai-mission.md)
+
+The video shows the observations, returned decision summary, cited numbers,
+selected operation, approval/Rules result and later telemetry on one simulation
+clock. The inflight approval comes from a candidate-bound test-operator script;
+it is not a recorded human review. The same flight reaches Ship contact at
+4.613 m/s and nominal booster water entry at 1.884 m/s. Booster disturbance
+robustness remains unresolved, as documented in the
+[retained ±1 t diagnostic](docs/examples/starship-recovery-sensitivity.md).
+
+<details>
+<summary>Earlier M1 and initialized return demonstrations</summary>
+
+The earlier [M1 record](docs/examples/starship-m1-operations.md) connected a
+recovery-area update, waiting for fresh status and a later orbital return within
+a once-approved scope. Normal operation preserved its original result and a
+persistent decision-service outage used a checked fallback.
 
 The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
 sets the goal: the operator approves delegated bounds, and MissionOS owns
@@ -259,6 +282,8 @@ does not authenticate human identity.
 
 </details>
 
+</details>
+
 ## Yokohama: choose a delivery destination on the 3D map
 
 Select a safe destination before departure, inspect the route and constraints,
@@ -316,7 +341,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
-| **Starship-inspired 6DOF simulator / MissionOS** | One approved mission envelope, provider-key-free flight worker environment, live Jev decisions, later observations and saved-state replay | In one release-fault run Jev selected a diagnostic and return guidance, changing contact speed from 238.74 to 3.22 m/s. A live normal run failed; the completion gate and launch-derived catch remain unmet. [Decision results](docs/examples/starship-mission-decisions.md) · [Earlier videos](docs/examples/starship-mission-showcase.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | Live Jev/DeepSeek supervision from ascent and deployment to orbital replanning, independently checked execution and later observations | Four M3 roles completed. The recorded approval-extension flight released 26 payloads, requested candidate-bound test-operator approval, and reached Ship contact at 4.613 m/s. Numeric citations were checked; booster disturbance robustness remains unresolved. [Whole-flight video and evidence](docs/examples/starship-ai-mission.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |
