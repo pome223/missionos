@@ -166,7 +166,9 @@ def _coast_control_profile(profile, observed, *, include_spooled_tvc=False):
                                    "max_angular_acceleration_rad_s2": alpha}}, frequency, alpha
 
 
-def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None):
+def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None,
+                            development_coast_control="fixed_v1", development_coast_restart=None,
+                            development_coast_from_separation=False):
     """Continue from the exact supplied state for at most 2000 elapsed seconds.
 
     The return site is the rotating launch location. This is a geometric target,
@@ -176,6 +178,23 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     from .starship_sixdof_mission import _attitude, control, vehicle
     from .starship_sixdof_contact import find_contact, hull_clearance
     configuration = _configuration(profile)
+    restart = None
+    if type(development_coast_from_separation) is not bool:
+        raise ValueError("invalid_development_coast_from_separation")
+    if development_coast_from_separation and (development_coast_restart is not None
+            or development_coast_control != "stopping_distance_v1" or guidance_policy != "fixed_v1"):
+        raise ValueError("invalid_development_coast_from_separation")
+    if development_coast_control not in ("fixed_v1", "stopping_distance_v1"):
+        raise ValueError("unknown_development_coast_controller")
+    if development_coast_restart is not None:
+        from .starship_booster_coast_probe import CoastRestart
+        if (type(development_coast_restart) is not CoastRestart or guidance_policy != "fixed_v1"
+                or mission_director is not None or splashdown_goal is not None):
+            raise ValueError("coast_restart_is_only_an_isolated_development_probe")
+        restart = development_coast_restart.resolve(profile, return_sites=return_sites,
+                                                     separation_state=separation_state_dict)
+    elif development_coast_control != "fixed_v1" and not development_coast_from_separation:
+        raise ValueError("development_coast_controller_requires_recorded_restart")
     if splashdown_goal is not None:
         from .starship_splashdown import SplashdownGoal
         if type(splashdown_goal) is not SplashdownGoal or return_sites is None or guidance_policy != "fixed_v1":
@@ -189,7 +208,7 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     duration = configuration["max_duration_s"] if duration_s is None else duration_s
     if type(duration) not in (int, float) or not math.isfinite(duration) or not 0 < duration <= 2000:
         raise ValueError("booster_duration_must_be_in_zero_to_2000_seconds")
-    state = dyn.state_from_dict(separation_state_dict)
+    state = restart["state"] if restart is not None else dyn.state_from_dict(separation_state_dict)
     time_steps = [profile.get("integration", {}).get(key) for key in ("powered_dt_s", "coast_dt_s")]
     if any(type(dt) not in (int, float) or not math.isfinite(dt) or not 0 < dt <= 10 for dt in time_steps):
         raise ValueError("invalid_booster_integration_step")
@@ -204,6 +223,10 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
     start_time = state.time_s
     phase, termination = "booster_boostback_slew", "time_limit"
     burn_start, coast_started, slew_commanded = None, None, False
+    terminal_boundary = None
+    if restart is not None:
+        phase, coast_started = "booster_entry_coast", restart["coast_started_s"]
+        burn_start, slew_commanded = restart["burn_start_s"], True
     steps, samples, events = 0, [], []
     max_altitude, max_rate, max_error = -math.inf, 0., 0.
     next_sample, contact_receipt = state.time_s, None
@@ -224,8 +247,15 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
             "tower_ready": tower_ready, "operations_notice": "",
             "numerical_tools": {"orbit_release_feasible": False, "retained_payload_present": False,
                 "capture_corridor_certified": False, "mechanism_status": "not_collected"}}
-    event("booster_return_start", "Exact separated state inherited; no position, velocity, attitude, rate or fault-state reset.")
+    if restart is None:
+        event("booster_return_start", "Exact separated state inherited; no position, velocity, attitude, rate or fault-state reset.")
+    else:
+        event("development_coast_restart", "Exact first recorded coast sample, including finite actuator states; not launch continuation.",
+              source_run_sha256=restart["source_run_sha256"], state_sha256=restart["state_sha256"],
+              source_sample_index=restart["sample_index"], controller=development_coast_control)
     while state.time_s < start_time+duration-1e-9:
+        from .starship_concurrent import PhysicsTick
+        yield PhysicsTick("booster", state.time_s, phase, state)
         if mission_director is not None:
             mission_director.pace("booster", state.time_s)
             row = director_observation()
@@ -346,9 +376,22 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
         if drag_aware and phase == "booster_entry_coast":
             control_profile, bandwidth, alpha = _coast_control_profile(profile, observed, include_spooled_tvc=mitigate_infeasible_burn)
             guidance.update(coast_control_frequency_rad_s=bandwidth, coast_angular_acceleration_limit_rad_s2=alpha)
-        command, diagnostic = control(state, booster, target, throttle, count, control_profile,
-                                      use_flaps=phase in ("booster_entry_coast", "booster_landing_burn"))
+        if development_coast_control == "stopping_distance_v1" and phase == "booster_entry_coast":
+            from .starship_booster_control import control_coast_stopping_distance
+            control_interval = (profile["integration"]["powered_dt_s"] if throttle > 0 or altitude < 100_000
+                                else profile["integration"]["coast_dt_s"])
+            command, diagnostic = control_coast_stopping_distance(state, booster, target, profile,
+                                                                  control_interval_s=control_interval)
+        else:
+            command, diagnostic = control(state, booster, target, throttle, count, control_profile,
+                                          use_flaps=phase in ("booster_entry_coast", "booster_landing_burn"))
         diagnostic.update(guidance)
+        if restart is not None and phase == "booster_landing_burn":
+            terminal_boundary = {"time_s": state.time_s, "controller": diagnostic,
+                                 "command": asdict(command), "command_executed": False}
+            termination = "development_coast_terminal_requested"
+            event(termination, "Stopped before applying the first terminal command; no entry success inferred.")
+            break
         max_altitude = max(max_altitude, altitude)
         max_rate = max(max_rate, env.norm(state.omega_body_rad_s))
         max_error = max(max_error, diagnostic["attitude_error_deg"])
@@ -421,8 +464,32 @@ def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidanc
                             "Return target is the declared model-test site when supplied, otherwise the launch-site ground location; catch tower, mechanisms, contact loads and structural survival are unmodeled.",
                             "No separate entry burn is introduced. Configured boostback count defaults to the V3 planned 33; fixed_v1/site_return_v1 final burn selects one to three, while v2/v3 can select up to the configured gimballed count. Neither reproduces Flight 14's 13-to-five-to-three landing sequence.",
                             "Shared propellant reservoir, no feed-path momentum, slosh, combustion or TPS model."]}
+    if development_coast_from_separation:
+        result["development_coast_from_separation"] = {
+            "controller": development_coast_control, "operational_policy_approved": False,
+            "physics_limits_changed": False, "terminal_alignment_gate_changed": False,
+            "separation_state_preserved": True}
+    if restart is not None:
+        result["development_coast"] = {"schema": "missionos.booster_coast_probe.v1",
+            "controller": development_coast_control, "source_run_sha256": restart["source_run_sha256"],
+            "state_sha256": restart["state_sha256"], "profile_sha256": restart["profile_sha256"],
+            "source_sample_index": restart["sample_index"], "terminal_boundary": terminal_boundary,
+            "stops_before_terminal_execution": True, "operational_policy_approved": False}
+        result["limitations"].append("Isolated recorded coast continuation, not a launch-to-splashdown qualification.")
     if splashdown_goal is not None:
         from .starship_splashdown import entry_result
         result["splashdown"] = entry_result(result, splashdown_goal)
         result["limitations"].append("Controlled water-entry envelope at a synthetic offshore area; no waves, buoyancy, structural survival or real clearance validation.")
     return result
+
+
+def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None,
+                     development_coast_control="fixed_v1", development_coast_restart=None,
+                     development_coast_from_separation=False):
+    """Legacy synchronous API; draining does not change any integration step."""
+    from .starship_concurrent import drain
+    return drain(_simulate_booster_steps(profile, separation_state_dict, duration_s,
+        guidance_policy=guidance_policy, mission_director=mission_director, return_sites=return_sites,
+        tower_ready=tower_ready, splashdown_goal=splashdown_goal,
+        development_coast_control=development_coast_control, development_coast_restart=development_coast_restart,
+        development_coast_from_separation=development_coast_from_separation))

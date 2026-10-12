@@ -2,6 +2,7 @@
 from copy import deepcopy
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import subprocess
@@ -284,7 +285,11 @@ class StaticProcessFixture:
         return 0
 
 
-def test_reserved_run_upgrades_only_to_its_signed_current_actor(service, monkeypatch):
+@pytest.mark.parametrize("clock_origin,extended_clock", [
+    (None, None), (511.7, None), (1023.9, None),
+    (511.7, "original_wall_deadline_s"), (511.7, "original_simulation_deadline_s"),
+])
+def test_reserved_run_upgrades_only_to_its_signed_current_actor(service, monkeypatch, clock_origin, extended_clock):
     from src.runtime import starship_tower_broker
     plan = future_plan(service)
     service.approve(SESSION, plan["id"], plan["sha256"])
@@ -298,15 +303,42 @@ def test_reserved_run_upgrades_only_to_its_signed_current_actor(service, monkeyp
     with service._lock():
         stored = service._load(SESSION)
     profile, catch, sites = public_inputs()
+    clock_options = {} if clock_origin is None else {"clock": lambda: clock_origin}
+    if clock_origin is not None:
+        original_init = starship_tower_broker.TowerBroker.__init__
+        def broker_init(self, *args, **kwargs):
+            original_init(self, *args, **kwargs, **clock_options)
+        monkeypatch.setattr(starship_tower_broker.TowerBroker, "__init__", broker_init)
     context = runtime.TowerWorkerContext(run_dir, plan, stored["approval"], run_id, profile, catch, sites,
-        local_integrity_key=runtime.read_local_key(run_dir), source_is_current=lambda: True)
+        local_integrity_key=runtime.read_local_key(run_dir), source_is_current=lambda: True, **clock_options)
     context.activate(body(), phase="recovery_boostback_burn")
     context.tick(body(), tower_ready=True, return_mode="capture", active_site_id="capture")
     original_state = deepcopy(body())
     monkeypatch.setattr(starship_tower_broker.TowerBroker, "serve", lambda self: self.step())
+    errors = []
+    if extended_clock is not None:
+        original_register = service.register_tower_broker
+        def extend_and_register(*args, broker):
+            # Even one representable step above the signed duration is refused;
+            # the rounding fix must not add a permissive epsilon to authority.
+            broker._scope[extended_clock] = math.nextafter(broker._scope[extended_clock], math.inf)
+            try:
+                return original_register(*args, broker=broker)
+            except control.StarshipMissionError as exc:
+                errors.append(str(exc))
+                raise
+        monkeypatch.setattr(service, "register_tower_broker", extend_and_register)
     service._connect_tower_runtime(SESSION, plan["id"], plan["sha256"], run_id, process)
     state = service.current(SESSION)
     lease = control._read(service.root/"tower-active-run.json")
+    if extended_clock is not None:
+        assert errors == ["tower_broker_scope_binding_mismatch"]
+        assert state["execution"]["tower_supervision_registered"] is False
+        assert lease["schema"] == "missionos.starship_tower_run_reservation.v1"
+        context.close()
+        process.ended = True
+        service._observe_exit(SESSION, run_id, process)
+        return
     assert state["execution"]["tower_supervision_registered"] is True
     assert lease["schema"] == "missionos.starship_tower_run_lease.v1"
     assert lease["actor_pid"] == process.pid and lease["context"] == context.scope["context"]

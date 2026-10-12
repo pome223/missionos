@@ -1,0 +1,326 @@
+{
+  "schema": "missionos.starship_orbital_protocol_campaign.v1",
+  "setting_id": "ids_orbital_low_16384",
+  "source_sha256": {
+    "scripts/starship_orbital_protocol.py": "747a1de1dfc4c312088ab71b6ce1573fe0b1918b277337d2aeabe654610ea88a",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/intelligence/starship_orbital_protocol_campaign.py": "c2f3aa4071017c8dfec70693af74e518c01b0a445e1d7999de8e3e856ad6d085",
+    "src/intelligence/starship_protocol_campaign.py": "92c6c5dd5d26031f1301b61f5c9f1dd7c7c9f76a4ba6109a45abeef10801028b",
+    "src/intelligence/starship_protocol_probe.py": "5c0fb6cd92a6bdccfb53c17610e8231d24b60aed267b546431a82451fefb8b88",
+    "src/intelligence/starship_reference_protocol.py": "eb7261ccd7c3228f54f375e840fde5048d7c81a1e7bfc2cfc346ea17b64d4d3b",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/runtime/starship_replanning.py": "e60880aa96b788757dc15b9e3a09455c77d84f3dfcc25cf7818537db2529fb7f"
+  },
+  "approved_bundle_sha256": "750566b4e921e604b65e61f935f9af5d772e928ffab75021856e300aaf89a2bf",
+  "original_probe_sha256": "d4931c4c975c83cd83e4ecd1ed51ec62810fcb24e54936178833151fa292b452",
+  "reservation_sha256": "8164f7c39e39ef5000d3edd301d174a1ef6a1b08859c61fb4fbec8aa830c1b4e",
+  "worstcase_reserved_tokens": 32768,
+  "attempted_calls": 2,
+  "valid_responses": 2,
+  "observed_completion_tokens": 13438,
+  "usage_missing_attempts": 0,
+  "ready_for_one_separately_bounded_flight": true,
+  "maximum_admitted_followup_flights": 1,
+  "decision": "ready_for_one_separately_bounded_flight",
+  "held_out": false,
+  "flight_runs": 0,
+  "dispatch": false,
+  "raw_response_retained": false,
+  "raw_reasoning_retained": false,
+  "attempts": [
+    {
+      "audit": {
+        "decision": {
+          "action": "keep_plan",
+          "compared_candidate_ids": [
+            "nominal",
+            "next_orbit"
+          ],
+          "reference_ids": [
+            "r_dcc0bee1c084_3d82baf0e202d54233f2",
+            "r_dcc0bee1c084_9a1e2454550214c18aaf",
+            "r_dcc0bee1c084_a8fa34fd90c597674bc1",
+            "r_dcc0bee1c084_9244e6d349801beb96e6",
+            "r_dcc0bee1c084_f159eb5e6832fc5b21f4",
+            "r_dcc0bee1c084_62e22c74ec2c22bcbc72",
+            "r_dcc0bee1c084_213c0ae6d05e23cb2d64",
+            "r_dcc0bee1c084_ad111f6d766ba1020f43",
+            "r_dcc0bee1c084_012dd1a1abbf970b2c07",
+            "r_dcc0bee1c084_6c880b7da13b6cb43c85",
+            "r_dcc0bee1c084_b17236bde626f220b69c",
+            "r_dcc0bee1c084_c3c9bcfba2d416213990"
+          ]
+        },
+        "decision_request_sha256": "dcc0bee1c084f1216795afea4f2de389a512da14ca7d4689180460c76057cadf",
+        "dispatch": false,
+        "errors": [],
+        "finish_reason": "stop",
+        "free_prose_verified": false,
+        "latency_s": 21.65386066699284,
+        "provider_request_sha256": "9ab09029486c0d2ed69c25d837e74b9d9818805b00f8cbf1d013c7dd4c6aec68",
+        "provider_usage": {
+          "completion_tokens": 4474,
+          "prompt_tokens": 4377,
+          "total_tokens": 8851
+        },
+        "reasoning_tokens": 4104,
+        "reference_audit": {
+          "affects_action_admission": false,
+          "errors": [],
+          "forecast_truth_verified": false,
+          "free_prose_verified": false,
+          "host_resolved_values": true,
+          "internal_reasoning_verified": false,
+          "model_numeric_values_verified": false,
+          "reference_errors": [],
+          "referenced_candidate_ids": [
+            "next_orbit",
+            "nominal"
+          ],
+          "request_sha256": "dcc0bee1c084f1216795afea4f2de389a512da14ca7d4689180460c76057cadf",
+          "resolved_references": [
+            {
+              "candidate_id": "nominal",
+              "field_path": "/waiting_at_burn/energy_remaining_kwh",
+              "reference_id": "r_dcc0bee1c084_3d82baf0e202d54233f2",
+              "unit": "kWh",
+              "value": 22.0
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+              "reference_id": "r_dcc0bee1c084_9a1e2454550214c18aaf",
+              "unit": "kg",
+              "value": 0.0
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/waiting_at_burn/temperature_upper_k",
+              "reference_id": "r_dcc0bee1c084_a8fa34fd90c597674bc1",
+              "unit": "K",
+              "value": 295.0
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/area_service_estimates/east/estimated_completion_time_s/0",
+              "reference_id": "r_dcc0bee1c084_9244e6d349801beb96e6",
+              "unit": "s",
+              "value": 11529.830537721551
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/area_service_estimates/east/estimated_completion_time_s/1",
+              "reference_id": "r_dcc0bee1c084_f159eb5e6832fc5b21f4",
+              "unit": "s",
+              "value": 14840.346042684065
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/return_time_s",
+              "reference_id": "r_dcc0bee1c084_62e22c74ec2c22bcbc72",
+              "unit": "s",
+              "value": 2280.7000000000407
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/waiting_at_burn/energy_remaining_kwh",
+              "reference_id": "r_dcc0bee1c084_213c0ae6d05e23cb2d64",
+              "unit": "kWh",
+              "value": 12.915581018355592
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+              "reference_id": "r_dcc0bee1c084_ad111f6d766ba1020f43",
+              "unit": "kg",
+              "value": 109.0130277797329
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/waiting_at_burn/temperature_upper_k",
+              "reference_id": "r_dcc0bee1c084_012dd1a1abbf970b2c07",
+              "unit": "K",
+              "value": 300.45065138898667
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/area_service_estimates/west/estimated_completion_time_s/0",
+              "reference_id": "r_dcc0bee1c084_6c880b7da13b6cb43c85",
+              "unit": "s",
+              "value": 11278.617826041906
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/area_service_estimates/west/estimated_completion_time_s/1",
+              "reference_id": "r_dcc0bee1c084_b17236bde626f220b69c",
+              "unit": "s",
+              "value": 12489.110245250573
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/return_time_s",
+              "reference_id": "r_dcc0bee1c084_c3c9bcfba2d416213990",
+              "unit": "s",
+              "value": 7731.351388986685
+            }
+          ],
+          "schema": "missionos.m1_reference_id_audit.v1",
+          "status": "valid"
+        },
+        "response_sha256": "cffe2c6ab1820043965b922aab86f6d58926031bd0ebff8e76e8eb880ad6a58e",
+        "schema": "missionos.starship_protocol_response_audit.v1",
+        "status": "valid",
+        "summary_omitted_from_portable_record": true
+      },
+      "call_attempted": true,
+      "latency_s": 21.655052,
+      "maximum_output_tokens": 16384,
+      "provider_request_sha256": "9ab09029486c0d2ed69c25d837e74b9d9818805b00f8cbf1d013c7dd4c6aec68",
+      "setting_id": "ids_orbital_low_16384",
+      "slot": 1,
+      "transport_status": "response"
+    },
+    {
+      "audit": {
+        "decision": {
+          "action": "keep_plan",
+          "compared_candidate_ids": [
+            "nominal",
+            "next_orbit"
+          ],
+          "reference_ids": [
+            "r_dcc0bee1c084_3d82baf0e202d54233f2",
+            "r_dcc0bee1c084_9a1e2454550214c18aaf",
+            "r_dcc0bee1c084_9244e6d349801beb96e6",
+            "r_dcc0bee1c084_f159eb5e6832fc5b21f4",
+            "r_dcc0bee1c084_62e22c74ec2c22bcbc72",
+            "r_dcc0bee1c084_213c0ae6d05e23cb2d64",
+            "r_dcc0bee1c084_ad111f6d766ba1020f43",
+            "r_dcc0bee1c084_6c880b7da13b6cb43c85",
+            "r_dcc0bee1c084_b17236bde626f220b69c",
+            "r_dcc0bee1c084_c3c9bcfba2d416213990"
+          ]
+        },
+        "decision_request_sha256": "dcc0bee1c084f1216795afea4f2de389a512da14ca7d4689180460c76057cadf",
+        "dispatch": false,
+        "errors": [],
+        "finish_reason": "stop",
+        "free_prose_verified": false,
+        "latency_s": 39.94523358301376,
+        "provider_request_sha256": "9ab09029486c0d2ed69c25d837e74b9d9818805b00f8cbf1d013c7dd4c6aec68",
+        "provider_usage": {
+          "completion_tokens": 8964,
+          "prompt_tokens": 4377,
+          "total_tokens": 13341
+        },
+        "reasoning_tokens": 8616,
+        "reference_audit": {
+          "affects_action_admission": false,
+          "errors": [],
+          "forecast_truth_verified": false,
+          "free_prose_verified": false,
+          "host_resolved_values": true,
+          "internal_reasoning_verified": false,
+          "model_numeric_values_verified": false,
+          "reference_errors": [],
+          "referenced_candidate_ids": [
+            "next_orbit",
+            "nominal"
+          ],
+          "request_sha256": "dcc0bee1c084f1216795afea4f2de389a512da14ca7d4689180460c76057cadf",
+          "resolved_references": [
+            {
+              "candidate_id": "nominal",
+              "field_path": "/waiting_at_burn/energy_remaining_kwh",
+              "reference_id": "r_dcc0bee1c084_3d82baf0e202d54233f2",
+              "unit": "kWh",
+              "value": 22.0
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+              "reference_id": "r_dcc0bee1c084_9a1e2454550214c18aaf",
+              "unit": "kg",
+              "value": 0.0
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/area_service_estimates/east/estimated_completion_time_s/0",
+              "reference_id": "r_dcc0bee1c084_9244e6d349801beb96e6",
+              "unit": "s",
+              "value": 11529.830537721551
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/area_service_estimates/east/estimated_completion_time_s/1",
+              "reference_id": "r_dcc0bee1c084_f159eb5e6832fc5b21f4",
+              "unit": "s",
+              "value": 14840.346042684065
+            },
+            {
+              "candidate_id": "nominal",
+              "field_path": "/return_time_s",
+              "reference_id": "r_dcc0bee1c084_62e22c74ec2c22bcbc72",
+              "unit": "s",
+              "value": 2280.7000000000407
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/waiting_at_burn/energy_remaining_kwh",
+              "reference_id": "r_dcc0bee1c084_213c0ae6d05e23cb2d64",
+              "unit": "kWh",
+              "value": 12.915581018355592
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+              "reference_id": "r_dcc0bee1c084_ad111f6d766ba1020f43",
+              "unit": "kg",
+              "value": 109.0130277797329
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/area_service_estimates/west/estimated_completion_time_s/0",
+              "reference_id": "r_dcc0bee1c084_6c880b7da13b6cb43c85",
+              "unit": "s",
+              "value": 11278.617826041906
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/area_service_estimates/west/estimated_completion_time_s/1",
+              "reference_id": "r_dcc0bee1c084_b17236bde626f220b69c",
+              "unit": "s",
+              "value": 12489.110245250573
+            },
+            {
+              "candidate_id": "next_orbit",
+              "field_path": "/return_time_s",
+              "reference_id": "r_dcc0bee1c084_c3c9bcfba2d416213990",
+              "unit": "s",
+              "value": 7731.351388986685
+            }
+          ],
+          "schema": "missionos.m1_reference_id_audit.v1",
+          "status": "valid"
+        },
+        "response_sha256": "714c6c4c097416efc60bdbd85ed213ed7eff2f3c379da881dd134d43907ab9fa",
+        "schema": "missionos.starship_protocol_response_audit.v1",
+        "status": "valid",
+        "summary_omitted_from_portable_record": true
+      },
+      "call_attempted": true,
+      "latency_s": 39.947207,
+      "maximum_output_tokens": 16384,
+      "provider_request_sha256": "9ab09029486c0d2ed69c25d837e74b9d9818805b00f8cbf1d013c7dd4c6aec68",
+      "setting_id": "ids_orbital_low_16384",
+      "slot": 2,
+      "transport_status": "response"
+    }
+  ],
+  "execution_source_commit": "3c5f5749",
+  "evidence_scope": "known_input_protocol_replay_not_flight",
+  "canonical_full_summary_sha256": "abaa3d3944eabc8cdf1ed2188ccc4c970ab17b97cf46fb38a886b9f3c59b8561",
+  "free_prose_verified": false
+}

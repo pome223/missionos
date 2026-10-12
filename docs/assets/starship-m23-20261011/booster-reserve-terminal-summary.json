@@ -1,0 +1,111 @@
+{
+  "schema": "missionos.booster_terminal_candidate_result.v1",
+  "case": "nominal",
+  "attempts": 1,
+  "model_calls": 0,
+  "retry_performed": false,
+  "adopted_for_operations": false,
+  "study_sha256": "b079c27abb272b9a2e3b50535cea0ac9cb7b69a70a51feaa40f9aadb6052e9a8",
+  "source_map_sha256": "ad89c1f8a9133c8039c2a4da915862bc5487a12dd4e1be65a6ec486b60c7d9a6",
+  "source_unchanged": true,
+  "record_check": {
+    "passed": true,
+    "issues": [],
+    "controlled_water_entry_envelope_met": false,
+    "water_response_verified": false,
+    "physical_execution": false
+  },
+  "outcome": {
+    "termination": "surface_contact",
+    "phase": "booster_entry_coast",
+    "duration_s": 379.68382004500666,
+    "start_time_s": 135.59999999999658,
+    "end_time_s": 515.2838200450033,
+    "integration_steps": 2105,
+    "max_altitude_m": 199865.87187447958,
+    "max_body_rate_rad_s": 0.19893124867234038,
+    "max_attitude_error_deg": 179.70191991274035,
+    "final_ground_speed_mps": 1049.7084025506642,
+    "final_altitude_m": 32.864267483353615,
+    "final_hull_clearance_m": -2.4223700165748596e-06,
+    "return_site_distance_m": 8012.4318922564025,
+    "final_tilt_deg": 1.4095115978293042,
+    "final_body_rate_rad_s": 0.00029840980182161406,
+    "simulated_contact_envelope_met": false,
+    "catch_verified": false,
+    "landing_hardware_validated": false,
+    "starship_vehicle_validated": false,
+    "six_dof_integrated": true,
+    "attitude_prescribed": false,
+    "booster_return_6dof_implemented": true,
+    "boostback_started": true,
+    "coast_started": true,
+    "physical_execution": false
+  },
+  "contact": {
+    "signed_clearance_m": -2.4223700165748596e-06,
+    "clearance_measure": "minimum_ellipsoid_level_set_radius_difference",
+    "point_body_m": [
+      -0.14749404277168915,
+      -4.497582184612846,
+      0.0
+    ],
+    "point_eci_m": [
+      -462296.1318961543,
+      -5717762.14240456,
+      2778860.7582783625
+    ],
+    "surface_normal_eci": [
+      -0.0724347435396315,
+      -0.8958860042954506,
+      0.43833945206412783
+    ],
+    "geometry": "configured_closed_cylinder_envelope",
+    "spatial_method": "convex_quadratic_disk_and_axial_active_sets",
+    "angular_vertex_sampling": false,
+    "appendages_outside_radius_modeled": false,
+    "contact": true,
+    "event_time_s": 515.2838200450033,
+    "initial_overlap": false,
+    "time_bracket_s": [
+      515.2838200390428,
+      515.2838200450033
+    ],
+    "event_detection": "endpoint_bracket_with_bisection",
+    "complete_swept_volume_test": false,
+    "contact_response_modeled": false,
+    "landing_verified": false,
+    "starship_vehicle_validated": false,
+    "point_velocity_eci_mps": [
+      467.50602374596235,
+      908.8552226344636,
+      -459.2347722296147
+    ],
+    "surface_relative_velocity_mps": [
+      50.56023289535807,
+      942.5663882128829,
+      -459.2347722296147
+    ],
+    "surface_relative_speed_mps": 1049.706773038975,
+    "surface_normal_speed_mps": -1049.3950712502374,
+    "surface_tangential_speed_mps": 25.579167296983755,
+    "omega_cross_lever_applied": true,
+    "moving_com_correction_applied": true,
+    "propellant_kg": 85344.34609523824,
+    "q_body_to_eci": [
+      -0.6187365059966069,
+      -0.36717735837430976,
+      0.3826748468676697,
+      -0.5795738824508745
+    ],
+    "omega_body_rad_s": [
+      -0.0002968454453886833,
+      6.615320810422023e-06,
+      2.9789744976827256e-05
+    ]
+  },
+  "preview_scope": "aligned one-dimensional stopping estimate with drag, per-engine spool and fixed reserve; not independent physical qualification",
+  "diagnosis": "No sampled overlap of reserve-preserving stop and near-surface stopping window. Early feasible stops remain far above the surface; near-ground stops lack impulse. No ignition and failed contact preserved.",
+  "m3_completed": false,
+  "physical_execution": false
+}

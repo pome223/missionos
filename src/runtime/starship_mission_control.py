@@ -25,6 +25,8 @@ from typing import Callable
 import uuid
 
 from .starship_replanning import SCENARIOS as M1_SCENARIOS, SCOPE as M1_SCOPE
+from .starship_m2_control import SCENARIOS as M2_SCENARIOS, SCOPE as M2_SCOPE
+from .starship_m3_live import SCENARIOS as M3_SCENARIOS, SCOPE as M3_SCOPE
 from .starship_flight import SCENARIOS
 from .starship_mission_director import SCENARIOS as MANAGED_SCENARIOS, MODE_ENV as DIRECTOR_MODE_ENV, SCOPE as DIRECTOR_SCOPE
 from .starship_sixdof_catalog import (
@@ -36,7 +38,16 @@ from .starship_sixdof_catalog import (
 )
 
 REPO = Path(__file__).resolve().parents[2]
-CATALOG = (*SCENARIOS, "dispenser_comparison", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M1_SCENARIOS)
+CATALOG = (
+    *SCENARIOS,
+    "dispenser_comparison",
+    "dispenser_jev_shadow",
+    *SIXDOF_SCENARIOS,
+    *MANAGED_SCENARIOS,
+    *M1_SCENARIOS,
+    *M2_SCENARIOS,
+    *M3_SCENARIOS,
+)
 PLAN_TTL_S = 900
 APPROVAL_TTL_S = 300
 ARTIFACT_NAMES = frozenset({"report.html", "study.json", "verification.json", "manifest.json"})
@@ -78,6 +89,8 @@ def _plan_sources(plan):
         from .starship_tower_runtime import runtime_sources
         sources.update(runtime_sources(REPO))
     return sources
+
+
 FLIGHT_SOURCES = (
     "scripts/run_starship_3d.py", "src/runtime/starship_flight.py",
     "src/runtime/starship_physics.py", "src/runtime/starship_study.py",
@@ -116,6 +129,14 @@ def _read(path: Path) -> dict:
 
 
 def _sources(scenario: str) -> dict:
+    if scenario in M3_SCENARIOS:
+        from .starship_m3_live import sources
+
+        return sources()
+    if scenario in M2_SCENARIOS:
+        from .starship_m2_runner import sources
+
+        return sources()
     if scenario in M1_SCENARIOS:
         from .starship_replanning import source_hashes
         return source_hashes()
@@ -149,7 +170,13 @@ def worker_environment() -> dict[str, str]:
 def process_environment(plan: dict) -> dict[str, str]:
     """Only the Jev observer broker may receive its own provider credential."""
     env = worker_environment()
-    if plan["scenario"] in (*MANAGED_SCENARIOS, *M1_SCENARIOS):
+    if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+        from src.intelligence.starship_m2_broker import require_live_configuration
+        try:
+            require_live_configuration(plan["mission_envelope"])
+        except ValueError as error:
+            raise StarshipMissionError(str(error)) from None
+    if plan["scenario"] in (*MANAGED_SCENARIOS, *M1_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS):
         mode = plan["mission_envelope"]["mode"]
         if os.environ.get(DIRECTOR_MODE_ENV) != mode:
             raise StarshipMissionError("mission_director_configuration_changed")
@@ -172,10 +199,10 @@ def process_environment(plan: dict) -> dict[str, str]:
     return env
 
 
-def _run_simulator(args: list[str], timeout: float = 300) -> int:
+def _run_simulator(args: list[str], timeout: float = 300, *, pass_fds=()) -> int:
     """Own a process group so a timeout also stops the flight CLI's worker."""
     process = subprocess.Popen(args, cwd=REPO, env=worker_environment(), stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, start_new_session=True)
+                               stderr=subprocess.PIPE, start_new_session=True, pass_fds=pass_fds)
     try:
         _, stderr = process.communicate(timeout=timeout)
         if process.returncode:
@@ -273,7 +300,9 @@ class StarshipMissionService:
                                       "plan_sha256": public["plan"]["sha256"]}
         return public
 
-    def plan(self, session_id: str, utterance: str, *, expected_scenario: str | None = None) -> dict:
+    def plan(
+        self, session_id: str, utterance: str, *, expected_scenario: str | None = None
+    ) -> dict:
         if expected_scenario is not None and (type(expected_scenario) is not str or expected_scenario not in CATALOG):
             raise StarshipMissionError("invalid_expected_scenario")
         self._session_path(session_id)
@@ -408,10 +437,10 @@ class StarshipMissionService:
             if reason:
                 raise StarshipMissionError(reason)
             try:
-                envelope = m1_contract(os.environ.get(DIRECTOR_MODE_ENV, "off"))
+                envelope = m1_contract(os.environ.get(DIRECTOR_MODE_ENV, "off"), M1_SCENARIOS[scenario])
             except ValueError as exc:
                 raise StarshipMissionError("m1_not_configured") from exc
-            if M1_SCENARIOS[scenario] == "decision_timeout" and envelope["mode"] != "fixture":
+            if M1_SCENARIOS[scenario] in ("decision_timeout", "event_timeout", "comparison_timeout", "comparison_tool_failure") and envelope["mode"] != "fixture":
                 raise StarshipMissionError("m1_timeout_fixture_only")
             plan.update(backend="starship_return_replanning", mission_envelope=envelope,
                 release_policy="approved_26_payload_sequence_then_bounded_ai_return_control",
@@ -423,6 +452,28 @@ class StarshipMissionService:
                 limitations=["開発用の観測・回収区域・待機資源の仮定を承認します。実機の回収許可ではありません。",
                     "予測と実行は共有の6DOF。制約・観測不確かさ・実際の接触は別に確認します。",
                     "人は範囲を承認。Jevは帰還を判断。未応答時にも現在の状態と回収条件を検算します。"])
+        if scenario in (*M2_SCENARIOS, *M3_SCENARIOS):
+            from .starship_return_feasibility import readiness
+            if scenario in M3_SCENARIOS:
+                from .starship_m3_live import plan_fields
+                cases, failure = M3_SCENARIOS, "m3_not_configured"
+            else:
+                from .starship_m2_control import plan_fields
+                cases, failure = M2_SCENARIOS, "m2_not_configured"
+
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason:
+                raise StarshipMissionError(reason)
+            try:
+                plan.update(
+                    plan_fields(
+                        os.environ.get(DIRECTOR_MODE_ENV, "off"),
+                        cases[scenario],
+                        plan["source_sha256"],
+                    )
+                )
+            except ValueError as exc:
+                raise StarshipMissionError(failure) from exc
         plan["sha256"] = _digest(plan)
         state = {"status": "awaiting_approval", "plan": plan, "approval": None,
                  "execution": {}, "planner_invocation": result.get("invocation", {}),
@@ -467,6 +518,9 @@ class StarshipMissionService:
             if plan["scenario"] == LAUNCH_CATCH_SCENARIO:
                 grant["scope"] = "local_launch_connected_booster_catch_simulation"
                 grant["booster_recovery"] = plan["booster_recovery"]
+            if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+                grant["scope"] = M3_SCOPE if plan["scenario"] in M3_SCENARIOS else M2_SCOPE
+                grant["mission_envelope"] = plan["mission_envelope"]
             if plan["scenario"] in M1_SCENARIOS:
                 grant["scope"] = M1_SCOPE
                 grant["mission_envelope"] = plan["mission_envelope"]
@@ -519,27 +573,68 @@ class StarshipMissionService:
                     and grant["created_at_epoch_s"] <= consumed < grant["expires_at_epoch_s"]
                     and deadline == consumed+runtime["maximum_wall_time_s"] and consumed <= now < deadline
                     and state.get("execution", {}).get("started_at_epoch_s") == consumed)
-        if (grant["session_id"] != plan["session_id"] or grant["plan_id"] != plan["id"]
-                or grant["plan_sha256"] != plan["sha256"] or grant["consumed_by_run"] != consumed_by_run
-                or grant["scope"] != (M1_SCOPE if plan["scenario"] in M1_SCENARIOS else DIRECTOR_SCOPE if plan["scenario"] in MANAGED_SCENARIOS else TOWER_GRANT_SCOPE if plan.get("tower_supervision") is not None else "local_launch_connected_booster_catch_simulation" if plan["scenario"] == LAUNCH_CATCH_SCENARIO else "local_initialized_booster_catch_simulation" if plan["scenario"] in CATCH_CATALOG else "local_simulation_and_bounded_flight_supervision_and_retained_return" if plan["scenario"] in RETAINED_RETURN_SCENARIOS else "local_simulation_and_bounded_flight_supervision" if plan["scenario"] in SUPERVISED_SCENARIOS else "local_simulation_and_jev_shadow" if plan["scenario"] == "dispenser_jev_shadow" else "local_simulation_only")
-                or grant.get("mission_envelope") != plan.get("mission_envelope")
-                or grant.get("jev_shadow") != plan.get("jev_shadow")
-                or grant.get("flight_supervision") != plan.get("flight_supervision")
-                or grant.get("return_policy") != plan.get("return_policy")
-                or grant.get("booster_catch") != plan.get("booster_catch")
-                or grant.get("booster_recovery") != plan.get("booster_recovery")
-                or grant.get("tower_supervision") != plan.get("tower_supervision")
-                or grant.get("tower_runtime") != plan.get("tower_runtime")
-                or grant["physical_execution_authorized"] is not False
-                or not expiry_valid):
+        if (
+            grant["session_id"] != plan["session_id"]
+            or grant["plan_id"] != plan["id"]
+            or grant["plan_sha256"] != plan["sha256"]
+            or grant["consumed_by_run"] != consumed_by_run
+            or grant["scope"]
+            != (
+                M3_SCOPE
+                if plan["scenario"] in M3_SCENARIOS
+                else M2_SCOPE
+                if plan["scenario"] in M2_SCENARIOS
+                else M1_SCOPE
+                if plan["scenario"] in M1_SCENARIOS
+                else DIRECTOR_SCOPE
+                if plan["scenario"] in MANAGED_SCENARIOS
+                else TOWER_GRANT_SCOPE
+                if plan.get("tower_supervision") is not None
+                else "local_launch_connected_booster_catch_simulation"
+                if plan["scenario"] == LAUNCH_CATCH_SCENARIO
+                else "local_initialized_booster_catch_simulation"
+                if plan["scenario"] in CATCH_CATALOG
+                else "local_simulation_and_bounded_flight_supervision_and_retained_return"
+                if plan["scenario"] in RETAINED_RETURN_SCENARIOS
+                else "local_simulation_and_bounded_flight_supervision"
+                if plan["scenario"] in SUPERVISED_SCENARIOS
+                else "local_simulation_and_jev_shadow"
+                if plan["scenario"] == "dispenser_jev_shadow"
+                else "local_simulation_only"
+            )
+            or grant.get("mission_envelope") != plan.get("mission_envelope")
+            or grant.get("jev_shadow") != plan.get("jev_shadow")
+            or grant.get("flight_supervision") != plan.get("flight_supervision")
+            or grant.get("return_policy") != plan.get("return_policy")
+            or grant.get("booster_catch") != plan.get("booster_catch")
+            or grant.get("booster_recovery") != plan.get("booster_recovery")
+            or grant.get("tower_supervision") != plan.get("tower_supervision")
+            or grant.get("tower_runtime") != plan.get("tower_runtime")
+            or grant["physical_execution_authorized"] is not False
+            or not expiry_valid
+        ):
             raise StarshipMissionError("approval_binding_expired_or_consumed")
         if plan["source_sha256"] != _plan_sources(plan):
             raise StarshipMissionError("approved_source_changed")
+        if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+            from .starship_return_feasibility import readiness
+            if plan["scenario"] in M3_SCENARIOS:
+                from .starship_m3_live import contract as current_contract
+                cases, failure = M3_SCENARIOS, "m3_envelope_not_current"
+            else:
+                from .starship_m2_contract import m2_contract as current_contract
+                cases, failure = M2_SCENARIOS, "m2_envelope_not_current"
+
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason or _digest(plan["mission_envelope"]) != _digest(
+                current_contract(plan["mission_envelope"]["mode"], cases[plan["scenario"]])
+            ):
+                raise StarshipMissionError(reason or failure)
         if plan["scenario"] in M1_SCENARIOS:
             from .starship_return_feasibility import readiness
             from .starship_replanning import contract as m1_contract
             _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
-            if reason or plan["mission_envelope"] != m1_contract(plan["mission_envelope"]["mode"]):
+            if reason or plan["mission_envelope"] != m1_contract(plan["mission_envelope"]["mode"], M1_SCENARIOS[plan["scenario"]]):
                 raise StarshipMissionError(reason or "m1_envelope_not_current")
         if plan["scenario"] in MANAGED_SCENARIOS:
             from .starship_return_feasibility import readiness
@@ -569,10 +664,38 @@ class StarshipMissionService:
                 raise StarshipMissionError("tower_runtime_not_connected")
             environment = process_environment(state["plan"])
             run_id = uuid.uuid4().hex
-            run_dir = self.root / ("run-" + run_id)
+            run_dir = self.root/("run-"+run_id)
             run_dir.mkdir(mode=0o700)
-            if state["plan"]["scenario"] in SUPERVISED_SCENARIOS or state["plan"]["scenario"] in (*MANAGED_SCENARIOS, *M1_SCENARIOS):
+            if state["plan"]["scenario"] in SUPERVISED_SCENARIOS or state["plan"]["scenario"] in (
+                *MANAGED_SCENARIOS,
+                *M1_SCENARIOS,
+                *M2_SCENARIOS,
+                *M3_SCENARIOS,
+            ):
                 (run_dir / "supervision").mkdir(mode=0o700)
+            if state["plan"]["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+                envelope = state["plan"]["mission_envelope"]
+                is_m3 = state["plan"]["scenario"] in M3_SCENARIOS
+                phases = ("ascent", "booster", "deployment", "return") if is_m3 else ("deployment", "return")
+                for phase in phases:
+                    (run_dir / "supervision" / phase).mkdir(mode=0o700)
+                _write(
+                    run_dir / "supervision" / "authority.json",
+                    {
+                        "run_id": run_id,
+                        "authority_sha256": _digest(envelope["m2_authority"] if is_m3 else envelope),
+                    },
+                )
+                if is_m3:
+                    _write(run_dir / "supervision" / "m3-authority.json",
+                           {"run_id": run_id, "authority_sha256": _digest(envelope)})
+            inflight_host, inflight_binding = None, None
+            if state["plan"]["scenario"] in M3_SCENARIOS and state["plan"]["mission_envelope"]["inflight_scope_amendment_enabled"]:
+                from .starship_m3_inflight import binding, LiveApprovalHost
+                inflight_binding = binding(state["plan"]["mission_envelope"], run_id=run_id,
+                    plan_sha256=plan_sha256, source_sha256=state["plan"]["source_sha256"], started=time.monotonic())
+                _write(run_dir/"inflight-binding.json", {**inflight_binding, "signature": self._signature(inflight_binding)})
+                inflight_host = LiveApprovalHost(run_dir, inflight_binding, signer=self._signature)
             state["approval"]["consumed_by_run"] = run_id
             unsigned = {key: value for key, value in state["approval"].items() if key != "signature"}
             state["approval"]["signature"] = self._signature(unsigned)
@@ -583,21 +706,60 @@ class StarshipMissionService:
                          "started_at_epoch_s": self.clock(), "subprocess_spawned": False,
                          "worker_receipt_verified": False, "physical_execution": False},
                          message="承認済み計画のシミュレーションを別プロセスで開始します。/status で確認できます。")
+            if inflight_binding is not None:
+                state["execution"]["inflight_approval"] = {
+                    "context": inflight_binding["inflight_contract"]["context"],
+                    "operator_ui_path": "/missionos/starship/inflight",
+                    "operator_authentication": "configured_bearer_principal",
+                    "sso_identity_verified": False,
+                }
             self._save(session_id, state)
+            worker_args = [sys.executable, str(REPO / "scripts/run_starship_mission_worker.py"),
+                           "--state-dir", str(self.root), "--run-id", run_id]
+            inflight_fds = inflight_host.fds if inflight_host is not None else ()
+            if inflight_host is not None:
+                for channel, fd in zip(("request", "grant", "telemetry"), inflight_fds):
+                    worker_args.extend(["--inflight-"+channel+"-fd", str(fd)])
             try:
                 with (run_dir / "worker.log").open("xb") as log:
                     child = subprocess.Popen(
-                        [sys.executable, str(REPO / "scripts/run_starship_mission_worker.py"),
-                         "--state-dir", str(self.root), "--run-id", run_id],
+                        worker_args,
                         cwd=REPO, env=environment, stdout=log, stderr=subprocess.STDOUT,
-                        start_new_session=True,
+                        start_new_session=True, pass_fds=inflight_fds,
                     )
+                if inflight_host is not None:
+                    inflight_host.spawned(child)
                 state["execution"].update(worker_pid=child.pid, subprocess_spawned=True)
             except OSError:
+                if inflight_host is not None:
+                    for pipe in inflight_host.child_ends:
+                        pipe.close()
+                    inflight_host.close()
                 state.update(status="failed", message="ワーカープロセスを開始できませんでした。承認は再利用できません。")
                 state["execution"].update(status="failed", failure_reason="worker_spawn_failed")
             self._save(session_id, state)
             if state["execution"].get("subprocess_spawned"):
+                if state["plan"]["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+                    if state["plan"]["scenario"] in M3_SCENARIOS:
+                        from src.intelligence.starship_m3_broker import serve
+                    else:
+                        from src.intelligence.starship_m2_broker import serve
+
+                    Thread(
+                        target=serve,
+                        args=(
+                            run_dir / "supervision",
+                            state["plan"]["mission_envelope"],
+                            run_id,
+                            child,
+                            lambda: (
+                                state["plan"]["source_sha256"]
+                                == _sources(state["plan"]["scenario"])
+                            ),
+                        ),
+                        kwargs={"inflight_binding": inflight_binding} if state["plan"]["scenario"] in M3_SCENARIOS else {},
+                        daemon=True,
+                    ).start()
                 if state["plan"]["scenario"] in M1_SCENARIOS:
                     from src.intelligence.starship_replanning import serve
                     Thread(target=serve, args=(run_dir / "supervision", state["plan"]["mission_envelope"], child,
@@ -798,8 +960,10 @@ class StarshipMissionService:
                     or scope["maximum_observation_age_s"] != contract["maximum_observation_age_s"]
                     or scope["observation_collection_allowed"] is not contract["observation_collection_allowed"]
                     or scope["human_resolution_allowed"] is not contract["human_resolution_allowed"]
-                    or scope["original_simulation_deadline_s"]-scope["issued_simulation_time_s"] > contract["decision_expiry_s"]
-                    or scope["original_wall_deadline_s"]-scope["issued_wall_time_s"] > contract["decision_expiry_s"]
+                    # Compare the absolute deadlines built by the actor. Subtracting
+                    # large clock values can round an exact 75 s grant upward.
+                    or scope["original_simulation_deadline_s"] > scope["issued_simulation_time_s"]+contract["decision_expiry_s"]
+                    or scope["original_wall_deadline_s"] > scope["issued_wall_time_s"]+contract["decision_expiry_s"]
                     or broker._router._mode != contract["mode"]
                     or broker._root.resolve() != run_dir/"tower"
                     or Path(broker._ledger._store_path).resolve() != run_dir/"tower-resolution.sqlite3"
@@ -953,17 +1117,21 @@ class StarshipMissionService:
                 if result_path.exists():
                     receipt = _read(result_path)
                     expected = self._signature({key: value for key, value in receipt.items() if key != "signature"})
-                    if (not hmac.compare_digest(str(receipt.get("signature", "")), expected)
-                            or receipt.get("run_id") != execution["run_id"]
-                            or receipt.get("plan_sha256") != state["plan"]["sha256"]
-                            or receipt.get("worker_pid") != execution.get("worker_pid")):
+                    if (
+                        not hmac.compare_digest(str(receipt.get("signature", "")), expected)
+                        or receipt.get("run_id") != execution["run_id"]
+                        or receipt.get("plan_sha256") != state["plan"]["sha256"]
+                        or receipt.get("worker_pid") != execution.get("worker_pid")
+                    ):
                         state.update(status="failed", message="ワーカー記録の結合検証に失敗しました。")
                         execution.update(status="failed", failure_reason="worker_receipt_binding_invalid")
                     else:
                         result_status = "verified" if receipt["verification_passed"] else "failed"
-                        if (state["plan"]["scenario"] in M1_SCENARIOS
-                                and result_status == "verified"
-                                and not receipt["verification"].get("case_accepted", False)):
+                        if (
+                            state["plan"]["scenario"] in (*M1_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS)
+                            and result_status == "verified"
+                            and not receipt["verification"].get("case_accepted", False)
+                        ):
                             result_status = "unresolved"
                         execution.update(status=result_status, worker_receipt_verified=True,
                                          verification=receipt["verification"], artifact_sha256=receipt["artifact_sha256"],
@@ -1006,7 +1174,7 @@ def get_starship_service() -> StarshipMissionService:
     return StarshipMissionService(os.environ.get("MISSIONOS_STARSHIP_STATE_DIR", "output/starship-missions"))
 
 
-def execute_worker(state_dir: Path, run_id: str) -> int:
+def execute_worker(state_dir: Path, run_id: str, *, inflight_fds=(None, None, None)) -> int:
     """Single-consumption worker. Only its signed receipt can finish a chat run."""
     if len(run_id) != 32 or any(c not in "0123456789abcdef" for c in run_id):
         raise StarshipMissionError("invalid_run_id")
@@ -1035,6 +1203,92 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                    {"DEEPSEEK_API_KEY", "TYPESAFE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "JEV_API_KEY"} - allowed_keys):
                 raise StarshipMissionError("provider_credentials_in_worker")
             output = run_dir / "results"
+            if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
+                from .starship_replanning import source_hashes as return_sources
+                is_m3 = plan["scenario"] in M3_SCENARIOS
+                if is_m3:
+                    from .starship_m3_live import verify
+                else:
+                    from .starship_m2_verifier import verify
+                boundary = "m3" if is_m3 else "m2"
+
+                _write(run_dir / "authority.json", plan["mission_envelope"])
+                args = [
+                    sys.executable,
+                    str(REPO / f"scripts/run_starship_{boundary}.py"),
+                    "--approve-simulation",
+                    "--case",
+                    plan["simulation"]["case"],
+                    "--mode",
+                    plan["mission_envelope"]["mode"],
+                    "--authority-file",
+                    str(run_dir / "authority.json"),
+                    "--mailbox",
+                    str(run_dir / "supervision"),
+                    "--run-id",
+                    run_id,
+                    "--output-dir",
+                    str(output),
+                ]
+                inflight_binding, host_evidence, pass_fds = None, None, ()
+                enabled = is_m3 and plan["mission_envelope"]["inflight_scope_amendment_enabled"]
+                if enabled:
+                    from .starship_m3_inflight import validate_binding
+                    signed = _read(run_dir/"inflight-binding.json")
+                    inflight_binding = {key: value for key, value in signed.items() if key != "signature"}
+                    if (signed.get("signature") != service._signature(inflight_binding)
+                            or inflight_binding.get("plan_sha256") != plan["sha256"]
+                            or len(inflight_fds) != 3 or any(type(fd) is not int or fd < 3 for fd in inflight_fds)
+                            or len(set(inflight_fds)) != 3):
+                        raise StarshipMissionError("inflight_signed_runtime_binding_required")
+                    validate_binding(inflight_binding, plan["mission_envelope"], run_id=run_id, sources=plan["source_sha256"])
+                    args.extend(["--inflight-binding", str(run_dir/"inflight-binding.json")])
+                    pass_fds = tuple(inflight_fds)
+                    for channel, fd in zip(("request", "grant", "telemetry"), pass_fds):
+                        args.extend(["--inflight-"+channel+"-fd", str(fd)])
+                elif any(fd is not None for fd in inflight_fds):
+                    raise StarshipMissionError("inflight_channels_outside_approved_scope")
+                code = _run_simulator(args, timeout=plan["simulation"]["maximum_wall_time_s"], pass_fds=pass_fds)
+                if enabled:
+                    from .starship_m3_inflight import await_host_evidence
+                    host_evidence = await_host_evidence(run_dir, inflight_binding)
+                    unsigned_host = {key: value for key, value in host_evidence.items() if key != "signature"}
+                    if host_evidence.get("signature") != service._signature(unsigned_host):
+                        raise StarshipMissionError("inflight_host_result_signature_invalid")
+                result["simulator_process_returncode"] = code
+                if code not in (0, 2, 3):
+                    raise StarshipMissionError(boundary + "_simulator_process_failed")
+                study = _read(output / "study.json")
+                if _digest(study["profile"]) != _digest(_read(REPO / SIXDOF_PROFILE)) or plan[
+                    "source_sha256"
+                ] != _sources(plan["scenario"]):
+                    raise StarshipMissionError(boundary + "_execution_input_binding_mismatch")
+                verdict = verify(
+                    study,
+                    expected_authority=plan["mission_envelope"],
+                    expected_sources=plan["source_sha256"],
+                    expected_return_sources=return_sources(),
+                    expected_run_id=run_id,
+                    **({"expected_inflight_binding": inflight_binding, "expected_host_evidence": host_evidence} if is_m3 else {}),
+                )
+                _write(output/"verification.json", verdict)
+                manifest = _read(output/"manifest.json")
+                manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()
+                _write(output/"manifest.json", manifest)
+                result.update(
+                    verification=verdict,
+                    verification_passed=verdict["passed"],
+                    artifact_sha256={
+                        name: sha256((output / name).read_bytes()).hexdigest()
+                        for name in ARTIFACT_NAMES
+                    },
+                    ended_at_epoch_s=service.clock(),
+                    process_role=f"credential_free_{boundary}_simulator_worker",
+                    simulator_provider_credentials_present=False,
+                )
+                result["signature"] = service._signature(result)
+                _write(run_dir / "result.json", result)
+                return 0 if verdict["passed"] else 2
             if plan["scenario"] in M1_SCENARIOS:
                 from .starship_replanning_verifier import verify
                 args = [sys.executable, str(REPO/"scripts/run_starship_m1.py"), "--approve-simulation",
@@ -1049,7 +1303,8 @@ def execute_worker(state_dir: Path, run_id: str) -> int:
                         or plan["source_sha256"] != _sources(plan["scenario"])):
                     raise StarshipMissionError("m1_execution_input_binding_mismatch")
                 verdict = verify(study, expected_envelope=plan["mission_envelope"],
-                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"])
+                    expected_case=plan["simulation"]["case"], expected_sources=plan["source_sha256"],
+                    expected_run_id=run_id)
                 _write(output/"verification.json", verdict)
                 manifest = _read(output/"manifest.json")
                 manifest["files"]["verification.json"] = sha256((output/"verification.json").read_bytes()).hexdigest()

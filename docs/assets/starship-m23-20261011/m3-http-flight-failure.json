@@ -1,0 +1,75 @@
+{
+  "artifact_sha256": {
+    "flight/authority.json": "34d191146971b55eae946c5f86ec64bc51087db1034a1f4c89234eec6db8007e",
+    "host-failure.json": "3c427b850e55a2bf222e20aa00ab23650f3fc93cf864e2b4f225694e76871785",
+    "inflight-contract.json": "e050016b976d3c48d16e3e03b13d9c73b8a683ec69d75c912fe8e0c7c5f32892",
+    "preflight.json": "521981d2cd2a77e3bf3bcd645efa76b441d7a70311cf1c85494364f142cdfe33",
+    "summary.json": "d5e0d61e06ffe80dd02f427c50ec91c3645e08c16e45d0b5a269206251c75360"
+  },
+  "attempts_authorized": 1,
+  "audit_added_flights": 0,
+  "audit_added_forecasts": 0,
+  "audit_added_model_calls": 0,
+  "audit_method": "read_saved_artifacts_and_compare_frozen_source_hashes_only",
+  "claim_limits": [
+    "This attempt does not establish the HTTP approval-to-return boundary.",
+    "Component HTTP and concurrent prefix results remain separate evidence.",
+    "No new Ship return or booster outcome is established by this attempt.",
+    "The failure record suppresses the missing module name, so it does not identify the dependency.",
+    "Source consistency and qualified physics do not establish successful execution."
+  ],
+  "declared_fixture_accepted": false,
+  "execution_evidence": {
+    "composition_authority_saved": true,
+    "deployment_handoff_observed": false,
+    "executor_reservation_change_observed": false,
+    "host_single_use_consumption_observed": false,
+    "later_reservation_confirmation_observed": false,
+    "numerical_execution_extent": "not established by the saved artifacts; no deployment/return study or worker completion record",
+    "operator_http_response_observed": false,
+    "operator_request_delivered": false,
+    "preflight_budget_and_contract_saved": true,
+    "ship_contact_observed": false,
+    "ship_return_dispatch_observed": false
+  },
+  "failure_type": "ModuleNotFoundError",
+  "m3_completed": false,
+  "missing_dependency_name_recorded": false,
+  "mission_completed": false,
+  "model_calls_reported": 0,
+  "operator_response_source": "scripted_test_operator_configured_but_not_observed",
+  "physical_execution": false,
+  "publication_exclusions": [
+    "operator-private.sqlite",
+    "private host database files",
+    "credentials or authorization headers",
+    "workstation paths"
+  ],
+  "retry_performed": false,
+  "run_id": "m3-http-fixture",
+  "schema": "missionos.starship_m3_http_fixture_readonly_audit.v1",
+  "source_file_count": 95,
+  "source_manifest_matches_current_files": true,
+  "source_mismatches": [],
+  "sso_identity_verified": false,
+  "termination": "host_initialization_failed",
+  "unavailable_artifacts": [
+    "host-runtime.json",
+    "http-transcript.json",
+    "host-verified-ledger.json",
+    "host-consumption-checkpoint.json",
+    "telemetry-summary.json",
+    "worker-result.json",
+    "worker-failure.json",
+    "flight/study.json",
+    "flight/mission/study.json",
+    "flight/mission/return-study.json"
+  ],
+  "source_comparison_moment": "immediately after the fixed failure, before startup repair",
+  "followup_import_diagnosis": {
+    "missing_module": "missionos_core",
+    "method": "import the Gateway with the recorded PYTHONPATH in a fresh process",
+    "new_flights": 0,
+    "original_failure_record_changed": false
+  }
+}

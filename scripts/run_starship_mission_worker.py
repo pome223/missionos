@@ -17,9 +17,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state-dir", type=Path, required=True)
     parser.add_argument("--run-id", required=True)
+    for channel in ("request", "grant", "telemetry"):
+        parser.add_argument("--inflight-"+channel+"-fd", type=int)
     args = parser.parse_args()
     try:
-        return execute_worker(args.state_dir, args.run_id)
+        return execute_worker(args.state_dir, args.run_id, inflight_fds=(args.inflight_request_fd, args.inflight_grant_fd, args.inflight_telemetry_fd))
     except Exception:
         # Never write raw subprocess/provider exceptions or local credentials to logs.
         print("starship_worker_request_rejected", file=sys.stderr)

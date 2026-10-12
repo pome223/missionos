@@ -170,7 +170,9 @@ class FlightSupervisor:
         except Exception:
             return False
 
-    def _invoke(self, provider, payload, receipt, decode):
+    def _invoke(self, provider, payload, receipt, decode, *, timeout_s=TIMEOUT_SECONDS, active=None):
+        if timeout_s != TIMEOUT_SECONDS and (provider != "deepseek" or timeout_s != 120):
+            raise ValueError("unregistered_provider_timeout")
         wire = canonical_bytes(payload)
         receipt.update(request_sha256=sha256(wire).hexdigest(), request_bytes=len(wire),
                        requested_model_id=payload["model"])
@@ -187,14 +189,20 @@ class FlightSupervisor:
         receipt.update(call_attempted=True, reserved_call_slot=1,
                        model_inference_status="unconfirmed_after_attempt")
         started = time.monotonic()
+        receipt["timeout_seconds"] = timeout_s
         try:
-            status, body = _send_once(JEV_ENDPOINT if provider == "typesafe" else DEEPSEEK_ENDPOINT, wire, key)
+            endpoint = JEV_ENDPOINT if provider == "typesafe" else DEEPSEEK_ENDPOINT
+            if timeout_s == TIMEOUT_SECONDS and active is None:
+                status, body = _send_once(endpoint, wire, key)
+            else:
+                status, body = _send_once(endpoint, wire, key, timeout_s=timeout_s, active=active)
         except Exception:
             status, body = "transport_failed", None
         finally:
             receipt["latency_ms"] = round((time.monotonic()-started)*1000, 3)
         if status != "response" or type(body) is not bytes:
-            receipt["status"] = "transport_timeout" if status == "transport_timeout" else "transport_failed"
+            receipt["status"] = ("cancelled_request" if status == "not_active" else
+                                 "transport_timeout" if status == "transport_timeout" else "transport_failed")
             return None
         receipt.update(response_received=True, response_bytes_read=len(body))
         if len(body) > MAX_RESPONSE_BYTES:
@@ -202,7 +210,15 @@ class FlightSupervisor:
             return None
         receipt.update(complete_response_observed=True, response_sha256=sha256(body).hexdigest())
         try:
-            result, model = decode(_json(body))
+            value = _json(body)
+        except (ValueError, TypeError, OverflowError, RecursionError, UnicodeError):
+            receipt.update(status="invalid_response", validation_error="json_decode")
+            return None
+        if type(value) is not dict:
+            receipt.update(status="invalid_response", validation_error="response_shape")
+            return None
+        try:
+            result, model = decode(value)
             if key in json.dumps([result, model]):
                 raise ValueError("credential_in_response")
         except (ValueError, KeyError, TypeError, OverflowError, RecursionError, UnicodeError):

@@ -16,6 +16,13 @@ from urllib.parse import quote
 
 from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
 from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
+from src.runtime.starship_m2_control import SCENARIOS as M2_SCENARIOS
+from src.runtime.starship_m3_live import SCENARIOS as M3_SCENARIOS
+
+
+def _deepseek_call_limit(scope):
+    maximum = scope["maximum_llm_calls"]
+    return "DeepSeek回数上限なし（判断期限は適用）" if maximum is None else f"DeepSeek最大{maximum}回"
 
 
 AMBIGUOUS_CONFIRMATIONS = {
@@ -92,13 +99,33 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     "60系列の最初の観測失敗後だけを分類し、履歴ルールの実行は変更しません。"
                     "この呼出し範囲も /approve の対象です。"
                 )
-            if plan.get("backend") == "starship_return_replanning":
+            if plan.get("backend") == "starship_concurrent_mission_control":
+                scope = plan["mission_envelope"]
+                response["message"] += (
+                    f"\nM3管制: {scope['mode']}。/approve は上昇・ブースター・放出・帰還の表示範囲を一度承認します。"
+                    "上昇・ブースター・放出はJev、軌道上の比較は期限に余裕がある場合だけDeepSeekへ渡します。"
+                    f"Jev最大{scope['maximum_jev_calls']}回、{_deepseek_call_limit(scope)}。"
+                    "モデルは低水準の姿勢・推力制御を行いません。判断待ちも共有時計で飛行を進め、実行直前の制約と後続観測を確認します。"
+                    "計画の承認・モデルの応答・操作の採用・帰還結果は別々に記録します。"
+                    "\n" + "\n".join(plan["limitations"])
+                )
+            elif plan.get("backend") == "starship_deployment_return_continuation":
+                scope = plan["mission_envelope"]
+                response["message"] += (
+                    f"\nM2管制: {scope['mode']}。/approve は放出から帰還までの表示範囲を一度承認します。"
+                    "放出はJev、帰還はJevと必要時のDeepSeekが判断します。モデルには実際の残期限を課します。"
+                    f"Jev最大{scope['maximum_jev_calls']}回、{_deepseek_call_limit(scope)}。"
+                    "確認された放出数・時刻・機体状態をそのまま帰還計画へ引き継ぎます。"
+                    "判断待ちも飛行を進め、成立性・範囲を実行時に検算します。成立しなければ未解決です。"
+                    "\n" + "\n".join(plan["limitations"])
+                )
+            elif plan.get("backend") == "starship_return_replanning":
                 scope = plan["mission_envelope"]
                 response["message"] += (
                     f"\nM1帰還管制: {scope['mode']}。/approve は次の範囲を一度承認します。"
                     "帰還候補の計算、公開済み回収情報の取得、有限の待機、帰還計画の選択と再判断。"
                     f"元の帰還予定から最大{scope['maximum_delay_s']:g}秒まで。再判断で期限を延長しません。"
-                    f"Jev最大{scope['maximum_jev_calls']}回、必要時のDeepSeek最大{scope['maximum_llm_calls']}回、"
+                    f"Jev最大{scope['maximum_jev_calls']}回、必要時の{_deepseek_call_limit(scope)}、"
                     f"予測最大{scope['maximum_forecasts']}本、計画更新最大{scope['maximum_plan_revisions']}回。"
                     "観測摂動3条件と細かい計算刻み1条件を検算し、最新状態、回収区域・時間、待機資源を実行直前にも確かめます。"
                     "判断待ちも飛行を進めます。未応答は同じ検算を通る代替動作へ移り、成立しなければ未解決です。"
@@ -109,7 +136,7 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                 scope = plan["mission_envelope"]
                 response["message"] += (
                     f"\nミッション管制: {scope['mode']}。/approve は各操作ではなく、表示した判断範囲を承認します。"
-                    f"\nJev最大{scope['maximum_jev_calls']}回、DeepSeek最大{scope['maximum_llm_calls']}回。"
+                    f"\nJev最大{scope['maximum_jev_calls']}回、{_deepseek_call_limit(scope)}。"
                     "放出の継続・保留・見送り、機構状態診断1回、帰還方式、キャッチか退避かを範囲内で決めます。"
                     "保留は合計30秒。5秒後に1回再判断し、有効な判断と独立チェックで再開できます。期限まで未解決なら放出を停止します。判断は最大6回。"
                     "保留は帰還まで105秒超が残る場合のみ。観測予算や時間を使い切った手段は選択肢から外れます。追加観測でインターロック停止は解除されません。"
@@ -272,7 +299,7 @@ def maybe_handle_starship_chat(payload: Mapping[str, Any], *, expected_scenario:
         raw = raw.get("text", raw.get("instruction", ""))
     text = raw.strip() if isinstance(raw, str) else ""
     explicit = (expected_scenario is not None or "starship" in text.lower() or "スターシップ" in text
-                or any(scenario in text.lower() for scenario in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS))
+                or any(scenario in text.lower() for scenario in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS))
                 or (bool(payload.get("starship_context")) and any(
                     marker in text.lower() for marker in ("6dof", "sixdof", "6自由度", "六自由度", "六軸", "6軸", "キャッチ", "catch", "姿勢連続"))))
     command = COMMANDS.get(text)

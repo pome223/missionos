@@ -1,0 +1,90 @@
+{
+  "schema": "missionos.starship_saved_booster_diagnosis_summary.v1",
+  "scope": "saved_simulation_records_and_algebraic_state_checks_only",
+  "new_simulations": 0,
+  "model_calls": 0,
+  "code_changes": false,
+  "standard_run": {
+    "splashdown_goal_connected": false,
+    "contact_time_s": 609.1090999782388,
+    "contact_speed_mps": 8.28521466284523,
+    "contact_normal_speed_mps": -8.006279285316763,
+    "contact_tangential_speed_mps": 2.1317302866294505,
+    "remaining_propellant_kg": 20467.848141456994,
+    "com_altitude_m": 32.25480788294226,
+    "hull_signed_clearance_m": -4.284083843231201e-08,
+    "existing_com_altitude_target_vertical_mps": -5.37580131382371,
+    "body_rate_rad_s": 0.0034247653388986463,
+    "contact_point_normal_correction_mps": -0.0045953515172694505,
+    "goal_completion_claimed": false
+  },
+  "finite_control_sample": {
+    "time_s": 607.70000000003,
+    "com_altitude_m": 45.74852101504803,
+    "hull_signed_clearance_m": 13.511130176484585,
+    "vertical_com_mps": -11.340909120871654,
+    "existing_target_vertical_mps": -7.624753502508004,
+    "existing_splashdown_formula_same_state_vertical_mps": -2.2518550294140973,
+    "formula_evaluation_is_executed_trajectory": false,
+    "main_engine_command_count": 2,
+    "command_throttle": 0.6817975669293768,
+    "actual_main_throttle": 0.6976766222795356,
+    "main_thrust_n": 3420936.6396419145,
+    "thrust_alignment_cosine": 0.9997280413255741,
+    "maximum_command_gimbal_deg": 0.8373935078655241,
+    "command_at_throttle_limit": false
+  },
+  "state_checks": {
+    "all_saved_mass_equals_dry_plus_propellant": true,
+    "minimum_throttle": 0.4,
+    "throttle_time_constant_s": 0.35,
+    "throttle_rate_per_s": 2.0,
+    "contact_point_rotation_and_moving_com_included": true,
+    "final_command_not_recorded_no_shutdown_inferred": true
+  },
+  "findings": [
+    {
+      "id": "terminal_reference",
+      "status": "observed_code_and_record_mismatch",
+      "detail": "The default terminal branch uses center-of-mass altitude to set descent speed. At hull contact the center of mass remains above the surface. The existing splashdown branch instead uses hull clearance, but it was not connected in this saved standard run."
+    },
+    {
+      "id": "upstream_attitude",
+      "status": "unresolved",
+      "detail": "The standard run undergoes large upper-flight attitude errors and substantial aerodynamic deceleration before main landing thrust. Its low terminal speed does not establish a robust upstream guidance law."
+    },
+    {
+      "id": "control_change_risk",
+      "status": "unresolved",
+      "detail": "The two separate aligned-coast candidates changed aerodynamic and fuel history; one exhausted propellant and the other had no feasible ignition window. Their failures must not be replaced or counted as successful splashdowns."
+    }
+  ],
+  "comparison_results": [
+    {
+      "case": "aligned_coast_fixed_terminal",
+      "contact_speed_mps": 587.9053707507508,
+      "remaining_propellant_kg": 0.0,
+      "result": "fuel_exhausted_surface_impact"
+    },
+    {
+      "case": "aligned_coast_reserved_terminal",
+      "contact_speed_mps": 1049.706773038975,
+      "remaining_propellant_kg": 85344.34609523824,
+      "result": "no_admissible_ignition_window_surface_impact"
+    }
+  ],
+  "proposed_scope": "Bind the already defined splashdown goal through approval, director and concurrent executor without changing physical parameters or its eight outcome limits; evaluate a separate saved run before claiming success.",
+  "claim_boundary": {
+    "new_goal_wiring_tested": false,
+    "controlled_splashdown_demonstrated": false,
+    "upstream_guidance_robustness_demonstrated": false,
+    "physical_execution": false,
+    "spacex_fidelity_demonstrated": false,
+    "water_survival_or_buoyancy_modeled": false
+  },
+  "evidence_sha256": {
+    "standard_run": "8e6ab0002d4a1c5f0545605aff2db368f85a5812a32eab2ca3289324323b35c3",
+    "diagnosis_json": "bd21b00b89a32081d3d0dade46a15672a5800c07d7957ca9fd68cd547a4afe62",
+    "entry_comparison_json": "dd36349913a0f3ec5a5dcd07419d89caa3359d6ff9ba5ae65e0e467db0890ab7"
+  }
+}

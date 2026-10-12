@@ -1,0 +1,1816 @@
+{
+  "schema": "missionos.starship_m3_campaign_report.v1",
+  "protocol_sha256": "74fbede56ddb32cc453f788c07de8b3f98318ba468976fdb96ace4caaf2e7f6c",
+  "completed_records": 4,
+  "planned_flights": 4,
+  "roles": {
+    "normal": {
+      "role": "normal",
+      "status": "completed_record",
+      "record_verified": true,
+      "case_accepted": true,
+      "run_id": "6d828100235f4ce19c0ed4dbfff1bf12",
+      "study_sha256": "7b4d77c72a3e043b418f95e7a74568a83e6303679e1f1ebb8308c5aabcc4309b",
+      "source_matches": true,
+      "authority_matches": true,
+      "receipt_study_hash_matches": true,
+      "saved_verdict_matches": true,
+      "verification_issue_count": 0,
+      "case_issue_count": 0,
+      "local_gateway_signatures_rechecked": false,
+      "physical_execution": false,
+      "approved_limits": {
+        "maximum_jev_calls": 27,
+        "maximum_llm_calls": null,
+        "maximum_model_calls": null,
+        "maximum_wall_time_s": 2400,
+        "maximum_output_bytes": 1200000000,
+        "minimum_free_bytes": 1073741824
+      },
+      "m2_runtime_wall_time_s": 282.7827850000467,
+      "inventory": {
+        "released_count": 26,
+        "retained_count": 0,
+        "total_count": 26
+      },
+      "ship": {
+        "contact": {
+          "time_s": 4929.856429758704,
+          "speed_mps": 4.608259493361677,
+          "tilt_deg": 2.374862690722787,
+          "body_rate_rad_s": 0.003031432577058173,
+          "reserve_kg": 62394.30546504836,
+          "latitude_deg": 4.882801542375486,
+          "longitude_deg": 165.2781946210071
+        },
+        "contact_and_area_met": true
+      },
+      "booster": {
+        "contact_observed": true,
+        "water_entry_met": true,
+        "speed_mps": 1.8835844992407478,
+        "propellant_kg": 11419.53848391343,
+        "checks_passed": 8,
+        "checks_total": 8,
+        "water_survival_verified": false
+      },
+      "phases": {
+        "ascent": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue_mission": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 265.946,
+              "maximum_ms": 290.886,
+              "mean_ms": 278.41600000000005
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 0.0,
+                "decision_sim_s": 0.4,
+                "deadline_sim_s": 12.0,
+                "provider_latency_ms": 290.886,
+                "provider_timeout_s": 9.974434186820872,
+                "adopted": true,
+                "action": "continue_mission"
+              },
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 147.59999999999658,
+                "provider_latency_ms": 265.946,
+                "provider_timeout_s": 9.946794225194026,
+                "adopted": true,
+                "action": "continue_mission"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "booster": {
+          "typesafe": {
+            "host_attempts": 1,
+            "host_valid": 1,
+            "host_completed": 1,
+            "actor_receipts": 1,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "splashdown": 1
+            },
+            "latency": {
+              "observations": 1,
+              "minimum_ms": 285.419,
+              "maximum_ms": 285.419,
+              "mean_ms": 285.419
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 210.59999999999658,
+                "provider_latency_ms": 285.419,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "splashdown"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "deployment": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 253.276,
+              "maximum_ms": 286.679,
+              "mean_ms": 269.97749999999996
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 480.7000000000408,
+                "decision_sim_s": 481.2000000000408,
+                "deadline_sim_s": 525.4500000000407,
+                "provider_latency_ms": 253.276,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              },
+              {
+                "requested_sim_s": 525.9500000000407,
+                "decision_sim_s": 526.4500000000407,
+                "deadline_sim_s": 600.9500000000407,
+                "provider_latency_ms": 286.679,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "return": {
+          "typesafe": {
+            "host_attempts": 4,
+            "host_valid": 4,
+            "host_completed": 4,
+            "actor_receipts": 4,
+            "adopted_decisions": 4,
+            "adopted_actions": {
+              "select_nominal": 1,
+              "keep_plan": 3
+            },
+            "latency": {
+              "observations": 4,
+              "minimum_ms": 274.881,
+              "maximum_ms": 364.328,
+              "mean_ms": 306.01775
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1164.4500000000407,
+                "decision_sim_s": 1164.9500000000407,
+                "deadline_sim_s": 1199.4500000000407,
+                "provider_latency_ms": 364.328,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "select_nominal"
+              },
+              {
+                "requested_sim_s": 1470.7000000000407,
+                "decision_sim_s": 1471.2000000000407,
+                "deadline_sim_s": 1505.7000000000407,
+                "provider_latency_ms": 305.358,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 1528.7000000000407,
+                "decision_sim_s": 1529.2000000000407,
+                "deadline_sim_s": 1563.7000000000407,
+                "provider_latency_ms": 274.881,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 2220.7000000000407,
+                "decision_sim_s": 2221.2000000000407,
+                "deadline_sim_s": 2255.7000000000407,
+                "provider_latency_ms": 279.504,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        }
+      },
+      "fallback_decisions": 0,
+      "adopted_counts": {
+        "typesafe": 9,
+        "deepseek": 0
+      },
+      "host_attempts": {
+        "typesafe": 9,
+        "deepseek": 0
+      },
+      "scope_http": null,
+      "gateway_signatures_verified_in_separate_audit": true
+    },
+    "deployment_change": {
+      "role": "deployment_change",
+      "status": "completed_record",
+      "record_verified": true,
+      "case_accepted": true,
+      "run_id": "80df087a27aa4d72bc55eae6d5ad1e36",
+      "study_sha256": "9a72edd23380c8cdd867ac360f1b440bb252c3ddab47a990ddc62d7f2a716596",
+      "source_matches": true,
+      "authority_matches": true,
+      "receipt_study_hash_matches": true,
+      "saved_verdict_matches": true,
+      "verification_issue_count": 0,
+      "case_issue_count": 0,
+      "local_gateway_signatures_rechecked": false,
+      "physical_execution": false,
+      "approved_limits": {
+        "maximum_jev_calls": 27,
+        "maximum_llm_calls": null,
+        "maximum_model_calls": null,
+        "maximum_wall_time_s": 2400,
+        "maximum_output_bytes": 1200000000,
+        "minimum_free_bytes": 1073741824
+      },
+      "m2_runtime_wall_time_s": 885.9903422499774,
+      "inventory": {
+        "released_count": 0,
+        "retained_count": 26,
+        "total_count": 26
+      },
+      "ship": {
+        "contact": {
+          "time_s": 10373.239445588357,
+          "speed_mps": 3.4636481237709518,
+          "tilt_deg": 0.4166155674525754,
+          "body_rate_rad_s": 0.003566686925886341,
+          "reserve_kg": 45202.685425199736,
+          "latitude_deg": 5.62022033553164,
+          "longitude_deg": 143.55713438381005
+        },
+        "contact_and_area_met": true
+      },
+      "booster": {
+        "contact_observed": true,
+        "water_entry_met": true,
+        "speed_mps": 1.8835844992407478,
+        "propellant_kg": 11419.53848391343,
+        "checks_passed": 8,
+        "checks_total": 8,
+        "water_survival_verified": false
+      },
+      "phases": {
+        "ascent": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue_mission": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 241.617,
+              "maximum_ms": 242.512,
+              "mean_ms": 242.0645
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 0.0,
+                "decision_sim_s": 0.30000000000000004,
+                "deadline_sim_s": 12.0,
+                "provider_latency_ms": 242.512,
+                "provider_timeout_s": 9.978698117949534,
+                "adopted": true,
+                "action": "continue_mission"
+              },
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.89999999999657,
+                "deadline_sim_s": 147.59999999999658,
+                "provider_latency_ms": 241.617,
+                "provider_timeout_s": 9.996141824696679,
+                "adopted": true,
+                "action": "continue_mission"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "booster": {
+          "typesafe": {
+            "host_attempts": 1,
+            "host_valid": 1,
+            "host_completed": 1,
+            "actor_receipts": 1,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "splashdown": 1
+            },
+            "latency": {
+              "observations": 1,
+              "minimum_ms": 253.986,
+              "maximum_ms": 253.986,
+              "mean_ms": 253.986
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 210.59999999999658,
+                "provider_latency_ms": 253.986,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "splashdown"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "deployment": {
+          "typesafe": {
+            "host_attempts": 3,
+            "host_valid": 3,
+            "host_completed": 3,
+            "actor_receipts": 3,
+            "adopted_decisions": 3,
+            "adopted_actions": {
+              "continue": 1,
+              "collect_status": 1,
+              "stop_deployment": 1
+            },
+            "latency": {
+              "observations": 3,
+              "minimum_ms": 246.074,
+              "maximum_ms": 263.626,
+              "mean_ms": 254.74866666666665
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 480.7000000000408,
+                "decision_sim_s": 481.2000000000408,
+                "deadline_sim_s": 525.4500000000407,
+                "provider_latency_ms": 246.074,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              },
+              {
+                "requested_sim_s": 525.9500000000407,
+                "decision_sim_s": 526.4500000000407,
+                "deadline_sim_s": 600.9500000000407,
+                "provider_latency_ms": 254.546,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "collect_status"
+              },
+              {
+                "requested_sim_s": 528.4500000000407,
+                "decision_sim_s": 528.9500000000407,
+                "deadline_sim_s": 603.4500000000407,
+                "provider_latency_ms": 263.626,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "stop_deployment"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "return": {
+          "typesafe": {
+            "host_attempts": 10,
+            "host_valid": 10,
+            "host_completed": 10,
+            "actor_receipts": 10,
+            "adopted_decisions": 10,
+            "adopted_actions": {
+              "keep_plan": 7,
+              "evaluate_returns": 2,
+              "select_next_orbit": 1
+            },
+            "latency": {
+              "observations": 10,
+              "minimum_ms": 225.841,
+              "maximum_ms": 331.807,
+              "mean_ms": 261.213
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1000.7000000000407,
+                "decision_sim_s": 1001.2000000000407,
+                "deadline_sim_s": 1035.7000000000407,
+                "provider_latency_ms": 256.745,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 1166.9500000000407,
+                "decision_sim_s": 1167.4500000000407,
+                "deadline_sim_s": 1201.9500000000407,
+                "provider_latency_ms": 254.785,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "evaluate_returns"
+              },
+              {
+                "requested_sim_s": 1450.2000000000407,
+                "decision_sim_s": 1450.7000000000407,
+                "deadline_sim_s": 1485.2000000000407,
+                "provider_latency_ms": 248.224,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "evaluate_returns"
+              },
+              {
+                "requested_sim_s": 1721.4500000000407,
+                "decision_sim_s": 1721.9500000000407,
+                "deadline_sim_s": 1756.4500000000407,
+                "provider_latency_ms": 243.555,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "select_next_orbit"
+              },
+              {
+                "requested_sim_s": 2921.9500000000407,
+                "decision_sim_s": 2922.4500000000407,
+                "deadline_sim_s": 2956.9500000000407,
+                "provider_latency_ms": 249.842,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 4122.450000000041,
+                "decision_sim_s": 4122.950000000041,
+                "deadline_sim_s": 4157.450000000041,
+                "provider_latency_ms": 225.841,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 5322.950000000041,
+                "decision_sim_s": 5323.450000000041,
+                "deadline_sim_s": 5357.950000000041,
+                "provider_latency_ms": 270.183,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 6523.450000000041,
+                "decision_sim_s": 6523.950000000041,
+                "deadline_sim_s": 6558.450000000041,
+                "provider_latency_ms": 331.807,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 6979.950000000041,
+                "decision_sim_s": 6980.450000000041,
+                "deadline_sim_s": 7014.950000000041,
+                "provider_latency_ms": 262.188,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 7614.950000000041,
+                "decision_sim_s": 7615.450000000041,
+                "deadline_sim_s": 7649.950000000041,
+                "provider_latency_ms": 268.96,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        }
+      },
+      "fallback_decisions": 0,
+      "adopted_counts": {
+        "typesafe": 16,
+        "deepseek": 0
+      },
+      "host_attempts": {
+        "typesafe": 16,
+        "deepseek": 0
+      },
+      "scope_http": null,
+      "gateway_signatures_verified_in_separate_audit": true
+    },
+    "scope_amendment": {
+      "role": "scope_amendment",
+      "status": "completed_record",
+      "record_verified": true,
+      "case_accepted": true,
+      "run_id": "c418dfe3a15444d195f45b7cc21c67dd",
+      "study_sha256": "f3c7cba83dee801357bab8fcbb81191dbdf85a94c9711cbef06e26e39cc43527",
+      "source_matches": true,
+      "authority_matches": true,
+      "receipt_study_hash_matches": true,
+      "saved_verdict_matches": true,
+      "verification_issue_count": 0,
+      "case_issue_count": 0,
+      "local_gateway_signatures_rechecked": false,
+      "physical_execution": false,
+      "approved_limits": {
+        "maximum_jev_calls": 27,
+        "maximum_llm_calls": null,
+        "maximum_model_calls": null,
+        "maximum_wall_time_s": 2400,
+        "maximum_output_bytes": 1200000000,
+        "minimum_free_bytes": 1073741824
+      },
+      "m2_runtime_wall_time_s": 578.1746479170397,
+      "inventory": {
+        "released_count": 26,
+        "retained_count": 0,
+        "total_count": 26
+      },
+      "ship": {
+        "contact": {
+          "time_s": 4929.856429758704,
+          "speed_mps": 4.608259493361677,
+          "tilt_deg": 2.374862690722787,
+          "body_rate_rad_s": 0.003031432577058173,
+          "reserve_kg": 62394.30546504836,
+          "latitude_deg": 4.882801542375486,
+          "longitude_deg": 165.2781946210071
+        },
+        "contact_and_area_met": true
+      },
+      "booster": {
+        "contact_observed": true,
+        "water_entry_met": true,
+        "speed_mps": 1.8835844992407478,
+        "propellant_kg": 11419.53848391343,
+        "checks_passed": 8,
+        "checks_total": 8,
+        "water_survival_verified": false
+      },
+      "phases": {
+        "ascent": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue_mission": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 361.244,
+              "maximum_ms": 365.427,
+              "mean_ms": 363.3355
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 0.0,
+                "decision_sim_s": 0.5,
+                "deadline_sim_s": 12.0,
+                "provider_latency_ms": 365.427,
+                "provider_timeout_s": 9.96610700013116,
+                "adopted": true,
+                "action": "continue_mission"
+              },
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 136.09999999999656,
+                "deadline_sim_s": 147.59999999999658,
+                "provider_latency_ms": 361.244,
+                "provider_timeout_s": 9.950148112140596,
+                "adopted": true,
+                "action": "continue_mission"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "booster": {
+          "typesafe": {
+            "host_attempts": 1,
+            "host_valid": 1,
+            "host_completed": 1,
+            "actor_receipts": 1,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "splashdown": 1
+            },
+            "latency": {
+              "observations": 1,
+              "minimum_ms": 287.211,
+              "maximum_ms": 287.211,
+              "mean_ms": 287.211
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 210.59999999999658,
+                "provider_latency_ms": 287.211,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "splashdown"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "deployment": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 1,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "continue": 1
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 236.382,
+              "maximum_ms": 250.943,
+              "mean_ms": 243.66250000000002
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 480.7000000000408,
+                "decision_sim_s": 481.2000000000408,
+                "deadline_sim_s": 525.4500000000407,
+                "provider_latency_ms": 250.943,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              },
+              {
+                "requested_sim_s": 525.9500000000407,
+                "decision_sim_s": 526.4500000000407,
+                "deadline_sim_s": 600.9500000000407,
+                "provider_latency_ms": 236.382,
+                "provider_timeout_s": 30.0,
+                "adopted": false,
+                "action": null
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "return": {
+          "typesafe": {
+            "host_attempts": 4,
+            "host_valid": 4,
+            "host_completed": 4,
+            "actor_receipts": 4,
+            "adopted_decisions": 4,
+            "adopted_actions": {
+              "select_nominal": 1,
+              "refresh_observation": 1,
+              "wait_for_update": 1,
+              "keep_plan": 1
+            },
+            "latency": {
+              "observations": 4,
+              "minimum_ms": 257.961,
+              "maximum_ms": 334.553,
+              "mean_ms": 281.79675000000003
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1166.9500000000407,
+                "decision_sim_s": 1167.4500000000407,
+                "deadline_sim_s": 1201.9500000000407,
+                "provider_latency_ms": 257.961,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "select_nominal"
+              },
+              {
+                "requested_sim_s": 1530.9500000000407,
+                "decision_sim_s": 1531.4500000000407,
+                "deadline_sim_s": 1565.9500000000407,
+                "provider_latency_ms": 334.553,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "refresh_observation"
+              },
+              {
+                "requested_sim_s": 1531.7000000000407,
+                "decision_sim_s": 1532.2000000000407,
+                "deadline_sim_s": 1566.7000000000407,
+                "provider_latency_ms": 267.435,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "wait_for_update"
+              },
+              {
+                "requested_sim_s": 2220.7000000000407,
+                "decision_sim_s": 2221.2000000000407,
+                "deadline_sim_s": 2255.7000000000407,
+                "provider_latency_ms": 267.238,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 1,
+            "host_valid": 1,
+            "host_completed": 1,
+            "actor_receipts": 1,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "select_nominal": 1
+            },
+            "latency": {
+              "observations": 1,
+              "minimum_ms": 10922.793,
+              "maximum_ms": 10922.793,
+              "mean_ms": 10922.793
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1844.2000000000407,
+                "decision_sim_s": 1855.4500000000407,
+                "deadline_sim_s": 1994.2000000000407,
+                "provider_latency_ms": 10922.793,
+                "provider_timeout_s": 120.0,
+                "adopted": true,
+                "action": "select_nominal"
+              }
+            ],
+            "reference_audits": [
+              {
+                "adopted": true,
+                "valid": true,
+                "submitted_count": 12,
+                "resolved_count": 12,
+                "referenced_candidate_count": 2,
+                "reference_ids": [
+                  "r_ed9585802992_c222a879ec689477418f",
+                  "r_ed9585802992_8868194610713afaea4f",
+                  "r_ed9585802992_bd3f17e42567fa87e007",
+                  "r_ed9585802992_16d55b7fa86e4d32c8a4",
+                  "r_ed9585802992_a29b791086eab140c352",
+                  "r_ed9585802992_4992273bff4e7a7f3579",
+                  "r_ed9585802992_8d1c9dff898960225d9a",
+                  "r_ed9585802992_0f8d18526d55b68b3c02",
+                  "r_ed9585802992_6154ea2d840c012ab8ff",
+                  "r_ed9585802992_66e73bdbbc2addec8053",
+                  "r_ed9585802992_7b5ccaa5537b6cafcad0",
+                  "r_ed9585802992_f0fdd955331e4ea9b7ad"
+                ],
+                "free_prose_verified": false,
+                "internal_reasoning_verified": false
+              }
+            ]
+          }
+        }
+      },
+      "fallback_decisions": 1,
+      "adopted_counts": {
+        "typesafe": 8,
+        "deepseek": 1
+      },
+      "host_attempts": {
+        "typesafe": 9,
+        "deepseek": 1
+      },
+      "scope_http": {
+        "passed": false,
+        "scope_amendment_applied": false,
+        "reservation_observed": false,
+        "negative_disposition_verified": false
+      },
+      "gateway_signatures_verified_in_separate_audit": true
+    },
+    "ambiguous_comparison": {
+      "role": "ambiguous_comparison",
+      "status": "completed_record",
+      "record_verified": true,
+      "case_accepted": true,
+      "run_id": "ff386975655b402cb219d57fb4e04a95",
+      "study_sha256": "12be7795ddacebdf45d626923993e3b84ecc64fb7badcf5f26e6ffc6ba64a4d3",
+      "source_matches": true,
+      "authority_matches": true,
+      "receipt_study_hash_matches": true,
+      "saved_verdict_matches": true,
+      "verification_issue_count": 0,
+      "case_issue_count": 0,
+      "local_gateway_signatures_rechecked": false,
+      "physical_execution": false,
+      "approved_limits": {
+        "maximum_jev_calls": 27,
+        "maximum_llm_calls": null,
+        "maximum_model_calls": null,
+        "maximum_wall_time_s": 2400,
+        "maximum_output_bytes": 1200000000,
+        "minimum_free_bytes": 1073741824
+      },
+      "m2_runtime_wall_time_s": 721.2284057499492,
+      "inventory": {
+        "released_count": 26,
+        "retained_count": 0,
+        "total_count": 26
+      },
+      "ship": {
+        "contact": {
+          "time_s": 10378.626705202787,
+          "speed_mps": 4.613326129759819,
+          "tilt_deg": 2.396269455067431,
+          "body_rate_rad_s": 0.00302824699790695,
+          "reserve_kg": 62433.93195734164,
+          "latitude_deg": 5.340555349536351,
+          "longitude_deg": 143.00317594363955
+        },
+        "contact_and_area_met": true
+      },
+      "booster": {
+        "contact_observed": true,
+        "water_entry_met": true,
+        "speed_mps": 1.8835844992407478,
+        "propellant_kg": 11419.53848391343,
+        "checks_passed": 8,
+        "checks_total": 8,
+        "water_survival_verified": false
+      },
+      "phases": {
+        "ascent": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue_mission": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 289.228,
+              "maximum_ms": 332.835,
+              "mean_ms": 311.0315
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 0.0,
+                "decision_sim_s": 0.4,
+                "deadline_sim_s": 12.0,
+                "provider_latency_ms": 289.228,
+                "provider_timeout_s": 9.98912274686154,
+                "adopted": true,
+                "action": "continue_mission"
+              },
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 147.59999999999658,
+                "provider_latency_ms": 332.835,
+                "provider_timeout_s": 9.993203142017592,
+                "adopted": true,
+                "action": "continue_mission"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "booster": {
+          "typesafe": {
+            "host_attempts": 1,
+            "host_valid": 1,
+            "host_completed": 1,
+            "actor_receipts": 1,
+            "adopted_decisions": 1,
+            "adopted_actions": {
+              "splashdown": 1
+            },
+            "latency": {
+              "observations": 1,
+              "minimum_ms": 278.772,
+              "maximum_ms": 278.772,
+              "mean_ms": 278.772
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 135.59999999999658,
+                "decision_sim_s": 135.99999999999656,
+                "deadline_sim_s": 210.59999999999658,
+                "provider_latency_ms": 278.772,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "splashdown"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "deployment": {
+          "typesafe": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "continue": 2
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 246.318,
+              "maximum_ms": 297.187,
+              "mean_ms": 271.7525
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 480.7000000000408,
+                "decision_sim_s": 481.2000000000408,
+                "deadline_sim_s": 525.4500000000407,
+                "provider_latency_ms": 297.187,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              },
+              {
+                "requested_sim_s": 525.9500000000407,
+                "decision_sim_s": 526.4500000000407,
+                "deadline_sim_s": 600.9500000000407,
+                "provider_latency_ms": 246.318,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "continue"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 0,
+            "host_valid": 0,
+            "host_completed": 0,
+            "actor_receipts": 0,
+            "adopted_decisions": 0,
+            "adopted_actions": {},
+            "latency": {
+              "observations": 0,
+              "minimum_ms": null,
+              "maximum_ms": null,
+              "mean_ms": null
+            },
+            "decisions": [],
+            "reference_audits": []
+          }
+        },
+        "return": {
+          "typesafe": {
+            "host_attempts": 7,
+            "host_valid": 7,
+            "host_completed": 7,
+            "actor_receipts": 7,
+            "adopted_decisions": 7,
+            "adopted_actions": {
+              "select_nominal": 1,
+              "keep_plan": 6
+            },
+            "latency": {
+              "observations": 7,
+              "minimum_ms": 254.769,
+              "maximum_ms": 321.052,
+              "mean_ms": 280.96457142857145
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1169.7000000000407,
+                "decision_sim_s": 1170.2000000000407,
+                "deadline_sim_s": 1204.7000000000407,
+                "provider_latency_ms": 254.769,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "select_nominal"
+              },
+              {
+                "requested_sim_s": 3149.7000000000407,
+                "decision_sim_s": 3150.2000000000407,
+                "deadline_sim_s": 3184.7000000000407,
+                "provider_latency_ms": 321.052,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 4350.200000000041,
+                "decision_sim_s": 4350.700000000041,
+                "deadline_sim_s": 4385.200000000041,
+                "provider_latency_ms": 265.297,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 5550.700000000041,
+                "decision_sim_s": 5551.200000000041,
+                "deadline_sim_s": 5585.700000000041,
+                "provider_latency_ms": 258.178,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 6751.200000000041,
+                "decision_sim_s": 6751.700000000041,
+                "deadline_sim_s": 6786.200000000041,
+                "provider_latency_ms": 291.247,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 6921.450000000041,
+                "decision_sim_s": 6921.950000000041,
+                "deadline_sim_s": 6956.450000000041,
+                "provider_latency_ms": 265.727,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              },
+              {
+                "requested_sim_s": 7671.450000000041,
+                "decision_sim_s": 7671.950000000041,
+                "deadline_sim_s": 7706.450000000041,
+                "provider_latency_ms": 310.482,
+                "provider_timeout_s": 30.0,
+                "adopted": true,
+                "action": "keep_plan"
+              }
+            ],
+            "reference_audits": []
+          },
+          "deepseek": {
+            "host_attempts": 2,
+            "host_valid": 2,
+            "host_completed": 2,
+            "actor_receipts": 2,
+            "adopted_decisions": 2,
+            "adopted_actions": {
+              "select_next_orbit": 1,
+              "keep_plan": 1
+            },
+            "latency": {
+              "observations": 2,
+              "minimum_ms": 46761.121,
+              "maximum_ms": 59284.64,
+              "mean_ms": 53022.8805
+            },
+            "decisions": [
+              {
+                "requested_sim_s": 1576.4500000000407,
+                "decision_sim_s": 1623.4500000000407,
+                "deadline_sim_s": 1726.4500000000407,
+                "provider_latency_ms": 46761.121,
+                "provider_timeout_s": 120.0,
+                "adopted": true,
+                "action": "select_next_orbit"
+              },
+              {
+                "requested_sim_s": 1890.2000000000407,
+                "decision_sim_s": 1949.7000000000407,
+                "deadline_sim_s": 2040.2000000000407,
+                "provider_latency_ms": 59284.64,
+                "provider_timeout_s": 120.0,
+                "adopted": true,
+                "action": "keep_plan"
+              }
+            ],
+            "reference_audits": [
+              {
+                "adopted": true,
+                "valid": true,
+                "submitted_count": 16,
+                "resolved_count": 16,
+                "referenced_candidate_count": 2,
+                "reference_ids": [
+                  "r_d5b693881058_69acba2afec0592cfcc7",
+                  "r_d5b693881058_741df587798fff6ab151",
+                  "r_d5b693881058_4cf3e34feffb1b40de2e",
+                  "r_d5b693881058_71cdcb97f6d38263b850",
+                  "r_d5b693881058_0e56ce581ce6bc601c46",
+                  "r_d5b693881058_99644658f8c0b62c0e04",
+                  "r_d5b693881058_34091e73162d974a3119",
+                  "r_d5b693881058_97fac2679248b9d4f9c5",
+                  "r_d5b693881058_a69bf5ea3723a43f97f4",
+                  "r_d5b693881058_40063d5a78a321458bed",
+                  "r_d5b693881058_0a5b0d4cf209498d846e",
+                  "r_d5b693881058_56418e7b003c7f1be135",
+                  "r_d5b693881058_5a5d5a4fb404f4e84ed7",
+                  "r_d5b693881058_00c3cf8dae1746d2b257",
+                  "r_d5b693881058_cd436918faff9b54477a",
+                  "r_d5b693881058_6c3faea810c0818d2430"
+                ],
+                "free_prose_verified": false,
+                "internal_reasoning_verified": false
+              },
+              {
+                "adopted": true,
+                "valid": true,
+                "submitted_count": 12,
+                "resolved_count": 12,
+                "referenced_candidate_count": 2,
+                "reference_ids": [
+                  "r_1d91ef4c3c0e_bfacb60cf59d99bd1b52",
+                  "r_1d91ef4c3c0e_0347371bfa990db24de5",
+                  "r_1d91ef4c3c0e_d742dd02c627b0b866da",
+                  "r_1d91ef4c3c0e_4f33eea44cdb35f5a360",
+                  "r_1d91ef4c3c0e_45ca76c1f13e492c4994",
+                  "r_1d91ef4c3c0e_861379628929910f7f8d",
+                  "r_1d91ef4c3c0e_049d461bbc73c6f0013d",
+                  "r_1d91ef4c3c0e_9c23af604635df3ba517",
+                  "r_1d91ef4c3c0e_675f94b6e33424bfdbac",
+                  "r_1d91ef4c3c0e_a36b8676fdbbb83587ba",
+                  "r_1d91ef4c3c0e_a67ec812071dc0411119",
+                  "r_1d91ef4c3c0e_f0762e6f805be8f4df57"
+                ],
+                "free_prose_verified": false,
+                "internal_reasoning_verified": false
+              }
+            ]
+          }
+        }
+      },
+      "fallback_decisions": 0,
+      "adopted_counts": {
+        "typesafe": 12,
+        "deepseek": 2
+      },
+      "host_attempts": {
+        "typesafe": 12,
+        "deepseek": 2
+      },
+      "scope_http": null,
+      "gateway_signatures_verified_in_separate_audit": true
+    }
+  },
+  "m3_completion_verdict_derived_here": false,
+  "physical_execution": false,
+  "raw_model_text_included": false,
+  "credentials_included": false,
+  "limitations": [
+    "Four preregistered development flights, one attempt per role; not held-out robustness qualification.",
+    "M3 remains incomplete because live candidate-bound scope amendment was not exercised.",
+    "The aggregate stops at the unmet scope role. Separate audits cover all four saved records and signed Gateway bindings without replacing its verdict.",
+    "Local HMAC signatures authenticate runtime bindings, not human SSO identity; the configured operator is a scripted test driver.",
+    "Reference IDs resolve supplied decision-time numerical fields, not free prose, internal reasoning or forecast truth.",
+    "Water-entry checks concern numerical contact only, not seawater survival or recovered hardware.",
+    "Recovery areas are model study areas. Numerical contact-location sensitivity remains unresolved.",
+    "No scenario-encoded Rules or fallback score is used to assess AI inferiority.",
+    "Raw provider responses, signing keys and private flight artifacts are retained separately and are not included here.",
+    "Four fresh integrated runs reproduce one unique nominal booster recovery trajectory; this is not a four-disturbance robustness cohort. Older fuel +/-1 t failures have not been rerun on this campaign source."
+  ],
+  "runtime_commit": "a5c92808",
+  "evidence_date_jst": "2026-10-12",
+  "source_sha256": {
+    "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "07bc62cfd2013c15b2d9f2d9e3de7df3d20d77fdb323ddcb08e80071a798b24b",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+    "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+    "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "64bb446a893f0d678375b4d2004e335cd303dc305fcaed10dc3ba048b873dcc4",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+    "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+    "docs/assets/starship-state-return-qualification/qualification.json": "dc925be6529d2d17a4de38ad89c8ecf66ccfe5e4285f2d0bace77bd20f20eced",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "9551cf63663fbad2f900eda5cb845bdaaf61e900f803bdf5ece59a9e9d73a4c8",
+    "scripts/run_starship_mission_worker.py": "e4fcd9901be3957faac5f09c037cb87eeadbb22e734999a29043618bbdcf7413",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "dc4d3825428b7ad44e156397eb63101022449ad2ef2439745d02dbc51b54f497",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "24ac28dfe2f6672b188a458b2578916b8262dc5b621d6ad049e01e117ce73568",
+    "src/gateway/starship_chat.py": "08b73f9711569940864a454c034cbc7866159abcfcc774be2aa2b24163979968",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "95d872096827cfc2f7ae491b907bb9fcb8320237b27154a04e108bcb1fd5dd79",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_orbital_window.py": "a7b2c96bb12d9dc806deb277696ec5255735ca11d391a7e36b15c453d8eb7d72",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/intelligence/starship_reference_protocol.py": "453e303f028bb132900a1855f92e5a14a1eebf7c671bdcc4853bedb0067a4a59",
+    "src/runtime/starship_replanning.py": "8be0c7497450b5f6b5d251d5ef4c68623da0fd868edc599319068991b8afa5fe",
+    "src/runtime/starship_call_limits.py": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43",
+    "src/runtime/starship_operational_trials.py": "960c2d7128ca8c8c33507779b0561ba7f684792da4d7fb23f5ea008d2d0a6f62",
+    "src/runtime/starship_replanning_executor.py": "452aae1b389da5ac02da4bf2cdac66f6f61444214fc6bb607270bf30582f68f3",
+    "src/runtime/starship_m2_contract.py": "b2081db50d4d13b7b5ef773748ee35c606604212ab4c9cd513cb3f8c00546342",
+    "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+    "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+    "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+    "src/runtime/starship_replanning_verifier.py": "b0f635a1f0b9893f9b3069c748335ba0b839bab6467881dffc57755f1a036adf",
+    "src/intelligence/starship_replanning.py": "7730e4b8121b0440ed433d9e39a6258d16e141161a8a67e074a35b2e85d7f1e7",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "2b3c017c74bf0bb104f0bea5838f45ef5a39dcf6af40e42f8c88ef97ecfdf156",
+    "scripts/summarize_starship_models.py": "4ece839b658063c8f5acbc6996e4f2a47ddd6678fb1ff1f5bbd83d6785096c1c",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110",
+    "examples/spaceflight/starship-comparison-operations.json": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68",
+    "src/runtime/starship_deployment_handoff.py": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a",
+    "src/runtime/starship_deployment_handoff_verifier.py": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73",
+    "src/runtime/starship_deployment_forecast.py": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847",
+    "src/runtime/starship_m2_runner.py": "3ad1faf1f71ee8e461e267e38db035aa2185dd3d7358e9f84d071479605f582c",
+    "src/runtime/starship_m2_verifier.py": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9",
+    "scripts/run_starship_m2.py": "92ecf37fe6d8ad4c3897d47ecb1bda3681802ad4aebb6a013fe0f29ad72a0ea0",
+    "src/runtime/starship_m2_control.py": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71",
+    "src/runtime/starship_m2_attempts.py": "29c07539b10c35af9555928c2d96dd4ccc32ab59c8870e9b234411650593f0e7",
+    "src/runtime/starship_m2_decision_verifier.py": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a",
+    "src/intelligence/starship_m2_broker.py": "6c3902fc972fc76422d2a129666f9ee955ccac9916f5b7042afe7aa7e3d1b5a5",
+    "src/runtime/starship_ascent_supervisor.py": "309d8430bc9c574a00b69f05a8a5bba282cad1bb90cb5cf0d53cd95f81d1b44a",
+    "src/runtime/starship_m3_prefix_verifier.py": "a752e1111993f9e5766d441ff08eae138ebc25d167a135d71ed20cceb6617cf6",
+    "src/runtime/starship_m3_directors.py": "f4a483ea2d836ebb6fb062e076155a0143f8beb9425a31280e11fe1ab8cc7a43",
+    "src/runtime/starship_m3_prefix.py": "efe31258dade9d627838e8297cff961dc11a159052f3ca3de29e789033421822",
+    "src/runtime/starship_m3_fixture.py": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10",
+    "src/runtime/starship_inflight_approval.py": "ccc9986d1ed7488dacbfb85f94b2ad3d519c5182bfd4ff7a1d6657df80042f23",
+    "src/runtime/starship_inflight_runtime.py": "e7de0b78a8553c03721a99a3a39f2001e933a0f7ad9d59076ad77ddbf0ffb644",
+    "src/runtime/starship_inflight_executor.py": "c2a11e221d1d1e34b1383a9472dc879cf749501f77c64f3f8b80df0982e9dbfc",
+    "src/runtime/starship_m3_live.py": "261dab52147594ec183c0391a81bf72b2f55b340a7e470954be72a0bbe07f018",
+    "scripts/run_starship_m3.py": "9d9d0f71e6497b86bce7ab6c704c0fe2efed6bf76cb3030268f2a65dad831efc",
+    "src/intelligence/starship_m3_broker.py": "7c7ff915ae92a65a881b4655581adb71a235eeb2723a1f83a0529e86a47b49e5",
+    "src/runtime/starship_runtime_budget.py": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853",
+    "src/runtime/starship_m3_inflight.py": "b2de0e52975a59c9247ea165acf228928886d96b6a6c4e9e0eebfbdd66faf02b",
+    "src/runtime/starship_m3_completion.py": "f3cdcd862988ee5783a4cd2c5e79f703fc95c1f32dee23ac7d8b7a34f1615208",
+    "src/gateway/starship_inflight_approval.py": "2843486f9c8a22001ef98420d4d67446e8efb569c8d86b1b0a779d76acf97319",
+    "src/runtime/assets/starship_inflight_operator.html": "98a065d33722b6d6c380645adc9afc2688915f720404de9118987ed93512054b"
+  },
+  "return_source_sha256": {
+    "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "07bc62cfd2013c15b2d9f2d9e3de7df3d20d77fdb323ddcb08e80071a798b24b",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+    "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+    "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "64bb446a893f0d678375b4d2004e335cd303dc305fcaed10dc3ba048b873dcc4",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+    "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+    "docs/assets/starship-state-return-qualification/qualification.json": "dc925be6529d2d17a4de38ad89c8ecf66ccfe5e4285f2d0bace77bd20f20eced",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "9551cf63663fbad2f900eda5cb845bdaaf61e900f803bdf5ece59a9e9d73a4c8",
+    "scripts/run_starship_mission_worker.py": "e4fcd9901be3957faac5f09c037cb87eeadbb22e734999a29043618bbdcf7413",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "dc4d3825428b7ad44e156397eb63101022449ad2ef2439745d02dbc51b54f497",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "24ac28dfe2f6672b188a458b2578916b8262dc5b621d6ad049e01e117ce73568",
+    "src/gateway/starship_chat.py": "08b73f9711569940864a454c034cbc7866159abcfcc774be2aa2b24163979968",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "95d872096827cfc2f7ae491b907bb9fcb8320237b27154a04e108bcb1fd5dd79",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_orbital_window.py": "a7b2c96bb12d9dc806deb277696ec5255735ca11d391a7e36b15c453d8eb7d72",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/intelligence/starship_reference_protocol.py": "453e303f028bb132900a1855f92e5a14a1eebf7c671bdcc4853bedb0067a4a59",
+    "src/runtime/starship_replanning.py": "8be0c7497450b5f6b5d251d5ef4c68623da0fd868edc599319068991b8afa5fe",
+    "src/runtime/starship_call_limits.py": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43",
+    "src/runtime/starship_operational_trials.py": "960c2d7128ca8c8c33507779b0561ba7f684792da4d7fb23f5ea008d2d0a6f62",
+    "src/runtime/starship_replanning_executor.py": "452aae1b389da5ac02da4bf2cdac66f6f61444214fc6bb607270bf30582f68f3",
+    "src/runtime/starship_m2_contract.py": "b2081db50d4d13b7b5ef773748ee35c606604212ab4c9cd513cb3f8c00546342",
+    "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+    "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+    "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+    "src/runtime/starship_replanning_verifier.py": "b0f635a1f0b9893f9b3069c748335ba0b839bab6467881dffc57755f1a036adf",
+    "src/intelligence/starship_replanning.py": "7730e4b8121b0440ed433d9e39a6258d16e141161a8a67e074a35b2e85d7f1e7",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "2b3c017c74bf0bb104f0bea5838f45ef5a39dcf6af40e42f8c88ef97ecfdf156",
+    "scripts/summarize_starship_models.py": "4ece839b658063c8f5acbc6996e4f2a47ddd6678fb1ff1f5bbd83d6785096c1c",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110",
+    "examples/spaceflight/starship-comparison-operations.json": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68"
+  },
+  "aggregate": {
+    "passed": false,
+    "m3_completed": false,
+    "issues": [
+      "m3_live_scope_amendment_unproven"
+    ],
+    "missing_private_records": [],
+    "cli_exit_code": 2,
+    "fail_fast": true,
+    "roles_checked_before_stop": [
+      "normal",
+      "deployment_change",
+      "scope_amendment"
+    ],
+    "record_sha256": "2ed6a210d1391b9725564bffc497de85d593da78552f13529924d6eeb7243928"
+  },
+  "separate_binding_audit": {
+    "schema": "missionos.private_m3_independent_binding_audit.v1",
+    "protocol_sha256": "74fbede56ddb32cc453f788c07de8b3f98318ba468976fdb96ace4caaf2e7f6c",
+    "protocol_hash_verified": true,
+    "canonical_protocol_verified": true,
+    "current_sources_verified": true,
+    "current_return_sources_verified": true,
+    "source_manifest_sha256": "b0071f8d8d790f45bc3a69842b9b1eef7af9e067ffeacc09369846684e3bcd36",
+    "return_source_manifest_sha256": "64aa734c7928eae7125bbdf54d111a432679826f9646fbe1a24262b5db705ba8",
+    "gateway_bindings": {
+      "normal": {
+        "passed": true,
+        "issues": [],
+        "run_id": "6d828100235f4ce19c0ed4dbfff1bf12",
+        "study_sha256": "7b4d77c72a3e043b418f95e7a74568a83e6303679e1f1ebb8308c5aabcc4309b",
+        "plan_sha256": "9656c7326e04ba9cd2fe5cc23385faf13163ee8f6b8d67949b1ed680b6b1e1ed",
+        "approval_sha256": "97608af78d4fc1736245ad00b25ea099f7db0a463b7fc9ecedf93a483e2125dc",
+        "receipt_sha256": "938eba636ae08aba4fbfc6b8690d16f25c6128190072c90f01e12851ec516d6e",
+        "approval_signature_verified": true,
+        "receipt_signature_verified": true,
+        "plan_authority_source_run_artifact_binding_verified": true
+      },
+      "deployment_change": {
+        "passed": true,
+        "issues": [],
+        "run_id": "80df087a27aa4d72bc55eae6d5ad1e36",
+        "study_sha256": "9a72edd23380c8cdd867ac360f1b440bb252c3ddab47a990ddc62d7f2a716596",
+        "plan_sha256": "411a89ff79c344477cce195573873ebce4b83ada0537d89e3d36e0381976f752",
+        "approval_sha256": "6363debf16042256f33d4e77d930f42a60de7e57ae523715b282d8e0ba1d2a8f",
+        "receipt_sha256": "2a712d95ee5a275edf73ead4a034db8e0f819f764ecdf5f5e9c37a759a55ac1b",
+        "approval_signature_verified": true,
+        "receipt_signature_verified": true,
+        "plan_authority_source_run_artifact_binding_verified": true
+      },
+      "scope_amendment": {
+        "passed": true,
+        "issues": [],
+        "run_id": "c418dfe3a15444d195f45b7cc21c67dd",
+        "study_sha256": "f3c7cba83dee801357bab8fcbb81191dbdf85a94c9711cbef06e26e39cc43527",
+        "plan_sha256": "f3aca6ac518ed3d58f52646e1067c44bf0de65ca09a1f0d6348587e183cfd764",
+        "approval_sha256": "80887eb643b0219944121fad289594a4670c1c6bde208220becae8d81c941b48",
+        "receipt_sha256": "6b06bc7a875fbc8ee116c092fee050a5d447ec19f00b21f308c64d35396147ac",
+        "inflight_binding_signature_verified": true,
+        "inflight_binding_contract_verified": true,
+        "inflight_binding_sha256": "b540d98354ee8954334ff3639c0b63252d27475449f8f44e16c8e1dbb5eaa404",
+        "inflight_host_evidence_sha256": "ecddbdb5a66135f915a8978d94e6874f06a0e8895a217513c02f4daa23f72948",
+        "inflight_request_present": false,
+        "scope_amendment_exercised": false,
+        "approval_signature_verified": true,
+        "receipt_signature_verified": true,
+        "plan_authority_source_run_artifact_binding_verified": true,
+        "inflight_host_signature_verified": true
+      },
+      "ambiguous_comparison": {
+        "passed": true,
+        "issues": [],
+        "run_id": "ff386975655b402cb219d57fb4e04a95",
+        "study_sha256": "12be7795ddacebdf45d626923993e3b84ecc64fb7badcf5f26e6ffc6ba64a4d3",
+        "plan_sha256": "67e7c8fa999b351a5389c15a868467c4496d2ddf86ae4047f19e0c5630647f47",
+        "approval_sha256": "50fe27d4ba1de88eae2aa960063e88e0178bf72d1f3fb9dd550ad1c936bd490d",
+        "receipt_sha256": "e69c77d584cc5a87b87b0e365dea6f540fb166a4351a7027fe1358cf5bf434f8",
+        "approval_signature_verified": true,
+        "receipt_signature_verified": true,
+        "plan_authority_source_run_artifact_binding_verified": true
+      }
+    },
+    "runtime_boundary_verification": {
+      "scope": {
+        "passed": true,
+        "issues": [],
+        "record_sha256": "02e41efec125447b6e123507d85ada6907265cdf8261fd34efe71447b814eb3e",
+        "verified_roles": {
+          "scope_reject": true,
+          "scope_expire": true,
+          "scope_replay": true
+        }
+      },
+      "ascent": {
+        "passed": true,
+        "issues": [],
+        "record_sha256": "f5fadb837f56633a9cf7c4b31ddf8524d3ad35e5d5f5bf06249b77859cca2439",
+        "verified_roles": {
+          "late_or_missing": true,
+          "ascent_health_change": true
+        }
+      }
+    },
+    "new_model_calls": false,
+    "new_physics_execution": false,
+    "credentials_included": false,
+    "raw_model_text_included": false,
+    "m3_completion_claimed": false,
+    "unique_run_ids_verified": true,
+    "all_gateway_bindings_verified": true,
+    "all_runtime_boundary_records_verified": true
+  },
+  "separate_binding_audit_sha256": "180d7d89e6bd749dcf4b57576501aae784fca4a2cdfd2f5e1f51f06c2bfa789d",
+  "record_metrics_reducer_sha256": "6762647e4ac0c7745776ed3d6c081bf61bfcbe13ec657cd5e9aa2281907b9a36",
+  "reference_values_not_model_prose": true,
+  "totals": {
+    "flights": 4,
+    "flight_records_verified": 4,
+    "contact_cases_accepted": 4,
+    "jev_attempts": 46,
+    "jev_valid_and_adopted": 45,
+    "deepseek_attempts": 3,
+    "deepseek_valid_and_adopted": 3,
+    "reference_ids_submitted": 40,
+    "reference_ids_resolved": 40,
+    "fallback_decisions": 1,
+    "inflight_operator_commands": 0
+  },
+  "booster_reproducibility": {
+    "schema": "missionos.starship_booster_reproducibility_audit.v1",
+    "audit_scope": "read_only_canonical_comparison_of_four_saved_concurrent_prefix_studies",
+    "integration_runs": 4,
+    "unique_count": 1,
+    "unique_separation_states": 1,
+    "samples_per_run": 243,
+    "events_per_run": 7,
+    "comparison_includes": [
+      "separation_state",
+      "initial_state",
+      "sampled_states_and_actuator_commands",
+      "events",
+      "guidance_configuration",
+      "active_return_site",
+      "contact",
+      "final_state",
+      "water_entry_goal"
+    ],
+    "canonical_encoding": "UTF-8 json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)",
+    "common_sha256": {
+      "booster_run": "4130c72fd8b5f34f2f9b5203d00b312176de74da1e4197dad1100f14be0dc232",
+      "booster_separation_state": "ad31d4feca85e5e45c9e8b1def1ff1388edc82e0c0e5f722e2708199a33bdea6",
+      "samples": "571b187a0a440d196375d06416264641ede8a47a315ee3343c7a09663b6e3e2f",
+      "events": "7a271f95fc113608c1db506cf4e558ef8c6c4a4902718ddc17419c1cacdb970a",
+      "contact": "e6638a2015757af353f466feb9434cc6d7dfedc4284ed069173347cd77d91b65",
+      "active_return_site": "ae084d90ff631bf7a091fa3868a73fcdb564f9939072e6e8b749f3dcd6474721",
+      "water_entry_goal": "3a5e366914170dd16b9da64b27d80cf7bd8498bda2af3f18e71cca45e4570db1"
+    },
+    "roles": {
+      "normal": {
+        "prefix_study_sha256": "c1eae6c75d3439d7a0844cc0f42a15dcf07918d27e984a235070d6dc50707dcd",
+        "booster_run_sha256": "4130c72fd8b5f34f2f9b5203d00b312176de74da1e4197dad1100f14be0dc232"
+      },
+      "deployment_change": {
+        "prefix_study_sha256": "0fc0e2914af8e1948a4ea56fd6e5ea60cdfd3f87ff4c272b5cd191a13ac6e3cf",
+        "booster_run_sha256": "4130c72fd8b5f34f2f9b5203d00b312176de74da1e4197dad1100f14be0dc232"
+      },
+      "scope_amendment": {
+        "prefix_study_sha256": "ebada8f5df0b7dfa1161914730cf88e22b75a946dc661bbd0280b44dc651421a",
+        "booster_run_sha256": "4130c72fd8b5f34f2f9b5203d00b312176de74da1e4197dad1100f14be0dc232"
+      },
+      "ambiguous_comparison": {
+        "prefix_study_sha256": "2373271611e30d57bc9c1cbd851a96239e67c4a11082735951d5557e06975004",
+        "booster_run_sha256": "4130c72fd8b5f34f2f9b5203d00b312176de74da1e4197dad1100f14be0dc232"
+      }
+    },
+    "nominal_reproducibility_observed": true,
+    "disturbance_robustness_verified": false,
+    "previous_prefix": {
+      "study_sha256": "d26c566ac2e5bbb8143907deb449e5ea27b1b6fff7af80487db5c0b0893fe9c2",
+      "contact_speed_mps": 8.28521466284523,
+      "same_geographic_reference_site": true,
+      "same_separation_state": true,
+      "splashdown_goal_connected": false,
+      "current_goal_connected": true,
+      "difference": "water_entry_goal_and_hull_clearance_terminal_control_not_geographic_destination"
+    },
+    "older_fuel_perturbations": {
+      "summary_reference": "../starship-splashdown-20261007/summary.json",
+      "summary_sha256": "c855b05ad8b0d78228d65f3eea0e957816e23ca16811ef6c85151aed8d9670e1",
+      "source_scope": "older_recorded_source_saved_separation_probes",
+      "booster_source_sha256": "45a23675f6a679e3644e7b1cc6e8e8e4e006f590006200ef0d84d544c5275c89",
+      "current_campaign_source_rerun": false,
+      "cases": [
+        {
+          "delta_fuel_kg": -1000.0,
+          "entry_envelope_met": false,
+          "contact_speed_mps": 165.0000819742047,
+          "remaining_fuel_kg": 81557.45994672873,
+          "failed_checks": [
+            "area",
+            "speed",
+            "vertical",
+            "horizontal",
+            "tilt"
+          ]
+        },
+        {
+          "delta_fuel_kg": 1000.0,
+          "entry_envelope_met": false,
+          "contact_speed_mps": 1.897990323793112,
+          "remaining_fuel_kg": 9206.951106182876,
+          "failed_checks": [
+            "reserve"
+          ]
+        }
+      ]
+    },
+    "new_model_calls": false,
+    "new_physics_execution": false,
+    "physical_execution": false
+  }
+}

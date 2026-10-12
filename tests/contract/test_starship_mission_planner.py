@@ -491,3 +491,33 @@ def test_jev_response_size_is_bounded(monkeypatch):
     with pytest.raises(planner.StarshipPlannerError, match="response_oversize"):
         planner.probe_starship_jev()
     assert planner._jev_calls == 1
+
+
+def test_m3_fixture_selection_is_registered_but_not_approval_or_model_execution():
+    scenario = "sixdof_m3_orbital_comparison"
+    result = planner.plan_starship_request(f"Starship {scenario}", "fixture")
+    assert result["proposal"]["scenario"] == scenario
+    assert result["invocation"]["call_attempted"] is False
+    assert result["invocation"]["model_inference_invoked"] is False
+    assert result["invocation"]["approval_granted"] is False
+    assert "concurrent ascent" in planner._DESCRIPTIONS[scenario]
+
+
+def test_m3_provider_proposal_cannot_carry_execution_authority(monkeypatch):
+    scenario = "sixdof_m3_orbital_comparison"
+    seen = []
+    _enable_mock_provider(monkeypatch)
+
+    async def invoke(prompt, attempt):
+        seen.append(json.loads(prompt))
+        planner._reserve_call(attempt)
+        attempt.response_received = True
+        return json.dumps({"scenario": scenario, "rationale": "Registered bounded mission.",
+                           "uncertainties": ["No flight result or approval."]})
+
+    monkeypatch.setattr(planner, "_invoke_deepseek", invoke)
+    result = planner.plan_starship_request("Plan M3", "deepseek")
+    assert scenario in seen[0]["scenarios"]
+    assert result["proposal"]["scenario"] == scenario
+    assert set(result["proposal"]) == {"scenario", "rationale", "uncertainties"}
+    assert result["invocation"]["approval_granted"] is False

@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "gateway_http_started": true,
+    "health_ready": true,
+    "operator_route_ready": true
+  },
+  "forecasts": 0,
+  "m3_completed": false,
+  "model_calls": 0,
+  "operator_approvals": 0,
+  "passed": true,
+  "physical_execution": false,
+  "retry_performed": false,
+  "schema": "missionos.starship_m3_http_runtime_check.v1",
+  "simulator_runs": 0,
+  "wall_time_s": 1.5029835419845767,
+  "worker_spawned": false,
+  "script_sha256": "87e9bc6cbca518f9824617ed929e838d709a81c0d1b442c004657dc9c29d5243",
+  "result_sha256": "591ceb032c5d6e307774d4e0c39ebc84139f97640351f5a9e2aafa1d8bc09529"
+}

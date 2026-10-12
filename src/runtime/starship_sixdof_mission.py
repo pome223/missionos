@@ -331,10 +331,12 @@ def _sample(s, v, phase, command=None, diagnostics=None):
     return result
 
 
-def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+def _simulate_steps(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
              booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
-             _development_return_qualification=None):
+             _development_return_qualification=None, _defer_booster=False, _defer_director_finish=False, deployment_permission=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
+    if deployment_permission is not None and (not callable(deployment_permission) or scenario != "launch"):
+        raise ValueError("deployment_permission_requires_launch_callable")
     if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect", "terminal_engine_out"):
         raise ValueError("unknown 6DOF scenario")
     if booster_policy not in ("fixed_v1", "predictive_return_v1"):
@@ -408,6 +410,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     satellites = []
     max_altitude, max_rate, max_error, released = initial_altitude, 0., 0., 0
     stage_state, orbit_time, next_release = None, None, None
+    separation_for_scheduler = None
+    deployment_withheld = False
     return_time, failed_engine, termination = None, False, "time_limit"
     contact_receipt = None
     sequencer_state, release_attempts, release_acknowledged = None, 0, False
@@ -443,10 +447,24 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     if development is not None:
         event("development_return_qualification", "explicit local experiment; not a MissionOS grant", **development)
     while s.time_s < limit-1e-9:
+        from .starship_concurrent import PhysicsTick
+        yield PhysicsTick("ship", s.time_s, phase, s, separation_for_scheduler, sequencer_state, released, deployment_withheld)
+        separation_for_scheduler = None
         if supervision is not None:
             supervision.pace(s.time_s)
         if mission_director is not None:
             mission_director.pace("ship", s.time_s)
+        if deployment_permission is not None:
+            permitted = deployment_permission()
+            if type(permitted) is not bool:
+                raise ValueError("deployment_permission_must_return_boolean")
+            if not permitted and not deployment_withheld:
+                deployment_withheld = True
+                event("supervised_deployment_withheld", "bounded supervisor permission latched; propulsion and attitude commands unchanged",
+                      phase=phase, payload_released_count=released)
+            if deployment_withheld:
+                sequencer_state, next_release = "skipped", None
+                deployment_hold_until, reassessment_due = None, None
         ps = point_state(s)
         o = dyn.observe(s, v)
         altitude = o["altitude_m"]
@@ -473,6 +491,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 samples.append(_sample(s, v, phase))
                 bs, ss, receipt = _split(s, v, booster, ship, (0., 0., p["geometry"]["booster_length_m"]), p["ship"]["propellant_kg"])
                 stage_state = asdict(bs)
+                separation_for_scheduler = bs
                 event("stage_separation", "mass/linear/angular momentum checked; instantaneous rigid split", **receipt)
                 s, v, phase = ss, ship, "ship_ascent"
                 continue
@@ -588,6 +607,10 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             # Coast dynamics continue while the first decision is pending;
             # the timeline cannot release a payload before that decision.
             deployment_started = mission_director is None or "deployment_start" in mission_director.finished
+            # An ordinary continue/hold response cannot clear the ascent latch.
+            if deployment_withheld:
+                sequencer_state, next_release = "skipped", None
+                deployment_hold_until, reassessment_due = None, None
             if development is not None and released >= development["release_limit"]:
                 next_release = None
             if deployment_started and next_release is not None and s.time_s >= next_release and sequencer_state not in ("inhibited", "skipped", "held"):
@@ -753,7 +776,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         satellite["samples"], satellite["final_orbit"] = child_samples, env.orbital_elements(point_state(child))
         satellite["orbital_propagation_only"] = True
     booster_run, catch_run = None, None
-    if stage_state:
+    if stage_state and not _defer_booster:
         if booster_policy == "predictive_return_v1":
             from .starship_booster_recovery import simulate_recovery
             booster_run = simulate_recovery(p, stage_state, catch_config)
@@ -784,7 +807,11 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         "terminal_qualification_violated": return_record.get("terminal_feasibility", {}).get("passed") is False,
                         "six_dof_integrated": True, "attitude_prescribed": False},
             "initial_state": samples[0], "final_state": asdict(s), "final_vehicle": asdict(v)}
-    if mission_director is not None:
+    if deployment_permission is not None:
+        result["deployment_permission"] = {"withheld": deployment_withheld, "sequencer_state": sequencer_state,
+            "payload_released_count": released, "observed_time_s": s.time_s,
+            "scope": "release_sequence_only_no_propulsion_or_attitude_authority"}
+    if mission_director is not None and not _defer_director_finish:
         result["mission_director"] = mission_director.finish()
     if development is not None:
         result["development_return_qualification"] = dict(development)
@@ -805,4 +832,67 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             "catch_invoked": catch_run is not None, "state_reset": False,
             "launch_connected_catch_supported": bool(catch_run and catch_run["outcome"]["simulated_catch_supported"]),
             "physical_execution": False, "real_hardware_validated": False}
+    return result
+
+
+def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
+             _development_return_qualification=None, deployment_permission=None):
+    """Legacy synchronous API, retaining sequential booster postprocessing."""
+    from .starship_concurrent import drain
+    return drain(_simulate_steps(profile, scenario=scenario, duration_s=duration_s, dt_scale=dt_scale,
+        supervision=supervision, return_policy=return_policy, booster_policy=booster_policy,
+        catch_config=catch_config, mission_director=mission_director, mission_case=mission_case,
+        return_sites=return_sites, splashdown_goal=splashdown_goal,
+        _development_return_qualification=_development_return_qualification, deployment_permission=deployment_permission))
+
+
+def simulate_concurrent(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
+             _development_return_qualification=None, development_booster_coast_control="fixed_v1", on_tick=None, deployment_permission=None):
+    """Opt-in shared-clock integration; existing simulate() remains sequential.
+
+    on_tick receives an immutable internal PhysicsTick before pace/observation/
+    command processing. Its state is simulator truth for numerical observers;
+    it must not be exposed directly as model-visible sensor information.
+    deployment_permission() returns a strict bool. False irreversibly withholds
+    later payload releases; later True cannot resume. Subsequent PhysicsTicks
+    and the final permission receipt expose the sequencer effect.
+    """
+    from .starship_concurrent import coordinate
+    from .starship_sixdof_booster import _configuration, _simulate_booster_steps
+    if scenario != "launch" or booster_policy != "fixed_v1" or dt_scale != 1.0:
+        raise ValueError("concurrent_control_requires_launch_fixed_booster_and_time_scale")
+    if development_booster_coast_control not in ("fixed_v1", "stopping_distance_v1"):
+        raise ValueError("unknown_development_coast_controller")
+    common_deadline = profile["integration"]["max_duration_s"] if duration_s is None else duration_s
+    if type(common_deadline) not in (int, float) or not math.isfinite(common_deadline) or common_deadline <= 0:
+        raise ValueError("invalid_concurrent_absolute_deadline")
+    ship = _simulate_steps(profile, scenario=scenario, duration_s=duration_s, dt_scale=dt_scale,
+        supervision=supervision, return_policy=return_policy, booster_policy=booster_policy,
+        catch_config=catch_config, mission_director=mission_director, mission_case=mission_case,
+        return_sites=return_sites, splashdown_goal=splashdown_goal,
+        _development_return_qualification=_development_return_qualification,
+        _defer_booster=True, _defer_director_finish=True, deployment_permission=deployment_permission)
+    def separated_booster(state):
+        remaining = common_deadline-state.time_s
+        if remaining <= 0:
+            raise ValueError("separation_at_or_after_concurrent_deadline")
+        # No body may advance beyond the shared checkpoint before Ship resumes.
+        duration = min(remaining, _configuration(profile)["max_duration_s"])
+        return _simulate_booster_steps(profile, asdict(state), duration_s=duration, mission_director=mission_director,
+            return_sites=return_sites, tower_ready=mission_case != "tower_unavailable", splashdown_goal=splashdown_goal,
+            development_coast_control=development_booster_coast_control,
+            development_coast_from_separation=development_booster_coast_control != "fixed_v1")
+    result = coordinate(ship, separated_booster,
+        maximum_tick_s=max(profile["integration"]["powered_dt_s"], profile["integration"]["coast_dt_s"]), on_tick=on_tick)
+    if mission_director is not None:
+        result["mission_director"] = mission_director.finish()
+    result["concurrent_execution"]["absolute_deadline_s"] = common_deadline
+    if result["booster_run"] is not None:
+        result["booster_run"]["shared_clock_checkpoint"] = {
+            "absolute_deadline_s": common_deadline,
+            "unfinished": result["booster_run"]["outcome"]["termination"] == "time_limit",
+            "state_reset": False,
+        }
     return result
