@@ -18,5 +18,18 @@
   },
   "physics_steps": 0,
   "new_model_calls": 0,
-  "content_changes": "Encoding only; same 120-second saved replay."
+  "content_changes": "Encoding only; same 120-second saved replay.",
+  "readme_player_verification": {
+    "checked_commit": "338cdf292f3aa66a232d9b27ee39524d6b395958",
+    "url": "https://github.com/pome223/missionos/blob/338cdf292f3aa66a232d9b27ee39524d6b395958/README.md#starship-inspired-six-degree-of-freedom-mission-simulation",
+    "anonymous_browser": true,
+    "native_controls": true,
+    "duration_s": 120,
+    "current_time_s": 55.418071,
+    "ready_state": 4,
+    "paused": false,
+    "media_error": null,
+    "closed_details_ancestor": false,
+    "scope": "Actual GitHub-rendered README playback; no simulator or model execution."
+  }
 }
