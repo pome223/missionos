@@ -1,5 +1,6 @@
 """Separate scope-coverage scenario; preserve the original frozen campaign."""
 from copy import deepcopy
+from hashlib import sha256
 import json
 import math
 import time
@@ -13,14 +14,53 @@ from src.runtime.starship_replanning import digest
 
 CASE = "inflight_op_scope_01"
 BASE = "op_scope_01"
+# Evidence identities in the frozen 2026-10-12 completion campaign and 61ebb8fe.
+# Keep the full historical authority digest below; only its evidence binding may
+# change when the unchanged scenario is qualified against current source.
+HISTORICAL_CERTIFICATE_SHA256 = "dc925be6529d2d17a4de38ad89c8ecf66ccfe5e4285f2d0bace77bd20f20eced"
+HISTORICAL_RETURN_SOURCES_SHA256 = "fbdff83740011abfd816b26e2183e10e8800dcca295c9b5167b0d2c42d0dabb9"
+
+
+def _director_authorities(authority):
+    return (
+        authority["m2_authority"]["deployment_authority"],
+        authority["prefix_authority"]["m2_authority"]["deployment_authority"],
+        authority["prefix_authority"]["booster_authority"],
+    )
 
 
 def test_historical_scope_authority_is_not_rewritten():
-    assert digest(contract("live", "inflight_op_trial_02")) == (
+    historical = deepcopy(contract("live", "inflight_op_trial_02", legacy_booster_jev=True))
+    for director in _director_authorities(historical):
+        director["return_qualification_sha256"] = HISTORICAL_CERTIFICATE_SHA256
+        director["return_model_source_sha256"] = HISTORICAL_RETURN_SOURCES_SHA256
+    # Rebind only the envelopes containing those two historical evidence fields.
+    prefix = historical["prefix_authority"]
+    prefix["m2_authority_sha256"] = digest(prefix["m2_authority"])
+    prefix["booster_authority_sha256"] = digest(prefix["booster_authority"])
+    historical["m2_authority_sha256"] = digest(historical["m2_authority"])
+    historical["prefix_authority_sha256"] = digest(prefix)
+    assert digest(historical) == (
         "99bd0e46cef377db073c4a9a8ce974fbe9bf3c23d29bee4bb177f7afcf37f13b"
     )
     from src.runtime.starship_m3_completion import FLIGHT_CASES
     assert FLIGHT_CASES["scope_amendment"] == "inflight_op_trial_02"
+
+
+def test_scope_authority_binds_current_qualification_and_source():
+    from src.runtime.starship_return_feasibility import CERTIFICATE, CORE_SOURCES, ROOT
+    certificate_sha256 = sha256((ROOT / CERTIFICATE).read_bytes()).hexdigest()
+    source_sha256 = digest({name: sha256((ROOT / name).read_bytes()).hexdigest()
+                           for name in CORE_SOURCES})
+    authority = contract("live", "inflight_op_trial_02")
+    for director in _director_authorities(authority):
+        assert director["return_qualification_sha256"] == certificate_sha256
+        assert director["return_model_source_sha256"] == source_sha256
+    prefix = authority["prefix_authority"]
+    assert authority["m2_authority_sha256"] == digest(authority["m2_authority"])
+    assert authority["prefix_authority_sha256"] == digest(prefix)
+    assert prefix["m2_authority_sha256"] == digest(prefix["m2_authority"])
+    assert prefix["booster_authority_sha256"] == digest(prefix["booster_authority"])
 
 
 def test_separate_trial_withdraws_nominal_without_reinstatement():

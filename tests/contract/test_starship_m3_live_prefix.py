@@ -67,9 +67,10 @@ def live_study(make_study, withheld=False):
 
 def test_live_scope_has_separate_bounded_jev_grants_and_unmodified_ascent_config():
     authority = prefix.m3_prefix_contract("normal", mode="live")
-    assert authority["schema"].endswith(".v3") and authority["maximum_model_calls"] == 11
+    assert authority["schema"].endswith(".v4") and authority["maximum_model_calls"] is None
     assert authority["ascent_authority"] == CONFIG
-    assert authority["maximum_ascent_jev_calls"] == 4 and authority["maximum_booster_jev_calls"] == 1
+    assert authority["maximum_ascent_jev_calls"] == 4 and authority["maximum_booster_jev_calls"] == 0
+    assert authority["maximum_booster_llm_calls"] is None
     assert authority["booster_authority"] == contract("live", splashdown=True)
     assert "splashdown_goal" not in authority["m2_authority"]["deployment_authority"]
     with pytest.raises(ValueError):
@@ -171,3 +172,67 @@ def test_live_continuation_also_needs_a_later_observation(make_study):
     study["ascent"]["decisions"][0]["later_observation"] = None
     with pytest.raises(ValueError, match="ascent_live_later_observation_missing"):
         verifier._ascent(study, study["prefix_run"]["concurrent_execution"]["tick_order"])
+
+
+def deep_study(make_study):
+    from test_starship_m3_broker import request as booster_request
+    study = live_study(make_study)
+    a = study["authority"]
+    _, req = booster_request("booster")
+    req["request_id"] = "live-test-booster:1"
+    req["envelope_sha256"] = digest(a["booster_authority"])
+    public = {"scope": "bounded_booster_supervision", "observation": req["observation"],
+        "allowed_actions": req["allowed_actions"], "decision_deadline_s": req["decision_deadline_s"],
+        "recovery_report": a["booster_recovery_report"],
+        "recovery_report_sha256": a["booster_recovery_report_sha256"],
+        "objectives_to_compare": ["capture", "splashdown"], "capture_controller_connected": False}
+    inv = {**receipt(), "provider": "deepseek", "public_input_sha256": digest(public),
+        "maximum_instance_calls": None}
+    res = {"mode": "live", "action": "splashdown", "llm_invocation": inv, "jev_invocation": None,
+        "model_inference_invoked": True, "decision_context": public,
+        "recovery_report_sha256": a["booster_recovery_report_sha256"],
+        "decision_summary": "Prior catch trials have not demonstrated support.", "free_text_summary_verified": False}
+    entry = {"request": req, "response": res, "dispatch": {"rules_accepted": True}}
+    study["prefix_run"]["booster_mission_director"]["records"] = [entry]
+    led = ledger(a, "booster", [entry])
+    led["attempts"][0]["provider"] = "deepseek"
+    study["provider_attempt_ledger"]["booster"] = led
+    study["model_calls"] = 2
+    return study
+
+
+def test_independent_deep_booster_receipt_and_report_binding(make_study):
+    study = deep_study(make_study)
+    result = verifier._providers(study)
+    assert result["attempted"] == result["actor_valid_responses"] == result["rules_accepted"] == 2
+
+
+@pytest.mark.parametrize("mutate", [
+    lambda s: s["prefix_run"]["booster_mission_director"]["records"][0]["response"].update(recovery_report_sha256="0"*64),
+    lambda s: s["prefix_run"]["booster_mission_director"]["records"][0]["response"]["decision_context"].update(capture_controller_connected=True),
+    lambda s: s["prefix_run"]["booster_mission_director"]["records"][0]["response"]["llm_invocation"].update(public_input_sha256="0"*64),
+    lambda s: s["provider_attempt_ledger"]["booster"]["attempts"][0].update(provider="typesafe"),
+])
+def test_independent_deep_booster_corruption_rejected(make_study, mutate):
+    study = deep_study(make_study)
+    mutate(study)
+    with pytest.raises(ValueError):
+        verifier._providers(study)
+
+
+def test_report_snapshot_validation_does_not_reload_current_files(monkeypatch):
+    a = prefix.m3_prefix_contract("orbital_update", mode="live")
+    from src.runtime.starship_recovery_reports import report_sources
+    monkeypatch.setattr("src.intelligence.starship_booster_recovery_evidence.mission_recovery_report",
+        lambda: (_ for _ in ()).throw(ValueError("future_report_unavailable")))
+    old = prefix.m3_prefix_contract("orbital_update", mode="live", legacy_booster_jev=True)
+    assert old["schema"].endswith(".v3")
+    frozen = prefix.m3_prefix_contract("orbital_update", mode="live",
+        recorded_booster_report=a["booster_recovery_report"])
+    assert frozen == a
+    assert report_sources(frozen["booster_recovery_report"]) == a["booster_recovery_report_source_sha256"]
+    import copy
+    bad = copy.deepcopy(a["booster_recovery_report"])
+    bad["catch"]["launch_derived_supported_catches_demonstrated"] = 1
+    with pytest.raises(ValueError, match="unreviewed"):
+        report_sources(bad)

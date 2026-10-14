@@ -69,6 +69,9 @@ def build_environment(args: argparse.Namespace) -> dict[str, str]:
     for value in (args.project, args.deepseek_secret, args.jev_secret):
         if value and not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", value):
             raise ValueError("starship_gateway_invalid_secret_locator")
+    model = getattr(args, "deepseek_model", None)
+    if model is not None and not re.fullmatch(r"deepseek-[A-Za-z0-9_.-]{1,80}", model):
+        raise ValueError("starship_gateway_invalid_model_id")
     state = args.state_dir.expanduser().absolute()
     if state.is_symlink() or (state / ".env").exists():
         raise ValueError("starship_gateway_isolated_state_required")
@@ -150,6 +153,8 @@ def build_environment(args: argparse.Namespace) -> dict[str, str]:
             env["MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE"] = "live"
         env["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_LLM_BACKEND"] = "deepseek"
         env["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_DEEPSEEK_API_BASE"] = "https://api.deepseek.com"
+    if model is not None:
+        env["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_MODEL_ID"] = model
     return env
 
 
@@ -160,6 +165,7 @@ def main() -> int:
     parser.add_argument("--project")
     parser.add_argument("--deepseek-secret", default="deepseek-api-key")
     parser.add_argument("--jev-secret", default="jev-api-key")
+    parser.add_argument("--deepseek-model", help="Explicit provider model ID; never an API key")
     modes = parser.add_mutually_exclusive_group()
     modes.add_argument("--enable-live-models", action="store_true")
     modes.add_argument("--fixture-planner", action="store_true")

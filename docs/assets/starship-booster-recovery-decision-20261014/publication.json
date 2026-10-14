@@ -1,0 +1,22 @@
+{
+  "schema": "missionos.video_publication.v1",
+  "url": "https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72",
+  "repository_video_sha256": "cf7a90502fc05145e5ed42fbc4423fd08b1d4da5ea7092fbc8c20c386573dcab",
+  "attachment_encode": {
+    "filename": "starship-booster-decision-github-20261014.mp4",
+    "bytes": 8010918,
+    "sha256": "f02a4620acb6ec17860a63e290fedea4b012b76482976be8516125a732fefdf4",
+    "duration_s": 120,
+    "frames": 2880,
+    "dimensions": [
+      1280,
+      720
+    ],
+    "codec": "h264",
+    "pixel_format": "yuv420p",
+    "command": "ffmpeg -i mission.mp4 -c:v libx264 -preset medium -b:v 580k -maxrate 630k -bufsize 1260k -pix_fmt yuv420p -movflags +faststart -an attachment.mp4"
+  },
+  "physics_steps": 0,
+  "new_model_calls": 0,
+  "content_changes": "Encoding only; same 120-second saved replay."
+}

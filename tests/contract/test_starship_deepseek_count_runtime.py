@@ -82,11 +82,11 @@ def test_unlimited_counts_remain_validated_and_finite_caps_enforced():
 def test_approval_display_names_unlimited_without_rendering_none():
     from src.gateway.starship_chat import _deepseek_call_limit
     assert _deepseek_call_limit(m3_contract("live")) == "DeepSeek回数上限なし（判断期限は適用）"
-    assert _deepseek_call_limit(m3_contract("live", legacy_call_limits=True)) == "DeepSeek最大1回"
+    assert _deepseek_call_limit(m3_contract("live", legacy_call_limits=True, legacy_booster_jev=True)) == "DeepSeek最大1回"
 
 
 def test_historical_m3_grant_has_consistent_finite_nested_prefix():
-    old = m3_contract("live", legacy_call_limits=True)
+    old = m3_contract("live", legacy_call_limits=True, legacy_booster_jev=True)
     assert old["maximum_llm_calls"] == 1 and old["maximum_model_calls"] == 28
     assert old["m2_authority"] == old["prefix_authority"]["m2_authority"]
     assert old["m2_authority_sha256"] == old["prefix_authority"]["m2_authority_sha256"]

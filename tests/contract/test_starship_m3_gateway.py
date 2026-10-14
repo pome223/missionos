@@ -87,7 +87,7 @@ def test_m3_worker_environment_never_inherits_host_credentials(monkeypatch):
         monkeypatch.setenv(name, "unit-fixture-not-a-key")
     authority = m3.contract("live")
     assert authority["maximum_model_calls"] is None
-    assert authority["maximum_jev_calls"] == 27 and authority["maximum_llm_calls"] is None
+    assert authority["maximum_jev_calls"] == 26 and authority["maximum_llm_calls"] is None
     environment = control.process_environment({"scenario": SCENARIO, "mission_envelope": authority})
     assert not keys & environment.keys()
     assert environment["MISSIONOS_LLM_BACKEND"] == "off"

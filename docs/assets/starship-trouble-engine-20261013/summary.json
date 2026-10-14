@@ -1,0 +1,1769 @@
+{
+  "schema": "missionos.starship_trouble_reviewed_evidence.v1",
+  "date": "2026-10-13",
+  "scope": "Standalone plant fault injection; not MissionOS AI flight control or historical vehicle validation",
+  "catalog_sha256": "4dc82a06ed1213836f3b8b35cce2535205f823ccb9d7bf0f0b48fad48ece4d56",
+  "predeclared_coverage_plan": {
+    "seed": 14,
+    "maximum_workers": 2,
+    "maximum_wall_s_per_case": 600,
+    "retry": false,
+    "kind": "coverage_smoke_not_historical_rates_or_ai_evaluation",
+    "cases": [
+      {
+        "id": "nominal",
+        "family": null,
+        "nominal_probability": 1.0,
+        "duration_s": 1200.0
+      },
+      {
+        "id": "ascent",
+        "family": "ascent_engine_out",
+        "nominal_probability": 0.0,
+        "duration_s": 180.0
+      },
+      {
+        "id": "ship",
+        "family": "ship_engine_out",
+        "nominal_probability": 0.0,
+        "duration_s": 1000.0
+      },
+      {
+        "id": "restart",
+        "family": "booster_restart_failure",
+        "nominal_probability": 0.0,
+        "duration_s": 700.0
+      },
+      {
+        "id": "rcs",
+        "family": "rcs_channel_loss",
+        "nominal_probability": 0.0,
+        "duration_s": 1200.0
+      },
+      {
+        "id": "payload",
+        "family": "payload_jam",
+        "nominal_probability": 0.0,
+        "duration_s": 1200.0
+      },
+      {
+        "id": "tower",
+        "family": "tower_unavailable",
+        "nominal_probability": 0.0,
+        "duration_s": 170.0
+      },
+      {
+        "id": "synthetic-flap",
+        "family": "flap_jam",
+        "nominal_probability": 0.0,
+        "duration_s": 6000.0
+      }
+    ]
+  },
+  "source_snapshots": {
+    "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d": {
+      "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "docs/agents/starship-incident-catalog.json": "4dc82a06ed1213836f3b8b35cce2535205f823ccb9d7bf0f0b48fad48ece4d56",
+      "scripts/run_starship_trouble.py": "dfcedba427a4a6a967d865dddd6732fdeb2a218f5a47e70b3583947bf94e87d4",
+      "src/runtime/starship_3d_report.py": "becb6263d63965b5a8852a22c1c4e581b7302cb5b7b2145c8cda8f1a07edaf5c",
+      "src/runtime/starship_actual_forecast_corpus.py": "c8b279539dcc943f9fef991b4140f797e7a975492b1001d396e58eec02cc8aa0",
+      "src/runtime/starship_actual_recovery_planning_verifier.py": "e355b57bd5ceb786606f921c2b2c85973a22d9b67bd0e3e42376a747745e5cec",
+      "src/runtime/starship_actual_recovery_shooting.py": "767981c84084351b8814c553d77cc6d2a99b60f0fc5150e897ef39c578102d4a",
+      "src/runtime/starship_artifacts.py": "1b00779f7b7cdab28ac7ee35e21405c722b2583b88e996538a8683a5bb3a2d95",
+      "src/runtime/starship_ascent_supervisor.py": "309d8430bc9c574a00b69f05a8a5bba282cad1bb90cb5cf0d53cd95f81d1b44a",
+      "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+      "src/runtime/starship_boostback_shooting.py": "d7b5825000449aa76de7fd52af9bd9067e300a326ec88674e46cfd288a430f69",
+      "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+      "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+      "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+      "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+      "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+      "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+      "src/runtime/starship_call_limits.py": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43",
+      "src/runtime/starship_capture_diagnostic_report.py": "54186db93fb48d5bbeb10dea3ae7b918683cbcd290b1d13d6f9bd6fd54eaf2ca",
+      "src/runtime/starship_capture_diagnostics.py": "b30e263f9c946004038b9260d014db1f862d8f6ccb0c34e5278a95bd21f476e8",
+      "src/runtime/starship_completion_report.py": "a2444f74807aa01f260807acc4061fc46f70ee8fa100a42327723dbefd3eb222",
+      "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+      "src/runtime/starship_constrained_guidance.py": "355a52445f39f3b9af2fe345a734c597c96f011e15d02f6ac412e990f47f095c",
+      "src/runtime/starship_constrained_recovery.py": "94dd88b0df70115125dab737ee92f7320eb44cd9a9bd04c004459eee38039a64",
+      "src/runtime/starship_constrained_recovery_verifier.py": "2c42b26bf77fad2c32ada6f759dac195c4fe6bb6f485e90c36fff12f9f1ce234",
+      "src/runtime/starship_coupled_pin_landing.py": "2c19c539a183d2abcb1ef272becc31f770b697a7a1b66ca6ff478a19f15cdf99",
+      "src/runtime/starship_coupled_pin_landing_verifier.py": "4e513602bbb3b93c0140c13c5b6aa26ba381dcbc0c8b2fb9dfef5ac2c5f68fae",
+      "src/runtime/starship_coupled_terminal_reference.py": "c1ceeb2ce069d52bf94d01a2e20593bd7b104b6cf4c3276af127cf74cf88bcf5",
+      "src/runtime/starship_coupled_terminal_reference_verifier.py": "5a8be510ace205788883848a5debeac0b0ba7b910b19e2a37230068ddcf411a6",
+      "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+      "src/runtime/starship_deployment_forecast.py": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847",
+      "src/runtime/starship_deployment_handoff.py": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a",
+      "src/runtime/starship_deployment_handoff_verifier.py": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73",
+      "src/runtime/starship_dispenser_experiment.py": "b802a87fa5e109cdd9f16527c7937e982fd3256586246633ee680b2bb504c031",
+      "src/runtime/starship_dispenser_report.py": "a0ba23dc10746e8d603c200a98caf21644f1ff2d6a2f15bb1c77d16e16a33d69",
+      "src/runtime/starship_dispenser_verifier.py": "87a1eff29fed995f9c02f03be91a434f3c9fd33f281fb04e1f0b50eb98ed517a",
+      "src/runtime/starship_entry_diagnostics.py": "6b93a6898191dd956a9d6ca49ca80e8981a5fbddd3af7edb116cbd88b7a6c2f8",
+      "src/runtime/starship_entry_pretrim.py": "2cb6ff8019790f952a4915268eaf2a5e44224abd12be8809a10e10d68e51bb9b",
+      "src/runtime/starship_entry_pretrim_verifier.py": "e8855aec0c2366a8717bbd14549d95ba1bb50f9099a81b4bf8d7eadc8b306503",
+      "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+      "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+      "src/runtime/starship_fin_report.py": "f07e5fa31a9b55df294892879433e07912f476269a1297f99452b6e42b59ab56",
+      "src/runtime/starship_fixed_terminal_reference.py": "d0d227c3ef091066f1ad9932a7ac5d0c1c2f0b0a4ff44f2bd2fa395522a6bfa3",
+      "src/runtime/starship_fixed_terminal_reference_verifier.py": "05291a7665a4782f22eab23aa7650a1b52d2e1552b4046e833295c10ede81644",
+      "src/runtime/starship_flight.py": "3f12eb6f2d3fcb72c4fea50e877c5b5f4467ef4b97a0cd37c9f9a4c1c12c9620",
+      "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+      "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+      "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+      "src/runtime/starship_inflight_approval.py": "ccc9986d1ed7488dacbfb85f94b2ad3d519c5182bfd4ff7a1d6657df80042f23",
+      "src/runtime/starship_inflight_executor.py": "5d0478b78afd679a02cfccd4c03840ff235fd8e53bd380c614c7e0b449b2dccd",
+      "src/runtime/starship_inflight_runtime.py": "3942d0300f4cd2aa61e0b06eb77b6d1ca814fcb7a5ff260307a4ad2f197d88ed",
+      "src/runtime/starship_jev_shadow.py": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b",
+      "src/runtime/starship_jev_shadow_report.py": "8332c8e806b2a3f0deeccec01a7daa2889541e9e90b2f9b4d6803f009794f48a",
+      "src/runtime/starship_jev_shadow_verifier.py": "bf547cbb95813b0e1097b7cf61c50bd7081bd270e3312379c655173765f59f48",
+      "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+      "src/runtime/starship_landing_decision.py": "32bb61b776ff601ce8741424f27fc9ea85bffadf4d0abb147f3782cb0343007e",
+      "src/runtime/starship_landing_decision_verifier.py": "a3992551890eafc0b330077c81b02b68ddeaeac60c75637cf49e74c1746afb76",
+      "src/runtime/starship_landing_forecast.py": "cc2b41002362048b37c1263b1f52fed67d940f346b1c50bab3125b94fa89765c",
+      "src/runtime/starship_landing_forecast_report.py": "e387f67f1433c505059ae7e5850e5590850ef6c2685344ce888cb4699372dd38",
+      "src/runtime/starship_landing_forecast_verifier.py": "e4e4c90edc3efa5fdb1530618a9c34effd4fd4cc80cfba686075736a84f86765",
+      "src/runtime/starship_m2_attempts.py": "29c07539b10c35af9555928c2d96dd4ccc32ab59c8870e9b234411650593f0e7",
+      "src/runtime/starship_m2_contract.py": "307312389cdea462144d70637b11e362880c194c573e7d468d3cee2392dc30e2",
+      "src/runtime/starship_m2_control.py": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71",
+      "src/runtime/starship_m2_decision_verifier.py": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a",
+      "src/runtime/starship_m2_runner.py": "c26ffae4ed53e4441117cf0d8aae8e6a1957ad692963de7af76ccfef8b7216a7",
+      "src/runtime/starship_m2_verifier.py": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9",
+      "src/runtime/starship_m3_completion.py": "a6b867bfae47ca5aab806e70613214eca8f13cc79783eec083f3b16f337e559b",
+      "src/runtime/starship_m3_directors.py": "f4a483ea2d836ebb6fb062e076155a0143f8beb9425a31280e11fe1ab8cc7a43",
+      "src/runtime/starship_m3_fixture.py": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10",
+      "src/runtime/starship_m3_inflight.py": "47056d8231af6b6048d0351c62be51f55df76e44ece84875cdecafa31809cbf9",
+      "src/runtime/starship_m3_live.py": "99dc6b620c386a32d5ab2dc16239e236b6fe610804b9787a5b3679acb2221ebc",
+      "src/runtime/starship_m3_prefix.py": "f46fa7a675ee5b7668218c5482fd45cca0ddc15889aa1a418f0445fdfc5e1c00",
+      "src/runtime/starship_m3_prefix_verifier.py": "7c9a4681418433b72b80e8b2533c014b5cd1952ac989fcc7098e75b42e950ee1",
+      "src/runtime/starship_mission_control.py": "9551cf63663fbad2f900eda5cb845bdaaf61e900f803bdf5ece59a9e9d73a4c8",
+      "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+      "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+      "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+      "src/runtime/starship_operational_trials.py": "9731a3cbc36199d2450a182e8eccf80d1b6b4d9ea8174deeb328165095c978dc",
+      "src/runtime/starship_operator_resolution.py": "9cfce545bb03b2972b50aa4dadfc4f3be3decdeca98db68e09c587b28377f111",
+      "src/runtime/starship_orbital_window.py": "ba492475f6c61f91ebaeb73313e039d16db4d49e059349854220c249c2781154",
+      "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+      "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+      "src/runtime/starship_reference_tracking.py": "726bfe4b37707d92a68e61ed20ce1e48ee6d0ece99ba3433425e19d756b530da",
+      "src/runtime/starship_reference_tracking_verifier.py": "cae08a63cc06e47aac6bca4ea2abad797a111084b2f8bb8e119819c3ad553bb6",
+      "src/runtime/starship_replanning.py": "e0b65f59d1fe435ae7dda503a93696f8b0e2f59f355f773e7bbfd14c54cc5163",
+      "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+      "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+      "src/runtime/starship_replanning_executor.py": "a53eea27cc6ebc16f175fcaa1ac6950aaf1739e53bf628f4436662beb61d6689",
+      "src/runtime/starship_replanning_verifier.py": "5741a24d04c011eb8cf77fe62ee5c3cfeb45859943a5051bf25e6b587750e20c",
+      "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+      "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+      "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+      "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+      "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+      "src/runtime/starship_return_prediction_verifier.py": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e",
+      "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+      "src/runtime/starship_return_sites_verifier.py": "d27bb52fb25f6f8034c180854540fef016642426d08a28265bb56666fd7a245c",
+      "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+      "src/runtime/starship_runtime_budget.py": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853",
+      "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+      "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+      "src/runtime/starship_sixdof_booster.py": "3ce4af569d64c5b934ba2f2f9bf84cb90411aa84370ca365aef5595334aaa140",
+      "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+      "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+      "src/runtime/starship_sixdof_mission.py": "cf208522a78e62a97ba7c3603e9a9f1f3b5ffc133e843230c6516958c0a2df20",
+      "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+      "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+      "src/runtime/starship_sixdof_validation.py": "19ad244cae8353244cffd1c43e4319b7e091c232edf48a51375798c0a038f36c",
+      "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+      "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+      "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+      "src/runtime/starship_static_artifacts.py": "91cc117fbd57f8c563321eff5d217d49dbf3830959090a39543c986335dcd1ad",
+      "src/runtime/starship_study.py": "879373a4f538fa4a3eb24222c70563b44b18184d705ca81806aca87c5782d782",
+      "src/runtime/starship_terminal_guidance.py": "735b2a4b5aa6a9af95e5e5eaae36eb101c39ebc66d6acc95016d6a6707037dad",
+      "src/runtime/starship_terminal_reference_screen.py": "29d865645e0efd1b2c90cbd6e3b01061f29c3369083e87eb66ddfaa6ea2136d5",
+      "src/runtime/starship_terminal_reference_screen_verifier.py": "363da8fcd715ea944c88e670f31db004268adacba06ba2230c54e44f6cbd8829",
+      "src/runtime/starship_terminal_wrench.py": "a0d03182194ad9a69179d04ca272e16c51556c88a1a2a760b5c698de18cae5fa",
+      "src/runtime/starship_terminal_wrench_verifier.py": "96fc32bf0b04046a706850fda045ad9f3470f54a1652162138a85805e08c4050",
+      "src/runtime/starship_tower_actor.py": "fd36b18c3af97653dceacf16d09eab310069daa4952a35eb31fb72c17f8eae1e",
+      "src/runtime/starship_tower_broker.py": "d3ff440eb482dd88d79d7780dba34ffb18e2f65f2df2310e3662cfb5881c4a25",
+      "src/runtime/starship_tower_preburn_gate.py": "a4227bf5f7af70aaad441946f88ab9831c752827dffdc668c48f6062b815d502",
+      "src/runtime/starship_tower_runtime.py": "26292405e58a48228fb62eef98f365dbaf6f49cd26f5bd34df7a0e76fb9af748",
+      "src/runtime/starship_tower_supervision.py": "e4fa539ab940d23caee683c2f28d719ffb6ba6900538267cd6f2680ce1e4aa16",
+      "src/runtime/starship_tower_supervision_verifier.py": "ab14ef1c8c28824ce7e8274593022ea42cb518cea6cdd05bb903e4cc693ae13a",
+      "src/runtime/starship_trouble_engine.py": "e092537d31cf289068f0e7b395fbae534f36cdb412cdab319419c97c6c07394f",
+      "src/runtime/starship_trouble_verifier.py": "661b972edf62e4c4268bb01abdc7ba62913e7925c203443f1d9fa94bb0514a90",
+      "src/runtime/starship_upstream_report.py": "30949f37f2cca3710cb9a5118fd27f39a5a6ad648e6a5cb2b1a638411a063daa",
+      "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+      "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412"
+    },
+    "8546f480aef0351d22f25f1176bbd9200c351e95bab97a75bed21453034dd419": {
+      "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+      "docs/agents/starship-incident-catalog.json": "4dc82a06ed1213836f3b8b35cce2535205f823ccb9d7bf0f0b48fad48ece4d56",
+      "scripts/run_starship_trouble.py": "770f3f478ecb4635e6ecfdfdaefdeb949d07115d34a74a33c38e7502355c6da1",
+      "src/runtime/starship_3d_report.py": "becb6263d63965b5a8852a22c1c4e581b7302cb5b7b2145c8cda8f1a07edaf5c",
+      "src/runtime/starship_actual_forecast_corpus.py": "c8b279539dcc943f9fef991b4140f797e7a975492b1001d396e58eec02cc8aa0",
+      "src/runtime/starship_actual_recovery_planning_verifier.py": "e355b57bd5ceb786606f921c2b2c85973a22d9b67bd0e3e42376a747745e5cec",
+      "src/runtime/starship_actual_recovery_shooting.py": "767981c84084351b8814c553d77cc6d2a99b60f0fc5150e897ef39c578102d4a",
+      "src/runtime/starship_artifacts.py": "1b00779f7b7cdab28ac7ee35e21405c722b2583b88e996538a8683a5bb3a2d95",
+      "src/runtime/starship_ascent_supervisor.py": "309d8430bc9c574a00b69f05a8a5bba282cad1bb90cb5cf0d53cd95f81d1b44a",
+      "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+      "src/runtime/starship_boostback_shooting.py": "d7b5825000449aa76de7fd52af9bd9067e300a326ec88674e46cfd288a430f69",
+      "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+      "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+      "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+      "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+      "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+      "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+      "src/runtime/starship_call_limits.py": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43",
+      "src/runtime/starship_capture_diagnostic_report.py": "54186db93fb48d5bbeb10dea3ae7b918683cbcd290b1d13d6f9bd6fd54eaf2ca",
+      "src/runtime/starship_capture_diagnostics.py": "b30e263f9c946004038b9260d014db1f862d8f6ccb0c34e5278a95bd21f476e8",
+      "src/runtime/starship_completion_report.py": "a2444f74807aa01f260807acc4061fc46f70ee8fa100a42327723dbefd3eb222",
+      "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+      "src/runtime/starship_constrained_guidance.py": "355a52445f39f3b9af2fe345a734c597c96f011e15d02f6ac412e990f47f095c",
+      "src/runtime/starship_constrained_recovery.py": "94dd88b0df70115125dab737ee92f7320eb44cd9a9bd04c004459eee38039a64",
+      "src/runtime/starship_constrained_recovery_verifier.py": "2c42b26bf77fad2c32ada6f759dac195c4fe6bb6f485e90c36fff12f9f1ce234",
+      "src/runtime/starship_coupled_pin_landing.py": "2c19c539a183d2abcb1ef272becc31f770b697a7a1b66ca6ff478a19f15cdf99",
+      "src/runtime/starship_coupled_pin_landing_verifier.py": "4e513602bbb3b93c0140c13c5b6aa26ba381dcbc0c8b2fb9dfef5ac2c5f68fae",
+      "src/runtime/starship_coupled_terminal_reference.py": "c1ceeb2ce069d52bf94d01a2e20593bd7b104b6cf4c3276af127cf74cf88bcf5",
+      "src/runtime/starship_coupled_terminal_reference_verifier.py": "5a8be510ace205788883848a5debeac0b0ba7b910b19e2a37230068ddcf411a6",
+      "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+      "src/runtime/starship_deployment_forecast.py": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847",
+      "src/runtime/starship_deployment_handoff.py": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a",
+      "src/runtime/starship_deployment_handoff_verifier.py": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73",
+      "src/runtime/starship_dispenser_experiment.py": "b802a87fa5e109cdd9f16527c7937e982fd3256586246633ee680b2bb504c031",
+      "src/runtime/starship_dispenser_report.py": "a0ba23dc10746e8d603c200a98caf21644f1ff2d6a2f15bb1c77d16e16a33d69",
+      "src/runtime/starship_dispenser_verifier.py": "87a1eff29fed995f9c02f03be91a434f3c9fd33f281fb04e1f0b50eb98ed517a",
+      "src/runtime/starship_entry_diagnostics.py": "6b93a6898191dd956a9d6ca49ca80e8981a5fbddd3af7edb116cbd88b7a6c2f8",
+      "src/runtime/starship_entry_pretrim.py": "2cb6ff8019790f952a4915268eaf2a5e44224abd12be8809a10e10d68e51bb9b",
+      "src/runtime/starship_entry_pretrim_verifier.py": "e8855aec0c2366a8717bbd14549d95ba1bb50f9099a81b4bf8d7eadc8b306503",
+      "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+      "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+      "src/runtime/starship_fin_report.py": "f07e5fa31a9b55df294892879433e07912f476269a1297f99452b6e42b59ab56",
+      "src/runtime/starship_fixed_terminal_reference.py": "d0d227c3ef091066f1ad9932a7ac5d0c1c2f0b0a4ff44f2bd2fa395522a6bfa3",
+      "src/runtime/starship_fixed_terminal_reference_verifier.py": "05291a7665a4782f22eab23aa7650a1b52d2e1552b4046e833295c10ede81644",
+      "src/runtime/starship_flight.py": "3f12eb6f2d3fcb72c4fea50e877c5b5f4467ef4b97a0cd37c9f9a4c1c12c9620",
+      "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+      "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+      "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+      "src/runtime/starship_inflight_approval.py": "ccc9986d1ed7488dacbfb85f94b2ad3d519c5182bfd4ff7a1d6657df80042f23",
+      "src/runtime/starship_inflight_executor.py": "5d0478b78afd679a02cfccd4c03840ff235fd8e53bd380c614c7e0b449b2dccd",
+      "src/runtime/starship_inflight_runtime.py": "3942d0300f4cd2aa61e0b06eb77b6d1ca814fcb7a5ff260307a4ad2f197d88ed",
+      "src/runtime/starship_jev_shadow.py": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b",
+      "src/runtime/starship_jev_shadow_report.py": "8332c8e806b2a3f0deeccec01a7daa2889541e9e90b2f9b4d6803f009794f48a",
+      "src/runtime/starship_jev_shadow_verifier.py": "bf547cbb95813b0e1097b7cf61c50bd7081bd270e3312379c655173765f59f48",
+      "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+      "src/runtime/starship_landing_decision.py": "32bb61b776ff601ce8741424f27fc9ea85bffadf4d0abb147f3782cb0343007e",
+      "src/runtime/starship_landing_decision_verifier.py": "a3992551890eafc0b330077c81b02b68ddeaeac60c75637cf49e74c1746afb76",
+      "src/runtime/starship_landing_forecast.py": "cc2b41002362048b37c1263b1f52fed67d940f346b1c50bab3125b94fa89765c",
+      "src/runtime/starship_landing_forecast_report.py": "e387f67f1433c505059ae7e5850e5590850ef6c2685344ce888cb4699372dd38",
+      "src/runtime/starship_landing_forecast_verifier.py": "e4e4c90edc3efa5fdb1530618a9c34effd4fd4cc80cfba686075736a84f86765",
+      "src/runtime/starship_m2_attempts.py": "29c07539b10c35af9555928c2d96dd4ccc32ab59c8870e9b234411650593f0e7",
+      "src/runtime/starship_m2_contract.py": "307312389cdea462144d70637b11e362880c194c573e7d468d3cee2392dc30e2",
+      "src/runtime/starship_m2_control.py": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71",
+      "src/runtime/starship_m2_decision_verifier.py": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a",
+      "src/runtime/starship_m2_runner.py": "c26ffae4ed53e4441117cf0d8aae8e6a1957ad692963de7af76ccfef8b7216a7",
+      "src/runtime/starship_m2_verifier.py": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9",
+      "src/runtime/starship_m3_completion.py": "a6b867bfae47ca5aab806e70613214eca8f13cc79783eec083f3b16f337e559b",
+      "src/runtime/starship_m3_directors.py": "f4a483ea2d836ebb6fb062e076155a0143f8beb9425a31280e11fe1ab8cc7a43",
+      "src/runtime/starship_m3_fixture.py": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10",
+      "src/runtime/starship_m3_inflight.py": "47056d8231af6b6048d0351c62be51f55df76e44ece84875cdecafa31809cbf9",
+      "src/runtime/starship_m3_live.py": "99dc6b620c386a32d5ab2dc16239e236b6fe610804b9787a5b3679acb2221ebc",
+      "src/runtime/starship_m3_prefix.py": "f46fa7a675ee5b7668218c5482fd45cca0ddc15889aa1a418f0445fdfc5e1c00",
+      "src/runtime/starship_m3_prefix_verifier.py": "7c9a4681418433b72b80e8b2533c014b5cd1952ac989fcc7098e75b42e950ee1",
+      "src/runtime/starship_mission_control.py": "9551cf63663fbad2f900eda5cb845bdaaf61e900f803bdf5ece59a9e9d73a4c8",
+      "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+      "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+      "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+      "src/runtime/starship_operational_trials.py": "9731a3cbc36199d2450a182e8eccf80d1b6b4d9ea8174deeb328165095c978dc",
+      "src/runtime/starship_operator_resolution.py": "9cfce545bb03b2972b50aa4dadfc4f3be3decdeca98db68e09c587b28377f111",
+      "src/runtime/starship_orbital_window.py": "ba492475f6c61f91ebaeb73313e039d16db4d49e059349854220c249c2781154",
+      "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+      "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+      "src/runtime/starship_reference_tracking.py": "726bfe4b37707d92a68e61ed20ce1e48ee6d0ece99ba3433425e19d756b530da",
+      "src/runtime/starship_reference_tracking_verifier.py": "cae08a63cc06e47aac6bca4ea2abad797a111084b2f8bb8e119819c3ad553bb6",
+      "src/runtime/starship_replanning.py": "e0b65f59d1fe435ae7dda503a93696f8b0e2f59f355f773e7bbfd14c54cc5163",
+      "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+      "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+      "src/runtime/starship_replanning_executor.py": "a53eea27cc6ebc16f175fcaa1ac6950aaf1739e53bf628f4436662beb61d6689",
+      "src/runtime/starship_replanning_verifier.py": "5741a24d04c011eb8cf77fe62ee5c3cfeb45859943a5051bf25e6b587750e20c",
+      "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+      "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+      "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+      "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+      "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+      "src/runtime/starship_return_prediction_verifier.py": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e",
+      "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+      "src/runtime/starship_return_sites_verifier.py": "d27bb52fb25f6f8034c180854540fef016642426d08a28265bb56666fd7a245c",
+      "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+      "src/runtime/starship_runtime_budget.py": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853",
+      "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+      "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+      "src/runtime/starship_sixdof_booster.py": "3ce4af569d64c5b934ba2f2f9bf84cb90411aa84370ca365aef5595334aaa140",
+      "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+      "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+      "src/runtime/starship_sixdof_mission.py": "6b1cdb4d755febb531761cab8ea11bd099961d6aac5a95c54a1813df87c8e620",
+      "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+      "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+      "src/runtime/starship_sixdof_validation.py": "19ad244cae8353244cffd1c43e4319b7e091c232edf48a51375798c0a038f36c",
+      "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+      "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+      "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+      "src/runtime/starship_static_artifacts.py": "91cc117fbd57f8c563321eff5d217d49dbf3830959090a39543c986335dcd1ad",
+      "src/runtime/starship_study.py": "879373a4f538fa4a3eb24222c70563b44b18184d705ca81806aca87c5782d782",
+      "src/runtime/starship_terminal_guidance.py": "735b2a4b5aa6a9af95e5e5eaae36eb101c39ebc66d6acc95016d6a6707037dad",
+      "src/runtime/starship_terminal_reference_screen.py": "29d865645e0efd1b2c90cbd6e3b01061f29c3369083e87eb66ddfaa6ea2136d5",
+      "src/runtime/starship_terminal_reference_screen_verifier.py": "363da8fcd715ea944c88e670f31db004268adacba06ba2230c54e44f6cbd8829",
+      "src/runtime/starship_terminal_wrench.py": "a0d03182194ad9a69179d04ca272e16c51556c88a1a2a760b5c698de18cae5fa",
+      "src/runtime/starship_terminal_wrench_verifier.py": "96fc32bf0b04046a706850fda045ad9f3470f54a1652162138a85805e08c4050",
+      "src/runtime/starship_tower_actor.py": "fd36b18c3af97653dceacf16d09eab310069daa4952a35eb31fb72c17f8eae1e",
+      "src/runtime/starship_tower_broker.py": "d3ff440eb482dd88d79d7780dba34ffb18e2f65f2df2310e3662cfb5881c4a25",
+      "src/runtime/starship_tower_preburn_gate.py": "a4227bf5f7af70aaad441946f88ab9831c752827dffdc668c48f6062b815d502",
+      "src/runtime/starship_tower_runtime.py": "26292405e58a48228fb62eef98f365dbaf6f49cd26f5bd34df7a0e76fb9af748",
+      "src/runtime/starship_tower_supervision.py": "e4fa539ab940d23caee683c2f28d719ffb6ba6900538267cd6f2680ce1e4aa16",
+      "src/runtime/starship_tower_supervision_verifier.py": "ab14ef1c8c28824ce7e8274593022ea42cb518cea6cdd05bb903e4cc693ae13a",
+      "src/runtime/starship_trouble_engine.py": "7dcf5eaa714dabae87fdcecd01bf611ff523003d3d1a09c6be8077ad16d93e40",
+      "src/runtime/starship_trouble_verifier.py": "09ec0893eb653aa90d4c4eeefdabe05317b398e00a98d3aa74c8b6e3104842a1",
+      "src/runtime/starship_upstream_report.py": "30949f37f2cca3710cb9a5118fd27f39a5a6ad648e6a5cb2b1a638411a063daa",
+      "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+      "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412"
+    }
+  },
+  "trials": [
+    {
+      "id": "nominal",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/nominal",
+      "inputs_sha256": "31663573683c8acf5c96d4b97ad89759485f09cca9a44622e4a446df97c1f16a",
+      "manifest": {
+        "allowed_families": [
+          "ascent_engine_out",
+          "booster_restart_failure",
+          "payload_jam",
+          "rcs_channel_loss",
+          "ship_engine_out",
+          "tower_unavailable"
+        ],
+        "events": [],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 1.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "0a148169a7303f0fe33e17633f5eff7e8d6021070facc73fd394e7a0c1212fba",
+        "applied_faults": 0,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 1200.0,
+          "integration_steps": 7685,
+          "max_altitude_m": 321681.47244997695,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7274.462169368846,
+          "final_altitude_m": 321681.47244997695,
+          "orbit_gate_reached": true,
+          "payload_released_count": 26,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 29.02701162500307,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "29ea214c8494f901f1293ee474bc1ef16fb08ff7c0e23cd3bb1a6a542b0ce1cb"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 0,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 0,
+          "manifest_sha256": "0a148169a7303f0fe33e17633f5eff7e8d6021070facc73fd394e7a0c1212fba",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "ascent",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/ascent",
+      "inputs_sha256": "0b0e2fbfca88f8afcb59b2c80d6ba790bd882e014a77462bdcbd8c9ab79545f1",
+      "manifest": {
+        "allowed_families": [
+          "ascent_engine_out"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 47.530631,
+            "family": "ascent_engine_out",
+            "id": "fault_01",
+            "phase": "stack_ascent",
+            "target": "booster_main_19"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 1,
+          "incident_id": "ift01_control_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "ascent_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 12,
+          "incident_id": "ift12_booster_engine_and_recovery",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "ascent_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 14,
+          "incident_id": "ift14_booster_engine_shortfalls",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "family": "ascent_engine_out",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "61dc2f74f9f2281f94df22350a3038384333c6b39cb8fae10f71dbd0bcb39369",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "ship_ascent",
+          "duration_s": 180.0,
+          "integration_steps": 1801,
+          "max_altitude_m": 117210.86164070293,
+          "max_body_rate_rad_s": 0.09965970329962018,
+          "max_attitude_error_deg": 55.98470419090334,
+          "final_ground_speed_mps": 1725.0472641984877,
+          "final_altitude_m": 117210.86164070293,
+          "orbit_gate_reached": false,
+          "payload_released_count": 0,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "time_limit",
+          "phase": "booster_entry_coast",
+          "duration_s": 41.569369000004,
+          "start_time_s": 138.430630999996,
+          "end_time_s": 180.0,
+          "integration_steps": 384,
+          "max_altitude_m": 122975.96767056175,
+          "max_body_rate_rad_s": 0.20087146373936743,
+          "max_attitude_error_deg": 136.21289869323047,
+          "final_ground_speed_mps": 1155.352969904413,
+          "final_altitude_m": 122975.96767056175,
+          "final_hull_clearance_m": 123028.67787558306,
+          "return_site_distance_m": 61458.30092159496,
+          "final_tilt_deg": 44.63519456237006,
+          "final_body_rate_rad_s": 0.0853653524211865,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 6.509996874956414,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "6a18a2a37350d64f04aa650d649508118f07bb10a3813d7e9f657aab79ce2bec"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 69,
+          "manifest_sha256": "61dc2f74f9f2281f94df22350a3038384333c6b39cb8fae10f71dbd0bcb39369",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "ship",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/ship",
+      "inputs_sha256": "5926a79377ff1d404424c385a7cc78de811b965bf579cce2868b90a0e2536db5",
+      "manifest": {
+        "allowed_families": [
+          "ship_engine_out"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 48.938436,
+            "family": "ship_engine_out",
+            "id": "fault_01",
+            "phase": "ship_ascent",
+            "target": "ship_main_5"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 2,
+          "incident_id": "ift02_ship_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "ship_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 7,
+          "incident_id": "ift07_ship_loss",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "ship_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 8,
+          "incident_id": "ift08_ship_loss",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "ship_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 12,
+          "incident_id": "ift12_ship_vacuum_engine_loss",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12"
+          ],
+          "family": "ship_engine_out",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 14,
+          "incident_id": "ift14_ship_engine_loss_and_early_return",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "family": "ship_engine_out",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "5c5812436c4a74b7432043ed0f53fd61c8ba93edec7a94d67c5c82946f5c4327",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 1000.0,
+          "integration_steps": 7274,
+          "max_altitude_m": 281741.3483443102,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7305.270142177335,
+          "final_altitude_m": 281741.3483443102,
+          "orbit_gate_reached": true,
+          "payload_released_count": 26,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 26.45763195899781,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "046c685ca151de560d2f976b1e6665bbc28668ab04b79968571f90c2f6c66c5c"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 461,
+          "manifest_sha256": "5c5812436c4a74b7432043ed0f53fd61c8ba93edec7a94d67c5c82946f5c4327",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "restart",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/restart",
+      "inputs_sha256": "062aa14a7b9c31c1bfed22a8e1781664bd4c490668f74682bedc3bdd2886d5be",
+      "manifest": {
+        "allowed_families": [
+          "booster_restart_failure"
+        ],
+        "events": [
+          {
+            "body": "booster",
+            "delay_s": 0.0,
+            "family": "booster_restart_failure",
+            "id": "fault_01",
+            "phase": "booster_boostback",
+            "target": "booster_main_8"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 2,
+          "incident_id": "ift02_booster_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 3,
+          "incident_id": "ift03_booster_thrust_shortfall",
+          "source_urls": [
+            "https://new.spacex.com/updates"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 7,
+          "incident_id": "ift07_booster_start_abort",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 8,
+          "incident_id": "ift08_booster_ignition_shortfall",
+          "source_urls": [
+            "https://www.spacex.com/updates/reusability"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 9,
+          "incident_id": "ift09_booster_structural_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 11,
+          "incident_id": "ift11_booster_boostback_relight",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-11"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 12,
+          "incident_id": "ift12_booster_engine_and_recovery",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 13,
+          "incident_id": "ift13_booster_boostback_and_landing",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-13",
+            "https://www.spacex.com/launches/starship-flight-14?tblci=Giro+d"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 14,
+          "incident_id": "ift14_booster_engine_shortfalls",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "edd5e2672d59254c96159ca263ef415bdcf69a1a6ccab6b6178ffee0bac30733",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 700.0,
+          "integration_steps": 5685,
+          "max_altitude_m": 288877.1780987,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7314.293206910265,
+          "final_altitude_m": 288877.1780987,
+          "orbit_gate_reached": true,
+          "payload_released_count": 12,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 431.5894836068395,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 567.1894836068361,
+          "integration_steps": 2635,
+          "max_altitude_m": 199734.21913077217,
+          "max_body_rate_rad_s": 0.4443550698062682,
+          "max_attitude_error_deg": 179.97285240869275,
+          "final_ground_speed_mps": 152.01584534696687,
+          "final_altitude_m": 5.830568470992148,
+          "final_hull_clearance_m": -5.690380930900574e-07,
+          "return_site_distance_m": 13914.669702937908,
+          "final_tilt_deg": 87.6601737745198,
+          "final_body_rate_rad_s": 0.046525023258868196,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 20.552253916976042,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "ef4abb3ec078be4e57824ca2c183087b6e94a00b704cc0d0d56dd1d47ea975f6"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 208,
+          "manifest_sha256": "edd5e2672d59254c96159ca263ef415bdcf69a1a6ccab6b6178ffee0bac30733",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "rcs",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/rcs",
+      "inputs_sha256": "ca554a51de2f8cc287c00b45724577d70eeca71beedfb9f0cc7696dffc631b53",
+      "manifest": {
+        "allowed_families": [
+          "rcs_channel_loss"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 10.67185,
+            "family": "rcs_channel_loss",
+            "id": "fault_01",
+            "phase": "orbital_coast",
+            "target": "rcs_0_1"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 3,
+          "incident_id": "ift03_ship_roll_control",
+          "source_urls": [
+            "https://new.spacex.com/updates"
+          ],
+          "family": "rcs_channel_loss",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 9,
+          "incident_id": "ift09_ship_pressure_attitude_payload",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "rcs_channel_loss",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "859b9527ff79e9b0546831eaf2801e30ee3a50af6fb3163064b27c3e53045018",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 1200.0,
+          "integration_steps": 7685,
+          "max_altitude_m": 321679.3179389592,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7274.464044497094,
+          "final_altitude_m": 321679.3179389592,
+          "orbit_gate_reached": true,
+          "payload_released_count": 26,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 28.738513457996305,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "072a0e0af87baa997d8bfdd8bdee07222a4992b96a5da435d6001976f50316b1"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 814,
+          "manifest_sha256": "859b9527ff79e9b0546831eaf2801e30ee3a50af6fb3163064b27c3e53045018",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "payload",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/payload",
+      "inputs_sha256": "dfcd1e240cd006589af61a2cafef019e7483d2995366a93d8150b30232f45b2b",
+      "manifest": {
+        "allowed_families": [
+          "payload_jam"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 3.614704,
+            "family": "payload_jam",
+            "id": "fault_01",
+            "phase": "orbital_coast",
+            "target": "dispenser"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 9,
+          "incident_id": "ift09_ship_pressure_attitude_payload",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "payload_jam",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "73d9b465bed9ed49f43de12eaa74b860ae67919713af765abe182a0edfa0bb9a",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 1200.0,
+          "integration_steps": 7685,
+          "max_altitude_m": 321681.46855431516,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7274.4611755776195,
+          "final_altitude_m": 321681.46855431516,
+          "orbit_gate_reached": true,
+          "payload_released_count": 0,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 26.228204417042434,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "c037e5a0f7ff30aa0b2cf83bd56dbf97532b2832f2080ed22014682ec6aaa80b"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 0,
+          "manifest_sha256": "73d9b465bed9ed49f43de12eaa74b860ae67919713af765abe182a0edfa0bb9a",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "tower",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/tower",
+      "inputs_sha256": "d5d47500c5145e8e4d38aaffda998b2a9d2c08ce81a38a1c6b351f337406254f",
+      "manifest": {
+        "allowed_families": [
+          "tower_unavailable"
+        ],
+        "events": [
+          {
+            "body": "booster",
+            "delay_s": 0.0,
+            "family": "tower_unavailable",
+            "id": "fault_01",
+            "phase": "booster_boostback_slew",
+            "target": "tower"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 6,
+          "incident_id": "ift06_tower_health_catch_abort",
+          "source_urls": [
+            "https://www.youtube.com/watch?v=CMGiNKcVSek"
+          ],
+          "family": "tower_unavailable",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "ebad89e6fb497413f8624fa658b024fe60315d5031dbced017c3ed796e92f299",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "ship_ascent",
+          "duration_s": 169.99999999999463,
+          "integration_steps": 1700,
+          "max_altitude_m": 110929.85216319654,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 1692.6355681238854,
+          "final_altitude_m": 110929.85216319654,
+          "orbit_gate_reached": false,
+          "payload_released_count": 0,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "time_limit",
+          "phase": "booster_boostback",
+          "duration_s": 34.399999999998045,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 169.99999999999463,
+          "integration_steps": 344,
+          "max_altitude_m": 115333.03084285278,
+          "max_body_rate_rad_s": 0.19911171343033882,
+          "max_attitude_error_deg": 134.9385574602647,
+          "final_ground_speed_mps": 1262.0571358442576,
+          "final_altitude_m": 115333.03084285278,
+          "final_hull_clearance_m": 115394.99861382786,
+          "return_site_distance_m": 60628.9458437834,
+          "final_tilt_deg": 76.04211818271416,
+          "final_body_rate_rad_s": 0.07140821176802155,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": false,
+          "physical_execution": false
+        },
+        "wall_s": 6.142779749992769,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "79b729d275b0d1cc8d506121a405a814d3fc4842bc3e1fa84e0ba411803981a2"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 0,
+          "manifest_sha256": "ebad89e6fb497413f8624fa658b024fe60315d5031dbced017c3ed796e92f299",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "synthetic-flap",
+      "run_directory": "output/starship-trouble-frozen-smokes-20261013/synthetic-flap",
+      "inputs_sha256": "056a484fdbafd4575a668867a798e67258c04fa1b5cb6412fbae9ded4d9bf072",
+      "manifest": {
+        "allowed_families": [
+          "flap_jam"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 45.021402,
+            "family": "flap_jam",
+            "id": "fault_01",
+            "phase": "ballistic_return",
+            "target": "movable_panel_2"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "9971d42ca1e5ce950e33195d6ff8f8611da4a93587da0c2478640a5956cefda8",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "surface_impact",
+          "phase": "landing_burn",
+          "duration_s": 4446.927609217046,
+          "integration_steps": 23160,
+          "max_altitude_m": 371910.4765024679,
+          "max_body_rate_rad_s": 1.4815905385371644,
+          "max_attitude_error_deg": 179.99543968710205,
+          "final_ground_speed_mps": 293.26106409787525,
+          "final_altitude_m": 20.278375481255352,
+          "orbit_gate_reached": true,
+          "payload_released_count": 26,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": 292.0393737882993,
+          "contact_propellant_kg": 80754.73799119142
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 83.12519904202782,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "36b98c9f1a87a8010059995dbd0c407930d22c5f55b4181cee4efb1f56c32a1a"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 1234,
+          "manifest_sha256": "9971d42ca1e5ce950e33195d6ff8f8611da4a93587da0c2478640a5956cefda8",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "random-full",
+      "run_directory": "output/starship-trouble-random-full-20261013",
+      "inputs_sha256": "f46a50a44f9ad023e05a4b941fb62203a6198ecab5693f87b255956ae8f4e435",
+      "manifest": {
+        "allowed_families": [
+          "ascent_engine_out",
+          "booster_restart_failure",
+          "payload_jam",
+          "rcs_channel_loss",
+          "ship_engine_out",
+          "tower_unavailable"
+        ],
+        "events": [
+          {
+            "body": "booster",
+            "delay_s": 0.0,
+            "family": "booster_restart_failure",
+            "id": "fault_01",
+            "phase": "booster_boostback",
+            "target": "booster_main_10"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 2,
+        "nominal_probability": 0.2,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 20261013
+      },
+      "source_snapshot_sha256": "64e8d8c1642501d5faedb6e517dab29c921a52dedaa7fde54f70d92644c1719d",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 2,
+          "incident_id": "ift02_booster_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 3,
+          "incident_id": "ift03_booster_thrust_shortfall",
+          "source_urls": [
+            "https://new.spacex.com/updates"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 7,
+          "incident_id": "ift07_booster_start_abort",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 8,
+          "incident_id": "ift08_booster_ignition_shortfall",
+          "source_urls": [
+            "https://www.spacex.com/updates/reusability"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 9,
+          "incident_id": "ift09_booster_structural_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 11,
+          "incident_id": "ift11_booster_boostback_relight",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-11"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 12,
+          "incident_id": "ift12_booster_engine_and_recovery",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 13,
+          "incident_id": "ift13_booster_boostback_and_landing",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-13",
+            "https://www.spacex.com/launches/starship-flight-14?tblci=Giro+d"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        },
+        {
+          "flight_number": 14,
+          "incident_id": "ift14_booster_engine_shortfalls",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "family": "booster_restart_failure",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "99076719dba1cf0355f3f21be65fcc7953b841c93234eca5be7782a40fec41b9",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "low_speed_surface_contact",
+          "phase": "landing_burn",
+          "duration_s": 4758.8739873433215,
+          "integration_steps": 26279,
+          "max_altitude_m": 371910.4765024679,
+          "max_body_rate_rad_s": 0.5279570694772752,
+          "max_attitude_error_deg": 179.95954755467886,
+          "final_ground_speed_mps": 4.8371993950154,
+          "final_altitude_m": 22.91249114088714,
+          "orbit_gate_reached": true,
+          "payload_released_count": 26,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": 4.54683447721646,
+          "contact_propellant_kg": 74210.51402538114
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 422.4676730454187,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 558.0676730454153,
+          "integration_steps": 2539,
+          "max_altitude_m": 200152.58947751392,
+          "max_body_rate_rad_s": 0.5082209755625634,
+          "max_attitude_error_deg": 179.81652843038725,
+          "final_ground_speed_mps": 156.32548450447715,
+          "final_altitude_m": 15.618585910648108,
+          "final_hull_clearance_m": -3.864988684654236e-07,
+          "return_site_distance_m": 11259.964212733916,
+          "final_tilt_deg": 106.71790364858235,
+          "final_body_rate_rad_s": 0.03025081891608224,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 91.23680808400968,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "89b352ddc01f309b001a1e81b77546c38677bbaac821756cb7de074f445f05c4"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 204,
+          "manifest_sha256": "99076719dba1cf0355f3f21be65fcc7953b841c93234eca5be7782a40fec41b9",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    },
+    {
+      "id": "final-replay",
+      "run_directory": "output/starship-trouble-final-replay-20261013",
+      "inputs_sha256": "316d8f1336b88f4db88ad6add5d72fd7c7f79dcea6b89fd30255f41cc66825b1",
+      "manifest": {
+        "allowed_families": [
+          "payload_jam"
+        ],
+        "events": [
+          {
+            "body": "ship",
+            "delay_s": 3.614704,
+            "family": "payload_jam",
+            "id": "fault_01",
+            "phase": "orbital_coast",
+            "target": "dispenser"
+          }
+        ],
+        "generator": "sha256_named_draw_v1",
+        "max_events": 1,
+        "nominal_probability": 0.0,
+        "parameter_basis": "synthetic_distribution_not_historical_incident_rates",
+        "schema": "missionos.starship_trouble_manifest.v1",
+        "seed": 14
+      },
+      "source_snapshot_sha256": "8546f480aef0351d22f25f1176bbd9200c351e95bab97a75bed21453034dd419",
+      "backend": {
+        "numpy": "2.4.6",
+        "scipy": "1.17.1",
+        "python": "3.11.13"
+      },
+      "incident_basis": [
+        {
+          "flight_number": 9,
+          "incident_id": "ift09_ship_pressure_attitude_payload",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "family": "payload_jam",
+          "mapping": "consequence_only"
+        }
+      ],
+      "summary": {
+        "schema": "missionos.starship_trouble_trial_summary.v1",
+        "source_unchanged": true,
+        "manifest_sha256": "73d9b465bed9ed49f43de12eaa74b860ae67919713af765abe182a0edfa0bb9a",
+        "applied_faults": 1,
+        "unapplied_event_ids": [],
+        "record_checks_passed": true,
+        "outcome": {
+          "termination": "time_limit",
+          "phase": "orbital_coast",
+          "duration_s": 1200.0,
+          "integration_steps": 7685,
+          "max_altitude_m": 321681.46855431516,
+          "max_body_rate_rad_s": 0.10164993040457797,
+          "max_attitude_error_deg": 57.26101478096829,
+          "final_ground_speed_mps": 7274.4611755776195,
+          "final_altitude_m": 321681.46855431516,
+          "orbit_gate_reached": true,
+          "payload_released_count": 0,
+          "payload_6dof_separation_implemented": true,
+          "booster_return_6dof_implemented": true,
+          "booster_return_invoked": true,
+          "starship_vehicle_validated": false,
+          "terminal_qualification_violated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "contact_point_speed_mps": null,
+          "contact_propellant_kg": null
+        },
+        "booster_outcome": {
+          "termination": "surface_contact",
+          "phase": "booster_landing_burn",
+          "duration_s": 472.61634260419373,
+          "start_time_s": 135.59999999999658,
+          "end_time_s": 608.2163426041903,
+          "integration_steps": 3039,
+          "max_altitude_m": 200110.9100254085,
+          "max_body_rate_rad_s": 0.3794964593706082,
+          "max_attitude_error_deg": 179.90383266885988,
+          "final_ground_speed_mps": 8.247810933409276,
+          "final_altitude_m": 32.197057373821735,
+          "final_hull_clearance_m": -2.9802322387695312e-08,
+          "return_site_distance_m": 17080.891841538618,
+          "final_tilt_deg": 0.42178128346204097,
+          "final_body_rate_rad_s": 0.003216210897468406,
+          "simulated_contact_envelope_met": false,
+          "catch_verified": false,
+          "landing_hardware_validated": false,
+          "starship_vehicle_validated": false,
+          "six_dof_integrated": true,
+          "attitude_prescribed": false,
+          "booster_return_6dof_implemented": true,
+          "boostback_started": true,
+          "coast_started": true,
+          "physical_execution": false
+        },
+        "wall_s": 25.861815457988996,
+        "model_inference_invoked": false,
+        "fault_return_qualified": false,
+        "historical_fidelity_verified": false,
+        "study_sha256": "a17f2a00d99821d3c7409adab5b7692dddac1513371825c5a064ef6d303afd3f"
+      },
+      "verification_after_hardening": {
+        "trouble": {
+          "passed": true,
+          "errors": [],
+          "applied_event_count": 1,
+          "unapplied_event_count": 0,
+          "sampled_effect_checks": 0,
+          "manifest_sha256": "73d9b465bed9ed49f43de12eaa74b860ae67919713af765abe182a0edfa0bb9a",
+          "claim": "record_consistency_only_not_recovery_or_ai_success"
+        },
+        "sixdof": {
+          "passed": true,
+          "issues": [],
+          "scope": "stored six-DOF output consistency; no dynamics reexecution, source/profile binding, numerical certification, vehicle fidelity or mission-success certification",
+          "physical_execution": false
+        }
+      }
+    }
+  ],
+  "raw_studies_committed": false,
+  "verification_after_hardening_source_sha256": {
+    "src/runtime/starship_trouble_verifier.py": "09ec0893eb653aa90d4c4eeefdabe05317b398e00a98d3aa74c8b6e3104842a1",
+    "src/runtime/starship_trouble_engine.py": "7dcf5eaa714dabae87fdcecd01bf611ff523003d3d1a09c6be8077ad16d93e40",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11"
+  },
+  "final_replay_comparison": {
+    "schema": "missionos.starship_trouble_manifest_replay.v1",
+    "original_study_sha256": "c037e5a0f7ff30aa0b2cf83bd56dbf97532b2832f2080ed22014682ec6aaa80b",
+    "replayed_study_sha256": "a17f2a00d99821d3c7409adab5b7692dddac1513371825c5a064ef6d303afd3f",
+    "exact_run_equal": true,
+    "admission_guard_hardened_between_runs": true,
+    "same_full_study": false,
+    "reason": "provenance hashes differ; complete flight run and fault audit are compared",
+    "model_inference_invoked": false
+  },
+  "limits": [
+    "Coverage conditions deliberately select families; not a failure-rate study.",
+    "The single random-full seed was frozen before integration; no fault redraw or flight retry.",
+    "The initial nine flights predate admission-only hardening and report-render changes; their saved states were independently rechecked, not relabeled.",
+    "The final replay exercises the final admission/CLI boundary and exactly matches the earlier payload trial full run, including its trouble audit.",
+    "Record consistency passes do not imply recovery success; surface impacts and time limits are preserved.",
+    "All runtime tests use fixed unqualified flight control. No Jev/DeepSeek calls, live hardware or catch claims."
+  ]
+}

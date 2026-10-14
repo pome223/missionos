@@ -61,6 +61,9 @@ class MissionAgent:
                   "decision_deadline_s": deadline,
                   "approved_scope": self.envelope,
                   "role": "Choose mission-level decisions. Numerical estimators are your tools. No low-level flight control."}
+        if request["point"] == "booster_selection":
+            from .starship_booster_recovery_evidence import model_history
+            public["recovery_history"] = model_history()
         jev, llm = _receipt("live", "typesafe", public), _receipt("live", "deepseek", public)
         for receipt in (jev, llm):
             receipt.update(maximum_instance_calls=self.envelope["maximum_jev_calls"] if receipt is jev else self.envelope["maximum_llm_calls"], reserved_call_slot=self.calls)
@@ -89,6 +92,8 @@ class MissionAgent:
         if action == "deep_reasoning" and self.transport._run_active():
             try:
                 model = _deepseek_model()
+                if request["point"] == "booster_selection" and model == "deepseek-v4-flash":
+                    model = "deepseek-flash"
             except Exception:
                 llm["status"] = "model_configuration_rejected"
                 return {"request_id": request["request_id"], "request_sha256": digest(request), "action": None,

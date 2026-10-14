@@ -115,6 +115,42 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+**MissionOS asks DeepSeek to judge tower or ocean recovery during the mission; only ocean return is currently executable.**
+DeepSeek selected splashdown; its returned explanation cited the prior catch
+history and unconnected capture controller. Independent scope checks accepted
+that choice; later
+telemetry confirmed it, and the recorded flight released 26 payloads.
+
+**Play the new 120-second mission — tower, ocean, AI judgment and metrics.**
+
+https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72
+
+*Generic rigid-body payloads: unfolding, communications and orbit raising are
+not modeled. The tower cutaway illustrates an option; no catch was executed.*
+
+[Open video](https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72) ·
+[Interactive replay](docs/assets/starship-booster-recovery-decision-20261014/index.html) ·
+[Decision, observed results and limits](docs/examples/starship-booster-recovery-decision.md)
+
+The video synchronizes actual observations, DeepSeek's returned explanation,
+checked action and later motion. Booster CG contact speed was 1.847 m/s; Ship
+contact-point speed was 4.608 m/s. A separate Ship comparison response was
+rejected, so that flight's overall comparison gate remains incomplete. It is
+recovery-judgment evidence, not a new completed M3 campaign or demonstrated catch.
+
+**Random faults are connected to MissionOS supervision.** The opt-in
+[trouble engine and live response](docs/examples/starship-trouble-engine.md)
+inject seeded engine, RCS, payload-mechanism and tower failures into the actual
+6DOF plant. Jev receives current observations, can request another diagnostic
+or stop pending releases, and can route time-rich decisions to DeepSeek.
+The AI never receives the seed, fault schedule or future failures. Each action
+passes independent scope checks and is followed by another plant observation.
+Probabilities are engineering test settings, not historical accident rates.
+Faulted-return qualification and completed recovery remain separate work.
+
+<details>
+<summary>Earlier completed M3 flight: scoped inflight approval and next-orbit return</summary>
+
 **Live AI supervision now runs from launch and payload deployment through return.**
 In the recorded M3 flight below, Jev monitors the mission and DeepSeek responds
 to a recovery-area closure by selecting a next-orbit return and requesting the
@@ -140,6 +176,9 @@ it is not a recorded human review. The same flight reaches Ship contact at
 4.613 m/s and nominal booster water entry at 1.884 m/s. Booster disturbance
 robustness remains unresolved, as documented in the
 [retained ±1 t diagnostic](docs/examples/starship-recovery-sensitivity.md).
+
+
+</details>
 
 <details>
 <summary>Earlier M1 and initialized return demonstrations</summary>

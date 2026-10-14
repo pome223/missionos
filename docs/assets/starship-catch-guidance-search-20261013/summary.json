@@ -1,0 +1,1879 @@
+{
+  "schema": "missionos.starship_catch_guidance_search_reviewed_scalars.v1",
+  "date": "2026-10-13",
+  "included_study_numbers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "study_count": 15,
+  "totals": {
+    "baseline_runs": 15,
+    "candidate_runs": 78,
+    "forecast_candidates": 65,
+    "surface_contact_candidates": 78,
+    "zero_propellant_candidates": 76,
+    "cold_candidates": 13
+  },
+  "catch_handoffs": 0,
+  "supported_catches": 0,
+  "jev_calls": 0,
+  "deepseek_calls": 0,
+  "launch_reexecuted": false,
+  "physical_execution": false,
+  "production_policy_admitted": false,
+  "mission_completed": false,
+  "candidate_independent_final_verification_performed": false,
+  "held_out_evaluation": false,
+  "review_method": "Read completed study summaries; hash-check every referenced compressed run and archived source bundle; derive only the listed scalar values.",
+  "source_provenance": "Historical run and input hashes are caller-supplied provenance, not external authentication. No raw private input or source configuration is included.",
+  "raw_evidence_included": false,
+  "raw_evidence_required_for_full_reverification": true,
+  "shared_physics_and_catch_checks_unchanged_across_15_archives": {
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7"
+  },
+  "limitations": [
+    "Studies are sequential engineering searches on one historical separation, not 78 independent launches or a robustness distribution.",
+    "Forecast continuation is not a cold return. Cold returns start from saved separation and do not rerun launch.",
+    "Final surface proximity, low tilt, or favorable point-reference arithmetic never substitutes for simultaneous arrival and bilateral support.",
+    "Older cold studies 03, 04, 07 have archived source bundles but did not check source/input drift around each execution.",
+    "The forecast runner used by studies 01 through 13 checked runtime/source input bytes but did not hash-check the protocol file or in-memory configs around calls.",
+    "The independent final recovery verifier does not yet admit the v16 development policy. No new catch admission follows from these outputs."
+  ],
+  "studies": [
+    {
+      "study": "starship-catch-onset-20261013-01",
+      "study_number": 1,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 7,
+      "summary_sha256": "49b07123008de1978f235ab8a8f87ccf76da1057900afa215725243f0d9576d2",
+      "protocol_sha256": "14804e3fd7a725b0c79db5d5d46fff0c924e05f41aae1afb3d933dcc4dccb4da",
+      "source_archive_sha256": "48abb30c1d670ca3987987e538a6e4248a93b4c5d0bf584d7d53a16421344cc8",
+      "source_manifest_sha256": "db1b62bb09900b9ec003ce3cba4b8fd9d4f3749fcb7bb9faf554268ca428f0af",
+      "archived_source_file_count": 129,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "src/runtime/starship_catch_search.py": "0404c40e82c207a713a7b390c3614e4344f5f3f857f4356308a542191436a600",
+        "src/runtime/starship_constrained_recovery.py": "55b22568364e46f4e019735d589d3b921291c0dbdddecf76d22d17a717634a10",
+        "src/runtime/starship_constrained_guidance.py": "93e656c9b80dcbe3d12f16077c0f2f6a1822ebc60af0bd81c8db1c7df9fe1be4",
+        "src/runtime/starship_actual_recovery_shooting.py": "7411b07c7d23a24e7f2a4eced7a470cf0cd8b72c33d766e1b330d7c520db5e71"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 64.22326541692019,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "56ef30456c18e7e8ecb51f61da3b600c5fe2c25f8630a5be7cce8278b05eb585",
+          "expanded_sha256": "c2fbace5c8a6f99f2ae75f98ae27f390c03f30a8e9b2478816ad4bef8dc8a1cc",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "7b5e52438dfb63295917405edeac4cfcc7ab596f9302f33a7cb151def156331a",
+          "expanded_sha256": "65f86bd167a53211a2ad7bd055ba95b7552c2872698b391619d962fac2dadc24",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "36a7a33903826ba8370a5fa8a465d88ddbd851af900c0278256017fe34add473",
+          "expanded_sha256": "3470fc91bb166f58fd26a0cc8f07af63830a1076d377b9d86c7ffd35b3fdc4b5",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 29.686223979623957,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 117.75545065663027,
+          "final_tilt_deg": 4.968830281527828
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "4fc15d2beb55d22055849ddcdab776eb2ecfbdc2eff467676aadb5d566c64e18",
+          "expanded_sha256": "a8d2a7d6724d8df7102637a581abf798f79f18a2dc7869641854468f4bdfe40a",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.588520639540654,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 244.45288126249415,
+          "final_tilt_deg": 2.763010632265218
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "a60bb7bbfd876074e126bd85f13428637c7cd6587aec6dc37f6e9fb66d4418de",
+          "expanded_sha256": "2e8817c168e03522de4baa3ac593edb0852dd78a073d28e29fe487f3c2c7f0be",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 26.84597033739126,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 93.33522558593369,
+          "final_tilt_deg": 1.0916507646776952
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "c00b30d36fd1ecf43c99c5dbffbc6bd981d5a0f90ed80404b6ad800373202cf8",
+          "expanded_sha256": "93715520c3449e8e803aca76ec019c708e5341fe65605abcb6c9f9faa4584074",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 33.63883759226616,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 156.55125740162657,
+          "final_tilt_deg": 5.191182451221554
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "fbf84f22fb3587dde36554880f344aaffffcc4d076e8ac57300135ddfede5a71",
+          "expanded_sha256": "b57fe768fe1886c6aec02266139a289000347fb1281b3ddd9ff96631784e0eeb",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 47.76043966944875,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 17.45361509263078,
+          "final_tilt_deg": 4.577084495549337
+        },
+        {
+          "id": "candidate-06",
+          "role": "candidate",
+          "stored_sha256": "3d1d4920f474c7efbb6921198acfc43acf7562d3e338577b15a36eb79ef5f64d",
+          "expanded_sha256": "7da0c84756ed75b42ddd6b7ddd54ce1689ea195208ecf0e3f334156a15da7189",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 65.437837689099,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 922.2133575177995,
+          "final_tilt_deg": 36.20233840019563
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-feedback-20261013-02",
+      "study_number": 2,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 9,
+      "summary_sha256": "7530daaa1336df0a4662fe7405d16035df36295ee95ac9f5021db5f5e6499be0",
+      "protocol_sha256": "cc67c56dc08d6d810c21761465c892bd09ea0d4c0c4fffeacb8eabc484a6454d",
+      "source_archive_sha256": "06ba2b60ffd0808df189a14741b42b0e431140da55ed38c1a6004630bd3c50c4",
+      "source_manifest_sha256": "9a112deb529c385dfea62551e2d6d7a04afca2739af09f0200efe62d0b52dcef",
+      "archived_source_file_count": 130,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "e619154af1a0f80cfb9ef97b1771c29c381ac140d2a1733aa1643e02de00a75a",
+        "src/runtime/starship_catch_search.py": "e7a82e0e1f9b3a2d76fb996ead2e7137c6ca58c18d2460dfc358c26a45cfb0e9",
+        "src/runtime/starship_constrained_recovery.py": "b62e102d20175e944736024c2943b9d00968cf09f739605836ede4fe203d0800",
+        "src/runtime/starship_constrained_guidance.py": "93e656c9b80dcbe3d12f16077c0f2f6a1822ebc60af0bd81c8db1c7df9fe1be4",
+        "src/runtime/starship_actual_recovery_shooting.py": "7411b07c7d23a24e7f2a4eced7a470cf0cd8b72c33d766e1b330d7c520db5e71"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 80.99812800006475,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "e4a8ebad8eadaf9aa0d21534d136ec469b62a0e5ded13694c5dc476e46dbb570",
+          "expanded_sha256": "e384b837307c21843146f4f7f338b5775f09bd3dcb0e65fc4f4b84124c574fb8",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "abdbb1dbccd9407f0324fe177e128f8ac7f52efe4ab6a57ab741420040331ec8",
+          "expanded_sha256": "18c47b51d78d56abdbcf758c6edcce0bb638b0691c5961290c7d1034b7eef48c",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 188.43353117098115,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1033.6295475210109,
+          "final_tilt_deg": 44.68967821532065
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "ded0b82ee8f4af01c7f24242ffd9319ad231916d66d1a32bca918715ab99cb4e",
+          "expanded_sha256": "13968a72bdec88ae4adab1bc164caef9e9d4ca05a0e4858ecaf6448f56d8894d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 26.091105491527564,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 22.406690492568597,
+          "final_tilt_deg": 0.3795383152571522
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "6375dc434e02b03fff2d5a4e5b8328c20f9e104cdcdeae3432a9111ebc9c8396",
+          "expanded_sha256": "d6ff2013cc0035427cc31bff1f901e2421b926118913837133439c24b9056d86",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.669352493523924,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 247.1336261678274,
+          "final_tilt_deg": 2.7493967287553267
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "801ccc2d8371957c3fd8ecc2b683c055cc50243b4767f86a0a1dccc281b84f69",
+          "expanded_sha256": "d70095a154576c22591fc7965ab69e982ce1a0af114edfc3ad77e9735cadd635",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 193.84952236879823,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2589.155106705356,
+          "final_tilt_deg": 46.62657799239852
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "a2e48380d113789d4a78c01e4fd9c96fef77d720f79a762923c8482b403d8a95",
+          "expanded_sha256": "da6fde6465bc20d69c934a335f7b33baa1be1e0b8618639ff3db6d3c35c9bd11",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 84.24173267416755,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1555.8845718522764,
+          "final_tilt_deg": 93.0213757120608
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "1045d8d630d321293e429a447577e2a6f0d9e4c55f22e494c1319e956810d304",
+          "expanded_sha256": "607a3b7e76bd972d7825bec7d1c41946545bc17600b31137d3ec8ef2bcab1b5f",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.846284282354286,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 4.097619387464971,
+          "final_tilt_deg": 1.4770541862812445
+        },
+        {
+          "id": "candidate-06",
+          "role": "candidate",
+          "stored_sha256": "e8936bffd7b6ddd10c98aeddca5bd6a4e34e5bb65205cb01e5d88f6f2f97de03",
+          "expanded_sha256": "c45c6f3bd382b7f2b8d2261d88f0b8e4fae7196abc14e1381bd300d2661bad9d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 241.9514669079714,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 875.250176682042,
+          "final_tilt_deg": 13.949894639224928
+        },
+        {
+          "id": "candidate-07",
+          "role": "candidate",
+          "stored_sha256": "1d8bdca0ff4789366b915cac44f87657693fb23912c4e56f7b68f1c72ee677ef",
+          "expanded_sha256": "d990d7684d05a72883e2fb90689b5b75e09d3bc8f47c680c8503be0242ad81e3",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 245.41844944888857,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 444.1519210107322,
+          "final_tilt_deg": 27.39400589262237
+        },
+        {
+          "id": "candidate-08",
+          "role": "candidate",
+          "stored_sha256": "839ebd94a09c3e9c3f5c4034fe86483aea44ea293019e696fa94d0d5a8250726",
+          "expanded_sha256": "250897bbc09946b931c2e80935d50c22c7efa359c41d89e69d238edc1bbdc28e",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 112.80709005256084,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2848.5703142786383,
+          "final_tilt_deg": 7.912298810230471
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-cold-20261013-03",
+      "study_number": 3,
+      "kind": "cold_finite_executor_from_saved_separation",
+      "candidate_count": 3,
+      "summary_sha256": "c8c1502387ec116b935c8df15725beb387da40325c72bb98b950adf01c9ff8ba",
+      "protocol_sha256": "53d29c95333e4fe0ca77064fd81883c71daf45b195951561ba8c0d2a1b90a2d8",
+      "source_archive_sha256": "0b3991656f26ac72aa8285750b8645588bd517f6634be7466ae2b2bbfa4162ba",
+      "source_manifest_sha256": "7994a1d6671c359737f82f424a445c7da09dfd370894e8f0b379f4237960775d",
+      "archived_source_file_count": 130,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_cold_probe.py": "b9cc0071ae0b1f7b61281c3c4fea9620875c238b02cd36fd819d42d3bf6969df",
+        "src/runtime/starship_catch_search.py": "e7a82e0e1f9b3a2d76fb996ead2e7137c6ca58c18d2460dfc358c26a45cfb0e9",
+        "src/runtime/starship_constrained_recovery.py": "f144072b5c925b853cf4f8ba451bfef333b69f1ae6ef7f51cd5eb3e7c715a6ec",
+        "src/runtime/starship_constrained_guidance.py": "93e656c9b80dcbe3d12f16077c0f2f6a1822ebc60af0bd81c8db1c7df9fe1be4",
+        "src/runtime/starship_actual_recovery_shooting.py": "7411b07c7d23a24e7f2a4eced7a470cf0cd8b72c33d766e1b330d7c520db5e71"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": null,
+      "baseline_equivalence": {
+        "baseline_artifact_exactly_matches_study14": true,
+        "historical_checkpoint_count": 3445,
+        "actual_checkpoint_count": 3445,
+        "derivation": "identical_raw_baseline_artifact_sha256_to_study14"
+      },
+      "runtime_source_and_input_drift_guard": false,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 83.99322495795786,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "522cc54bc4743068bb887bacedbd41613539419208208a1480dd333717e06fc4",
+          "expanded_sha256": "41111b28f0961e83bf45300371f0c0e78e2aced86a731e9b2fe420b25ae9490d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "1f36997739db1d1788378cb96621c7e7acedb872c37e59d89616e73151a350d8",
+          "expanded_sha256": "e2be4237fab864c343f47a053391a75e32a58584bdde66b9ea9de9edc0410e60",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 70.31167357829099,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 49821.37970942872,
+          "final_tilt_deg": 11.06156500366808
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "82040e35ad2dbe30ea52405efc49603470787f2da2756e1d9c4f2d332fa63083",
+          "expanded_sha256": "05542e3a73f14a40876012b985992991450de23be5d9312949d97dc6bf6e1af3",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 51.81386282121518,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 24670.213493914474,
+          "final_tilt_deg": 6.193267626470932
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "ec64dc8906b9f99582d7908666465eb07963c5dd775b55737201edf189d4e7d7",
+          "expanded_sha256": "097df61c048d970de5af47ce4624fd2004985862f16add8411f2f61efa633379",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 39.245310428944244,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 12249.143381014137,
+          "final_tilt_deg": 7.438704736545006
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-cold-20261013-04",
+      "study_number": 4,
+      "kind": "cold_finite_executor_from_saved_separation",
+      "candidate_count": 4,
+      "summary_sha256": "534534ca681143ca27f5cd8bbf4b55cd2a548888c075fba92117e5bd2365fd2e",
+      "protocol_sha256": "34dc84ccbfff038cad75a076fc8536df285370c4cfa5ecf76617bd0c5c0065bf",
+      "source_archive_sha256": "f90c15046180c4d017e0228be18e82aa3d83959e587dd1aa74c9bd756993f458",
+      "source_manifest_sha256": "7994a1d6671c359737f82f424a445c7da09dfd370894e8f0b379f4237960775d",
+      "archived_source_file_count": 130,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_cold_probe.py": "b9cc0071ae0b1f7b61281c3c4fea9620875c238b02cd36fd819d42d3bf6969df",
+        "src/runtime/starship_catch_search.py": "e7a82e0e1f9b3a2d76fb996ead2e7137c6ca58c18d2460dfc358c26a45cfb0e9",
+        "src/runtime/starship_constrained_recovery.py": "f144072b5c925b853cf4f8ba451bfef333b69f1ae6ef7f51cd5eb3e7c715a6ec",
+        "src/runtime/starship_constrained_guidance.py": "93e656c9b80dcbe3d12f16077c0f2f6a1822ebc60af0bd81c8db1c7df9fe1be4",
+        "src/runtime/starship_actual_recovery_shooting.py": "7411b07c7d23a24e7f2a4eced7a470cf0cd8b72c33d766e1b330d7c520db5e71"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": null,
+      "baseline_equivalence": {
+        "baseline_artifact_exactly_matches_study14": true,
+        "historical_checkpoint_count": 3445,
+        "actual_checkpoint_count": 3445,
+        "derivation": "identical_raw_baseline_artifact_sha256_to_study14"
+      },
+      "runtime_source_and_input_drift_guard": false,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 98.50398466701154,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "522cc54bc4743068bb887bacedbd41613539419208208a1480dd333717e06fc4",
+          "expanded_sha256": "41111b28f0961e83bf45300371f0c0e78e2aced86a731e9b2fe420b25ae9490d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "fccd11877a5bc9c62d953412c5aade1cc78aa3303784e87776ed0e39c53644c9",
+          "expanded_sha256": "48eadb69f3b757686490c0c81f0ef696f4e478d378375be9d55d8d3131043bac",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 40.07208268076089,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 12949.49877684372,
+          "final_tilt_deg": 12.393810358972356
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "dfcf349d98a7e74b087dc67473c01ff6527506392066a7b07a8c1c4ba0c0e439",
+          "expanded_sha256": "06f1ee18ad4f4f58abb057a77ffc4eeee262e3298734a694869f7442ad35e3b9",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 41.79733092812756,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 10382.64909155823,
+          "final_tilt_deg": 9.288209221575622
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "4efeba2d8ba2743357d1c88445a49a3acf08cfaa22d86bce97afc43214dba284",
+          "expanded_sha256": "566c819d82d84c6bb973b38c2c917f3de5572f66e669eae9f5ec5016c71f4815",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 42.12665268133545,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 6847.108249134183,
+          "final_tilt_deg": 9.560110828817004
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "289cf52607ca669f662bb6c55b38260bdb7b0b0fbb8a4ef8933e4a78a5af0ec4",
+          "expanded_sha256": "c1bfe5a9edbdf9e6cc6b4a7e63fef07422ea212bcdde814aeb7f2ec4db211027",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 74.07727233695965,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 7518.020756120386,
+          "final_tilt_deg": 46.35779714302856
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-timed-20261013-05",
+      "study_number": 5,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 12,
+      "summary_sha256": "30cb74d61c6c1534bb311b503a659abb2a5844e78e4b3e4faaa2791e0355a0cf",
+      "protocol_sha256": "d5cdd88aad65da52b40290d46eb7671300cbc55212e1af60774204d46964da32",
+      "source_archive_sha256": "c59688547fd212552006f9c9a579a505d9875c6f69accfa2052a9dabebb33165",
+      "source_manifest_sha256": "253bfd494d5c968b4fb1ec139b5d7f47875a3c81f8f1c914d09d1fcdb7ea39df",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "58eebc2c204016d280f1858ce516c0a1407661aa5059151dcfbe353264dd7fed",
+        "src/runtime/starship_catch_search.py": "dd5c68929d1a1030980d89646c90ecb4a0cf2aef6714dbfb34e9abe00bbe08f8",
+        "src/runtime/starship_constrained_recovery.py": "5ef8c1acf17b61e61888bee324288e8d462a909f3b32bf924300647acdd49f82",
+        "src/runtime/starship_constrained_guidance.py": "2115bab3972effb0977bba69f0536a086ecb3db337b7d1e62058ef982ed0c951",
+        "src/runtime/starship_actual_recovery_shooting.py": "ddc09fe66585e053647ad7ac4a449be9106df497201879560b7a3e4512d95b2b",
+        "src/runtime/starship_catch_trajectory.py": "0ea049451087d6baa9c72c4dcc6b801d29642495d759babeba2ce8c8fbed1a7a"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 101.21199512493331,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "de61d772f2038352d9af2f0d7ff6e00b991206ee177e1193591ecd70d49e4f78",
+          "expanded_sha256": "a19791165cb8af32112ee61631ca0fdae414304b0ea76652dc74a6191582e6dd",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "6b085fcbb0b8b0ea9b44a68378aba8b0a7590ab345e3f4a96d9f7daa807d99cb",
+          "expanded_sha256": "95bba6841f8d2662d373daab3b6424779e2bba72cf8c8308099b5f910c13d2fa",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.6777154179038,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 9.099714673500017,
+          "final_tilt_deg": 1.4387928266278138
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "a218f088a613cef4ce83ea59477d98ece69e54d3c658d6e02b922f11134ef6a5",
+          "expanded_sha256": "5dae7c73344a211df1efc8bd811838d4904d2ca0bd98b8809883d2603e0c1124",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 27.21479780512416,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 68.16813094541898,
+          "final_tilt_deg": 2.938135314384956
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "bae1224e4b5a75fff6234b99e15742902d70fb1c8b747e48c89489a443f20712",
+          "expanded_sha256": "5496152b364f3abeb3a85c51c5de0276602efe68fae7681a9c38a351a9890df6",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.608995112965133,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.8300223915119671,
+          "final_tilt_deg": 0.4604370258554324
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "6ad1beefe3fefe63034a0f35b2077f5b8d39613d8727fd3d6e604e58bcdf68f2",
+          "expanded_sha256": "b87e66483011101b5378597e9bd54cfc48296db66a7127a4a076c626c6d41059",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.641562354317244,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.0910570200527752,
+          "final_tilt_deg": 0.708634897407624
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "641a6410bd956872981c38217365e328822ae0941bbe4816bc0b4a4f91dffdad",
+          "expanded_sha256": "0aae52e3431a0b0a5015bd9132bea5fbe2a9cb79ea7e31575e60163c785abd98",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 33.39391134941679,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1001.5371771179005,
+          "final_tilt_deg": 10.287676400033277
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "e727adf971887daf89dbd21afdbfd31924604821dfdd32c947c76e7cb23fa468",
+          "expanded_sha256": "c182b746c1a0df96cae379dbf60ebe686ce2e9c6d4915471d6a2ff09d2e727cf",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 31.926746819293033,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 539.8530277655962,
+          "final_tilt_deg": 11.03151836379383
+        },
+        {
+          "id": "candidate-06",
+          "role": "candidate",
+          "stored_sha256": "ca7a69467245db9841a17741d2241f4e0737d9a7c2cdf6879d2255072561064a",
+          "expanded_sha256": "0c5cf3e417f6c5f2d7589656ed6fa3351c5a9e4ff2dc49aecccfe5eea3df05a6",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.70778458046084,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 10.886753438544476,
+          "final_tilt_deg": 1.3515757052321802
+        },
+        {
+          "id": "candidate-07",
+          "role": "candidate",
+          "stored_sha256": "7a88371c51b9c353ac4df40d121b82868ef8c4ac9a9749b80b2b8eaabb4f9321",
+          "expanded_sha256": "ef04fdac81978dbf798a2234d3cca06c567c6284af686529a3af96e2e25da28c",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.614937372563755,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 3.5420236970760066,
+          "final_tilt_deg": 0.7297673200451974
+        },
+        {
+          "id": "candidate-08",
+          "role": "candidate",
+          "stored_sha256": "719375fc2664e23b0c512c3910b5f76dfe4fa28d46810d536c3c1e16fcbcf49f",
+          "expanded_sha256": "869a7f283cdf83b94112fa0e8f7f5837f00032d9d15d4635a099a590b6429db4",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 33.49139777268073,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 784.0396872750492,
+          "final_tilt_deg": 11.786992711119161
+        },
+        {
+          "id": "candidate-09",
+          "role": "candidate",
+          "stored_sha256": "088115cd966face16de2dfcba50f4c8b51d188995ec23d2510b60235cc732dff",
+          "expanded_sha256": "cb8a1a6be872c56959e46095479d5d2e0559c6c4e689707af0b371971f1f5450",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.24165734019485,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 269.01035833937186,
+          "final_tilt_deg": 0.6970269766892128
+        },
+        {
+          "id": "candidate-10",
+          "role": "candidate",
+          "stored_sha256": "c7443950d9f82d6ec354371c9bba268287345a19c3721564f5572315f9e76840",
+          "expanded_sha256": "fcc0ff68bf4e36588cec3c9336a2fcdf4f9791f59b1a0f82fb135f2d4e843a5b",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 27.878578335423597,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 317.948439806141,
+          "final_tilt_deg": 10.11420495536587
+        },
+        {
+          "id": "candidate-11",
+          "role": "candidate",
+          "stored_sha256": "e6802e94a7e721cda3eb845bb9da2608c37635123d1c19ce405ab3f78e9bd81b",
+          "expanded_sha256": "9cd0392d702a5be54170de9c64daf1ebc764d6234b821a5242ffa7224bbc8df3",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 35.09904287758288,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 266.35275018353383,
+          "final_tilt_deg": 2.811416533069926
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-terminal-pd-20261013-06",
+      "study_number": 6,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 4,
+      "summary_sha256": "e2b676ba9befdca83f4aec88ff247d5de492ef729c47ff136fdbe1260d79ad20",
+      "protocol_sha256": "6dd4a53728b0cfa02d1840993f151187de1b2b9d8aadecee19972295fc2e52ac",
+      "source_archive_sha256": "81886550165d743a0a5278839ac237144ab2c927fa1e97c982d9fe4b0a46c9d2",
+      "source_manifest_sha256": "0b2189628bb4a3f11a49a651f8de13c56ff2e1eacd203dd63c43a7450e51a651",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "58eebc2c204016d280f1858ce516c0a1407661aa5059151dcfbe353264dd7fed",
+        "src/runtime/starship_catch_search.py": "b7882b2d72b5ac75a7dbac119ec5d2c09eb97cf627f33cad748ee293859f2353",
+        "src/runtime/starship_constrained_recovery.py": "08eb131d5bb736aeb4edef14c0794b8ac81b2594524e17845ecfbe8164b40172",
+        "src/runtime/starship_constrained_guidance.py": "2115bab3972effb0977bba69f0536a086ecb3db337b7d1e62058ef982ed0c951",
+        "src/runtime/starship_actual_recovery_shooting.py": "cfb661714decdee88a8c3d938bc65db0aaa8e247988d0d410afb83c86c70af0d",
+        "src/runtime/starship_catch_trajectory.py": "0ea049451087d6baa9c72c4dcc6b801d29642495d759babeba2ce8c8fbed1a7a"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 40.69471116596833,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "ac68edb41cb2d9ffd8a0fb66220bbf5fe67e16a6ea0c2ac4864b913e2ffb6275",
+          "expanded_sha256": "0d0559e46334b079ceb7a64b3f15e5e1c6db8a3970097e6d249087e2d42172d2",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "33131a12a1ddb4362c23bab4021f49c0561522eb0fc228e07f9b2d2d5d8f8d35",
+          "expanded_sha256": "7b423535a97c9990aacb24c7bcf508e33ea849e73dbac801ca4602440b7df21a",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.671129574966816,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 8.44093907746222,
+          "final_tilt_deg": 6.193249858817702
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "a927ff5434c489875cda4021876e1419c99939868ea6c1bb094e8c3d12efaf21",
+          "expanded_sha256": "6285680ed6acf0b912b8545d7e088902bb01aa1efac1918bda02e6b2af686e91",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.536378514315462,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 28.567944851393992,
+          "final_tilt_deg": 16.171952316808408
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "12011aadcdbd738be1eb6d67ad5d66f055719e544dccb46ef30001c969e4a6bd",
+          "expanded_sha256": "b23d7100ec7ecc1c8b31b278b86fffff4e6283cc5f0d871f8c3ecabbe1969f60",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 27.408985126751684,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 23.370725018167978,
+          "final_tilt_deg": 3.495184712404248
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "87ad2c440a848a0118d2dd88020651f343cddcda0938cbb2bc77969c37374335",
+          "expanded_sha256": "79d8ee78308b6e11c731df95f70941d4fdab429d32aadac7ad842150ab130d5e",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 26.572011530737182,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 5.995912061790054,
+          "final_tilt_deg": 13.301246545086345
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-cold-20261013-07",
+      "study_number": 7,
+      "kind": "cold_finite_executor_from_saved_separation",
+      "candidate_count": 3,
+      "summary_sha256": "743cebc6e173be37354d8f3ef2cfbc22283a9ddec7993af152f0b5549a94e2ca",
+      "protocol_sha256": "c01ddc36934dfd861481af84592fa1e16e06c9ac0ba75d4ffda48879169c88f2",
+      "source_archive_sha256": "13fe2fd39719f9d4dba681f086411414900fa2c99628dc88afc69b55f1101e2d",
+      "source_manifest_sha256": "d48c1f89852e110a3715e6fb610cdb0719e90cff73ddd9a1ba50fe3a165ea703",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_cold_probe.py": "b9cc0071ae0b1f7b61281c3c4fea9620875c238b02cd36fd819d42d3bf6969df",
+        "src/runtime/starship_catch_search.py": "b7882b2d72b5ac75a7dbac119ec5d2c09eb97cf627f33cad748ee293859f2353",
+        "src/runtime/starship_constrained_recovery.py": "08eb131d5bb736aeb4edef14c0794b8ac81b2594524e17845ecfbe8164b40172",
+        "src/runtime/starship_constrained_guidance.py": "2115bab3972effb0977bba69f0536a086ecb3db337b7d1e62058ef982ed0c951",
+        "src/runtime/starship_actual_recovery_shooting.py": "cfb661714decdee88a8c3d938bc65db0aaa8e247988d0d410afb83c86c70af0d",
+        "src/runtime/starship_catch_trajectory.py": "0ea049451087d6baa9c72c4dcc6b801d29642495d759babeba2ce8c8fbed1a7a"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": null,
+      "baseline_equivalence": {
+        "baseline_artifact_exactly_matches_study14": true,
+        "historical_checkpoint_count": 3445,
+        "actual_checkpoint_count": 3445,
+        "derivation": "identical_raw_baseline_artifact_sha256_to_study14"
+      },
+      "runtime_source_and_input_drift_guard": false,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 84.39085087494459,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "522cc54bc4743068bb887bacedbd41613539419208208a1480dd333717e06fc4",
+          "expanded_sha256": "41111b28f0961e83bf45300371f0c0e78e2aced86a731e9b2fe420b25ae9490d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "0b89fb17c89d1c3edd75d35f0ab0a41d69cca52f624933e7afd61befcb96fcd7",
+          "expanded_sha256": "960d3c48ee1cf11c528b246472c44622d19da2ebcbce6d50f11f56f95243c228",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 42.61972197850715,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 4378.974348672233,
+          "final_tilt_deg": 7.826691069315774
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "e88bf5cfcd3bc4f42399434a070e44fd5de446cd76d026fa17822fba650c3a76",
+          "expanded_sha256": "a9119c48d15a2ad568bfd9ec75309fa020bbe4de034bd1734862db63e4285760",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 42.2214359724636,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 3372.695997217179,
+          "final_tilt_deg": 8.532833108219295
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "a18450695cfa061b0f2ef344a4d87d2df1417db99db9f80f76060789d60c9af9",
+          "expanded_sha256": "a3a2586b5c42dcdf18c1c26e509aff7f5e68d55c61a5dd18da4ed5ee024f4aa9",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 37.54930045390193,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 9398.289416645983,
+          "final_tilt_deg": 7.265288611621872
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-quintic-20261013-08",
+      "study_number": 8,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 6,
+      "summary_sha256": "9b209ac6a5db28ca1b7fd9e7f663616104adf3c7e9a9dc08f95db71efbfc0250",
+      "protocol_sha256": "397d312b55aa079d3fff80527db555040b1cb47a2567d58c963bc872dd24f045",
+      "source_archive_sha256": "bafdebd32342809dffd4363117861c9b85baa4cf4b9d1637836f8a0728944cf5",
+      "source_manifest_sha256": "65df5716d9874023d104d58a96bb9ef6055202bd2a660678c1eb61f146d54306",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "549bcdacc3b263159b271834254673098c223a998ea65723ac866957527a3743",
+        "src/runtime/starship_constrained_recovery.py": "b871e7614f14aa3a72e9f0034d51c684c6deaac71425ce0a9d96d723fceca2b6",
+        "src/runtime/starship_constrained_guidance.py": "2115bab3972effb0977bba69f0536a086ecb3db337b7d1e62058ef982ed0c951",
+        "src/runtime/starship_actual_recovery_shooting.py": "a5392ec449652941ab3b95b3e52bfa95919ad5b18fa1c0ba40cf6963f65e129d",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 56.993577250046656,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "cafd2ff4c23bed4646f4655fdd2744683d59c73e2c2abc00f60b3416f3c8ecf2",
+          "expanded_sha256": "7db501db6daf230d283e140f88cc251aa293883fd3656168c4e9b2f61e60f403",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "70ba9215034e70cd5996ffe8269c79d5fa6a0ff572554fd3570b92ea35fb3f37",
+          "expanded_sha256": "fd89e40d96b21048d086c8446331e60fc0b862100d5774e6c0ead7112072f774",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.77421404613194,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 15.607090629789992,
+          "final_tilt_deg": 1.4964350215760183
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "1654d2e298b03b0bf15eade8261048cff5c2ad7955415ba843749d2ade4a97cc",
+          "expanded_sha256": "15ecdd38cded67d69d1306b88bd03e0c377ce30ac89126c746cdba06c706965f",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.66602631453846,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.3718114241103165,
+          "final_tilt_deg": 0.6235842182618611
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "3de8da9a2bbbef0c5c7ce6d54835d86ce0c9818fa5502264ac0f5f335a326ae3",
+          "expanded_sha256": "17234278e40e8a2b785c527d354b3267ec9e0175312f1476f33fdbd1fceecb1c",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 26.071329651213116,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 31.548417394193486,
+          "final_tilt_deg": 2.3761774448882003
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "8eda7d7d494a4e5a4b8669eafc07108086d217001931e5f73ab5b59ae45a8e61",
+          "expanded_sha256": "0b2ef7d99ee32e2b336c49d7c7d5fb3ce7ef612552caefba92a76e10862a4403",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 27.064226355164248,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 69.65720678323059,
+          "final_tilt_deg": 3.072993880446941
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "db8d2dee71a807c08f3ef5e1dc6580168d5a0e231e617cc9828095053f9def27",
+          "expanded_sha256": "54f0a787ad76f438f912821b24c93550846afcae5d9f8075573f1a2bf3499562",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 115.6672543967851,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1240.0009140410702,
+          "final_tilt_deg": 13.324637502473871
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "31454f694c11a2cbebe1db207a5e105cff44de96e2a40b03125b634a1bfb859e",
+          "expanded_sha256": "2d58e8b63108b0d94d6f040aa259756d6c4bf7f005fc3423a7db746e0961a279",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.06641787168639,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 224.63692370204808,
+          "final_tilt_deg": 6.551998881260714
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-braking-cone-20261013-09",
+      "study_number": 9,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 6,
+      "summary_sha256": "a4434dc59b5d21025760a53c9f6b4bf59c51ba7b14211c4a77e19046246a4581",
+      "protocol_sha256": "d2422f42a68877a21745b691b19dd9c58a0d48f7728cb7193bb6b76142bbc7a1",
+      "source_archive_sha256": "531666a7430eb112cf15dc37b99df5fa64dcce02fab4e5fcfc797581720e0029",
+      "source_manifest_sha256": "e10612899a525100619f99f9011d3b4146a8ec7f623c0d7c4bc87b33551d9768",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "909fe656ac2428fd27624b373cccc082ff2eb5ab871d318542e7614cff9b89a7",
+        "src/runtime/starship_constrained_recovery.py": "c682c0e5be2776e4750a9ecfd1e3fe54ec4a4ff6bf63fad87f3de20c5b72eac0",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "a5392ec449652941ab3b95b3e52bfa95919ad5b18fa1c0ba40cf6963f65e129d",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 57.982419957988895,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "63e48085d450f6fbea41fb263e42ae93bbf07aaf5b7ece605633874d4ad34f39",
+          "expanded_sha256": "57c7f7fde725fb852bb5521f3c524c0aee600b66c0f9e5f542f3a947b8a61517",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "a1d06f2c6a8fc965891cb79751a7fc7a250e625847f2d21685e0aec152e76fa9",
+          "expanded_sha256": "52ba4481327aa305cf4b2f0b9da98675b1e2e3727531e4899a71403809dfa798",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.828497378299794,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1647.1903018132246,
+          "final_tilt_deg": 14.30301747600966
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "d5f82be9d4dbf6efd1fddf23bf33296507c4907cd74d5030b07bd68bea4b76d7",
+          "expanded_sha256": "f47fc98d1df34265d673524cab07ea317a4e329565d997200065dda2b6d09aa2",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 186.68352290884644,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2937.661723898204,
+          "final_tilt_deg": 34.63601731008761
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "613489601d7c0324d57e6b838f4ba4c7bd049df8be3c370b1021041f6155c8fe",
+          "expanded_sha256": "d7add2801c918406cab8d44aa47039a64c7f169e36e2dddbc8e7d9343d6049ff",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.73400041357864,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 6.728591457679634,
+          "final_tilt_deg": 0.7214913032760453
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "7f80fe63f66077bf7c833e6c8caf556c13ccfda56def1295b3aa3f35c094dfa1",
+          "expanded_sha256": "db27f910f72370fa878b34a584c3cedc0f5f72ff6af5923399f76dfde0b25104",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.6433654211778,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.4017690716428686,
+          "final_tilt_deg": 0.8259080718454791
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "eb883a8da63a617ba5fdbf243e7ce49f94d52f62a0f1b9d05940c9e4a2f7dcf3",
+          "expanded_sha256": "9d8e25dcc4e849af0ba7a8d132c95eaeaebc4d1a04c3bbfe607ecc600a929104",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.373897466271618,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 210.01874138170623,
+          "final_tilt_deg": 4.080527751003445
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "6694a2d88379bd0a6bcbcde8981f636ba74b113f333715ccb875738842db402e",
+          "expanded_sha256": "7fe218b9a347f03c4d8742f1dd89f1167ff64e020e189be560c947fb3641ad96",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.09295317053242,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 548.2631703050914,
+          "final_tilt_deg": 10.768993130723045
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-reference-20261013-10",
+      "study_number": 10,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 4,
+      "summary_sha256": "460ab4dc0959358f781a715b323cff0385f76e78b9c7724cf884091815364cfe",
+      "protocol_sha256": "5ec4852b414bd1e8ead29c24013b8bfb8fe63609f63cc81d1673e79b352fb510",
+      "source_archive_sha256": "2a2cb82e43e9e95cbcb95d58cacae62f6d47fddcf6b2f18770b052b06215178a",
+      "source_manifest_sha256": "d683f0e60276d8c47937c5bb94b2e46cdb7a217f664e13851d0cd894bc00c653",
+      "archived_source_file_count": 131,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "17c137681fe483d75a5d4d5644a46d9f15e158f8ebec35964cfc1e6896385489",
+        "src/runtime/starship_constrained_recovery.py": "b159d3b51ddcb9abb8ff5c111616ee1c92ccf1a6daa640150f6abacd49f55ec2",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "a5392ec449652941ab3b95b3e52bfa95919ad5b18fa1c0ba40cf6963f65e129d",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 41.15264712495264,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "9e6528ffb899464043bde51d7a913df97090edd9827290c84ef9b6943c6f5bd5",
+          "expanded_sha256": "e2c863728c294cf9cb78d4df6c6f06f0e1651783bd6b26a9dba3105bd00c171a",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "7594f855621eb1edf04d3c057cc94e0e2a455a9d9bed823eeaec6b095daec120",
+          "expanded_sha256": "b3c028adde039f09411ac4e69df7bb9eafe532284edb6b592161eaeed897fb96",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.637374794840955,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2.958251795366852,
+          "final_tilt_deg": 0.5326391803431273
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "a29d66d669b47cdb7857d78d76d87ac6510813d58b1f13b6ef172ffa49199827",
+          "expanded_sha256": "34ae9b634cf923e14e8932a07735150ca148c51aae013f48ff0f17f1ad422862",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 30.338430676783375,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 394.903750227022,
+          "final_tilt_deg": 9.837938084155503
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "eddda4795903e9522e654e227c36bb5d9e15f39df31672dda324bda142565186",
+          "expanded_sha256": "820c9d13e4641452e7e69420df2484392420f310a3b5c40baccee65a5e0af4b8",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.732688398805255,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 11.180467252882744,
+          "final_tilt_deg": 1.3206229278355732
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "4cce7fea0bf510f6f4c7011320fe0a814c5ab2fbd24d08498f739ebcb6a05020",
+          "expanded_sha256": "2d7259a3cd4976c9c158064f5b1c8e0a52c13382097b170b1eeaa5ef3d154288",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.71531622928563,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 10.97777263907318,
+          "final_tilt_deg": 1.2760106915477005
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-point-20261013-11",
+      "study_number": 11,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 4,
+      "summary_sha256": "51bf2667635df712da78bf7aa800242f37fa1262976baed227c86e743a491673",
+      "protocol_sha256": "159d833e989576ded2a67ddf6d34dcb2417a3eb30454ac82c420d2a847d85aeb",
+      "source_archive_sha256": "4b2dc40c9420124a5380c103e8260351064c03a37534395078ed472d721d38e7",
+      "source_manifest_sha256": "c8bc90f48b6251b28691a090ac7568641a669d58e9ebc3220dbd8274b5966f8a",
+      "archived_source_file_count": 132,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "14ea31652f905e0d17a7b5ba5ee252f001e298b4a9da8e9ab4079c8f86168513",
+        "src/runtime/starship_constrained_recovery.py": "14362af46938df0ae6c4dbf55193a5405483c3a9a8e0288fa3fa758019eab34d",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "bdf2534f6d6ca23b45b9d4cc93202932282a71361acdc2030c3bee6dc99bb8a3",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c",
+        "src/runtime/starship_catch_point_reference.py": "e64fd4e7bbcb06b91cbfa802f3a46ff398a2aa4d28de44a7e59ae9c7b15bac9e"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 47.35177195793949,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "e07a5ac84a9b76c332cd3d496c03ef38c7125cdfb6b72b18f0965522f15d0434",
+          "expanded_sha256": "8f81963409aab687252d86a7687256bcf2ed3121b06288c2810080dc311b7922",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "9674679e5a7ee37dccc558e1af2422feb5338e63e62c5034d9a9abe8de2a9353",
+          "expanded_sha256": "25b10f654c8a1f2d193768ad86ecc60c6049582e3b9f89e68eea5c8368227257",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 32.4709488128935,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1388.0759069032772,
+          "final_tilt_deg": 6.2784173072176355
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "1ad6d5962627b09180ef56849071f944a4220f6abfd5c64c53b9f503ae766172",
+          "expanded_sha256": "8405ebf53fa4a703600a5cdd0e23d4b6e580c2c998908fdf83f8069b6d818b91",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.765550387134116,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1179.3047149931904,
+          "final_tilt_deg": 9.106659363458224
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "750a20e0d59d2d6a928e884af5da70b90b9fc453b385e850448226bb7fdf8561",
+          "expanded_sha256": "0619211ecf17106220e86fa5762f1204c390b368ca90c775e9dd8d8d85f9ea4c",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 29.611304411968288,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1312.2978927551574,
+          "final_tilt_deg": 8.37224841851082
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "db84ce468fde6a93ced59ef0927e86b18f522f8afcd4751583eaa971079f6a45",
+          "expanded_sha256": "6a10ed63bcf8eaf29e0d2b356d06dee82ce4ef4a9d41bab3c19654874d9efa1e",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 77.31609747269829,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1480.1502017986681,
+          "final_tilt_deg": 8.397194792060077
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-projection-20261013-12",
+      "study_number": 12,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 3,
+      "summary_sha256": "90c206dab476ce9111209d72bc4257e163271ab75ba2efa2e3fbb8147d8bcd0f",
+      "protocol_sha256": "f564c0e2fb7849c54c93aae72802ed9e5f68549fe764aafe0a1139b6e7062a29",
+      "source_archive_sha256": "2e767fa06f168940daf016fd4d7a438d1aebfc3430bd2c472976643dd26691be",
+      "source_manifest_sha256": "36263e8c3d0b90e28552d1cc00c579a0252f69529399a9a09ae6f58f38c688a3",
+      "archived_source_file_count": 132,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "0300b59b17ab170ad3252a56e20c17cbcb18f188e202665c03064b98595b617e",
+        "src/runtime/starship_constrained_recovery.py": "156115906a8485e38fa17bcba87bd4b7cc7311e5bf589274c114e3b01851ea57",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "bdf2534f6d6ca23b45b9d4cc93202932282a71361acdc2030c3bee6dc99bb8a3",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c",
+        "src/runtime/starship_catch_point_reference.py": "e64fd4e7bbcb06b91cbfa802f3a46ff398a2aa4d28de44a7e59ae9c7b15bac9e"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 34.270057999994606,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "a6bbc7665ac655b27870d8d92932815b889cd63ad1d9cd553ca4ab725fec2fdd",
+          "expanded_sha256": "f7082e01e33fcd9c5f60b78a20b94f7e6075a95ff038b1372eea5e442ddf3992",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "f4773de98dbbdb40a99199552a3d124fdcd6b3b9e2f358dc8a02b53ba30d3035",
+          "expanded_sha256": "6357ae43989f7ac5aef491f19c0525a68411d3ef01ad4dc78c01dfc554b4120a",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.57106821584169,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.3016241402464386,
+          "final_tilt_deg": 0.6722083736125188
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "7dc24c6c720739fa5fab0363412de4963bfd552dcc1a69b083872a90e9de7e14",
+          "expanded_sha256": "13303090be1d9a5be61bff26727106941322f40b736c0bbedd5fc060cad3e834",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 74.40614909467776,
+          "final_propellant_kg": 17296.476803837868,
+          "final_horizontal_pin_midpoint_error_m": 60.14092842897674,
+          "final_tilt_deg": 51.43866150375292
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "3b92ce4306909bc5b0999d015568ce8a2ab6974206d93a3dacb6237a8ea94e4a",
+          "expanded_sha256": "1a0ea2b5973365d4277aa06b4bcb4be2d21c8622630b1c96ac59f66a8bf131f1",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 27.265314927745067,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 874.6041741796353,
+          "final_tilt_deg": 7.982730200315807
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-allocation-20261013-13",
+      "study_number": 13,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 4,
+      "summary_sha256": "1051f1f0a517ecf9325e5595f9fd47104951f1f928222a94366496b952677605",
+      "protocol_sha256": "cd647d510189362e3c79a55b17472734ac07144f73eceaa6ef4890ce8e1d153b",
+      "source_archive_sha256": "ff70dbee619adfafaa0631e232205f46c39c3ad92f10743671d01a1165cf6b56",
+      "source_manifest_sha256": "f1e975b0b0613e5fe3fdac71c2e593f3392d3248e264b5d1129f561e3ca98027",
+      "archived_source_file_count": 133,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "b27eabb6bbc9bab3a00b312fa84ae2926079ffdf06971ffe456795c963e77cdb",
+        "src/runtime/starship_catch_search.py": "4905990f99e2f8fa80411b2da94dd9ccda7da5c1547389b650b4b7e039702d64",
+        "src/runtime/starship_constrained_recovery.py": "de51793e74f0215c79b54e6eaf5f4c5e2b9dc23957541833fc162e5c43d628f8",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "bdf2534f6d6ca23b45b9d4cc93202932282a71361acdc2030c3bee6dc99bb8a3",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c",
+        "src/runtime/starship_catch_point_reference.py": "e64fd4e7bbcb06b91cbfa802f3a46ff398a2aa4d28de44a7e59ae9c7b15bac9e",
+        "src/runtime/starship_catch_thrust_allocation.py": "41268e0c2648c5e4b4885c619004699c0e65464ac0eb13d4c3395c7eb381b1c8"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": false,
+      "elapsed_wall_s": 51.993110958021134,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "996bad6963c6582251349673fdf10cdcb76cbce80a7e3213fd776a46cf7e9472",
+          "expanded_sha256": "2ec22069ac46e84785ab1b92b9a8d57533641f9fc84b39c0d6ca41480a483136",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "da59b859b8d496bda6b26839d6873d8b37f3ec24ea4ea60a512b16293b825edf",
+          "expanded_sha256": "f8f7e5d0e587d989ec320f887d31592d4788aab110beb380fd5bf31ac57242eb",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.64984564314602,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.3904200923956485,
+          "final_tilt_deg": 0.43734930514890696
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "ecfd8fcf1f74ee34dd713dc0d30899917ac072341301cab6ee3ef2f9ed477a64",
+          "expanded_sha256": "c0c38eef29c75a941d5ca8a488b6ab109e62d9f92019198a311da5717d5bc826",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.691187204403022,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.8854101290562656,
+          "final_tilt_deg": 0.40979424916484397
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "4a3ef8f900b0098b7f6c133bfac058cfcac5d4b706ce7bdea84f073311602ea9",
+          "expanded_sha256": "d86bee012aee626f9893290423542079c62c30c301c731ae06b87a7bdddc9c09",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.681588870922898,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.252947598630121,
+          "final_tilt_deg": 0.7963832156171
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "3d08773ac756face6f090e6ce44a58f9325bfc398d31ff467a3ba3cf38b6fffa",
+          "expanded_sha256": "f2436b4bbc55e7c6dbf75b56ed877d2f7baf370f465e28bede7c3b61fd93591f",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 33.541958657303276,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 446.9131958862255,
+          "final_tilt_deg": 8.870037946169944
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-powered-prefix-20261013-14",
+      "study_number": 14,
+      "kind": "cold_finite_executor_from_saved_separation",
+      "candidate_count": 3,
+      "summary_sha256": "74aa591a416a41533ef669c84f2859f5bde06019e20253806466f8a901319486",
+      "protocol_sha256": "75b7fa97c507b9eb23c1c81016723b3763b4dd37ea2d99735082c2d8a8703b53",
+      "source_archive_sha256": "7044f02b8ad1ce35bc828231d15df363979291e509c29449c72f1a2df615968a",
+      "source_manifest_sha256": "b1818967c21aa1794d3b4d59e77e09276e62169e54a56f3558d206fae0ebc53c",
+      "archived_source_file_count": 133,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_cold_probe.py": "d1b619dcd4ee068e18b7e0f344a7d8669a4a1c4439e00f0a47bf0f4388221827",
+        "src/runtime/starship_catch_search.py": "4905990f99e2f8fa80411b2da94dd9ccda7da5c1547389b650b4b7e039702d64",
+        "src/runtime/starship_constrained_recovery.py": "de51793e74f0215c79b54e6eaf5f4c5e2b9dc23957541833fc162e5c43d628f8",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "bdf2534f6d6ca23b45b9d4cc93202932282a71361acdc2030c3bee6dc99bb8a3",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c",
+        "src/runtime/starship_catch_point_reference.py": "e64fd4e7bbcb06b91cbfa802f3a46ff398a2aa4d28de44a7e59ae9c7b15bac9e",
+        "src/runtime/starship_catch_thrust_allocation.py": "41268e0c2648c5e4b4885c619004699c0e65464ac0eb13d4c3395c7eb381b1c8"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "ad31d4feca85e5e45c9e8b1def1ff1388edc82e0c0e5f722e2708199a33bdea6",
+      "baseline_equivalence": {
+        "physical_checkpoints_and_final_state_exact": true,
+        "historical_checkpoint_count": 3445,
+        "actual_checkpoint_count": 3445,
+        "launch_reexecuted": false
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": true,
+      "elapsed_wall_s": 94.6292709170375,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "522cc54bc4743068bb887bacedbd41613539419208208a1480dd333717e06fc4",
+          "expanded_sha256": "41111b28f0961e83bf45300371f0c0e78e2aced86a731e9b2fe420b25ae9490d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "547af0799971b60507a36ffcec1d1259be3fad1bdf886eb780882a86e8883716",
+          "expanded_sha256": "1adda90074686d5379e37b08a298bae97497a981f7d918fc20bd2c7612bd90c8",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 39.32183140950708,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2356.1577997584322,
+          "final_tilt_deg": 6.860957167655148
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "99e5d78d32f1bb52b3e39223fca938160fb57edd2e66c21c4b86f71c0b6c6189",
+          "expanded_sha256": "188955cae9e7b3b10ebf0b78cbaf6a9413444c98bfa44f4fdf1d6d6e59bb4e89",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 38.60571456235736,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1539.9687294679202,
+          "final_tilt_deg": 12.791983328137714
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "780fbf7872f783f9acab47be149aa5daf940e4dd57a402c46c2dedae3362e033",
+          "expanded_sha256": "7390af21adc1d5731bb035e00303590c7b58e694791b8d2bf1301a7401b49917",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 103.13626518965233,
+          "final_propellant_kg": 39582.96787376398,
+          "final_horizontal_pin_midpoint_error_m": 16094.62724480988,
+          "final_tilt_deg": 16.202437921149794
+        }
+      ]
+    },
+    {
+      "study": "starship-catch-tvc-20261013-15",
+      "study_number": 15,
+      "kind": "forecast_from_saved_coast_context",
+      "candidate_count": 6,
+      "summary_sha256": "d57b23405c6b0bf4505d73b81798a8018c690c183d9aa701495862ccd1abb375",
+      "protocol_sha256": "c8c7733ec99a7670e4fec1828a668832181778a2cc312816ef8c12f9413c548a",
+      "source_archive_sha256": "ecbb6168889f302905519a9fb363d53286339bd5e401bbd0f8305a04420cc766",
+      "source_manifest_sha256": "bb6b2a3dbe354bd7ee83934f0297362eaf61dc4bc9b3ab6c0b396270604d6514",
+      "archived_source_file_count": 135,
+      "selected_source_sha256": {
+        "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+        "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+        "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+        "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+        "src/runtime/starship_constrained_recovery_verifier.py": "6457f365726291964ce34bd0284322a66a7bf69bc4c330e609ceffe8c8cc92b7",
+        "scripts/run_starship_catch_search.py": "8ef18fdfca9f2f00b50f3b86768a3e8baf2b68607208a64e6f120dc305467a30",
+        "src/runtime/starship_catch_search.py": "c96302f5ed6f3dd24ea80a656c1e39f57301a8bc1dd06178ffd6ac64a6cabee9",
+        "src/runtime/starship_constrained_recovery.py": "c1ca50eb789683b2adfbfa882741e114ddb9f044d961ad7b20f5827c56e307bb",
+        "src/runtime/starship_constrained_guidance.py": "34a0025346cd8ca14a97ac05b8104bf1fcdd14dd94f9b5f9bcd2906324f5d031",
+        "src/runtime/starship_actual_recovery_shooting.py": "bdf2534f6d6ca23b45b9d4cc93202932282a71361acdc2030c3bee6dc99bb8a3",
+        "src/runtime/starship_catch_trajectory.py": "3d849f34ffbba391a469d0a5ce73381979f1cad749f3773ebcc2a99d8280769c",
+        "src/runtime/starship_catch_point_reference.py": "e64fd4e7bbcb06b91cbfa802f3a46ff398a2aa4d28de44a7e59ae9c7b15bac9e",
+        "src/runtime/starship_catch_thrust_allocation.py": "41268e0c2648c5e4b4885c619004699c0e65464ac0eb13d4c3395c7eb381b1c8",
+        "src/runtime/starship_catch_finite_tvc.py": "db942d6bcce731fe882632005071da4d3ba40eec4926366741a14a70efd79ff5",
+        "src/runtime/starship_catch_terminal_feedback.py": "09758e72019583dd56b1b82277a9eac0b919fc93e0c9e2b51a6b5f3d347e00eb"
+      },
+      "historical_run_binding": {
+        "stored_sha256": "29be3693bd9ec788931b57f682802b989cadd8753de9828fc9865b70dc9636e0",
+        "expanded_sha256": "0f8b07b39cb2d1f787dcc6efef1a135848c5cbbfc28008293673b835e5d79aef"
+      },
+      "historical_input_binding": {
+        "stored_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935",
+        "expanded_sha256": "80f535362f962401f77c1f173a0bfa99b8e520374aa987b47965850129b90935"
+      },
+      "origin_state_sha256": "72b81494c23b18ddf64da1e3ab6c70af7c9a68727ea9eb3b372633a64d3bdd9e",
+      "baseline_equivalence": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "runtime_source_and_input_drift_guard": true,
+      "protocol_file_and_memory_drift_guard": true,
+      "elapsed_wall_s": 79.83810616703704,
+      "cases": [
+        {
+          "id": "baseline",
+          "role": "baseline",
+          "stored_sha256": "1b9c58c2f8bd9e6aafbd503acde6e081ae76bf5bb5e0db54802df3ce572c68c8",
+          "expanded_sha256": "6e89f7c2ca87d466da4f40cc240904afa8bc65937bd7f48d73969ef4002f51cb",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 28.79081593589998,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1610.9841052677177,
+          "final_tilt_deg": 8.195214182470423
+        },
+        {
+          "id": "candidate-00",
+          "role": "candidate",
+          "stored_sha256": "8f5e477bbe5b01ddf99c24294353bdad2166933120c1a3df336a977f38b34a4e",
+          "expanded_sha256": "cb986ea25bfd39919462f5d0da3c632a1a33372b2b27693cfec02c38e400e169",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.656524474716964,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.3032982352645846,
+          "final_tilt_deg": 0.4340613737842984
+        },
+        {
+          "id": "candidate-01",
+          "role": "candidate",
+          "stored_sha256": "57b47a6f086804c8e4d79e98ede72f70e6ae468cb0e58e6724a2f6eba7c87b4e",
+          "expanded_sha256": "de73931f3b434964d4e8f2ef6950259ca59b57f203ba17036849fadb0acd8bd2",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.779439432357393,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.7637702789727134,
+          "final_tilt_deg": 0.7497632599989306
+        },
+        {
+          "id": "candidate-02",
+          "role": "candidate",
+          "stored_sha256": "ff09de2a43f492fd5a13c5c6e31343a9b6f527d37064c2ecdfd68ba59eaf68da",
+          "expanded_sha256": "f496138452895abf5609c9191f7e94e9c93094e603b83858e4171985a4ccc20d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.794224472504883,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 0.7887880559999177,
+          "final_tilt_deg": 0.2580073842748792
+        },
+        {
+          "id": "candidate-03",
+          "role": "candidate",
+          "stored_sha256": "624017c7617c4c6af34634ba4ed7858c97c9d34ec75d0e2158a2c5ad598a5e79",
+          "expanded_sha256": "ece9abb8b9bf5e68a8096bb888b5772f9fb7a4f72660e80eedcb775e8ce1b62d",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 30.659571766247005,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 177.4218070039187,
+          "final_tilt_deg": 4.0052306338859385
+        },
+        {
+          "id": "candidate-04",
+          "role": "candidate",
+          "stored_sha256": "be73b67c8bb638bf1f9759cd9a5807738f9f2a90e3ccfec786e2e7ed67787964",
+          "expanded_sha256": "336f74068b1612b3cdcb876e3b0f50c6e44fbc12cedd50c14ee3c77359d482e2",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.66956461793217,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 2.0581215007961853,
+          "final_tilt_deg": 0.35256260595397043
+        },
+        {
+          "id": "candidate-05",
+          "role": "candidate",
+          "stored_sha256": "7a3e81e761d9f24f88ef2fcc76b16e16e43c07b5d8f5b36f7fb3da98ccd0a3e8",
+          "expanded_sha256": "2ec7bdb3dbe1e06965d3bd0c9832d4bed90e4d20e6f51f228a16365da6d829a5",
+          "termination": "surface_contact",
+          "handoff_reached": false,
+          "final_ground_speed_mps": 25.676544273248556,
+          "final_propellant_kg": 0.0,
+          "final_horizontal_pin_midpoint_error_m": 1.6504365035296604,
+          "final_tilt_deg": 0.3184952883075719
+        }
+      ]
+    }
+  ],
+  "study15_startup_diagnostic": {
+    "source": "Recomputed from candidate-01 and candidate-02 saved samples; cross-checked against the retained causal diagnostic.",
+    "only_configuration_difference": "coast_gimbal_preposition",
+    "basis": "First 10 simulated seconds after first recovery_landing_13 sample, 101 recorded control samples per candidate.",
+    "startup": [
+      {
+        "candidate": "candidate-01",
+        "coast_gimbal_preposition": false,
+        "landing_start_time_s": 528.8525733798209,
+        "last_sample_time_s": 538.8525733798232,
+        "sample_count": 101,
+        "peak_absolute_body_omega_z_rad_s": 0.17939943819823953,
+        "peak_thrust_torque_norm_mnm": 19.044125070434227
+      },
+      {
+        "candidate": "candidate-02",
+        "coast_gimbal_preposition": true,
+        "landing_start_time_s": 528.8525733798209,
+        "last_sample_time_s": 538.8525733798232,
+        "sample_count": 101,
+        "peak_absolute_body_omega_z_rad_s": 0.045233811222454304,
+        "peak_thrust_torque_norm_mnm": 6.316798156411165
+      }
+    ],
+    "first_pin_below_100_m": {
+      "candidate": "candidate-02",
+      "time_s": 538.9525733798232,
+      "minimum_pin_clearance_m": 98.95146741025005,
+      "pin_midpoint_horizontal_error_enu_m": [
+        58.13662514451561,
+        -20.27632506184571
+      ],
+      "pin_midpoint_velocity_enu_mps": [
+        -23.572776445260914,
+        22.324013158948986,
+        -31.18413174415797
+      ],
+      "tilt_deg": 24.955117823331342,
+      "propellant_kg": 40885.28790383512,
+      "body_axis_to_conditioned_request_deg": 1.958389947706302,
+      "body_axis_to_raw_goal_deg": 23.61329101994171,
+      "local_hover_model_applicable": false,
+      "arrival_eligible": false
+    },
+    "interpretation": "The matched preposition change reduces the startup torque and roll-rate transient. It does not repair approach capture: the vehicle reaches the terminal region outside the local hover model, still far from the unchanged simultaneous arrival envelope.",
+    "full_nonlinear_stability_or_catch_proved": false,
+    "expanded_run_sha256_checked": true
+  }
+}

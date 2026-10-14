@@ -41,7 +41,7 @@ EXTRA_SOURCES = (
 )
 
 
-def m3_prefix_contract(case, *, mode="fixture", splashdown=True, legacy_call_limits=False, authority_gap_reasoning=None):
+def m3_prefix_contract(case, *, mode="fixture", splashdown=True, legacy_call_limits=False, authority_gap_reasoning=None, legacy_booster_jev=False, recorded_booster_report=None):
     if (mode not in ("fixture", "live") or case not in (*CASES, "orbital_update", *REGISTERED_CASES)
             or type(splashdown) is not bool or mode == "live" and not splashdown):
         raise ValueError("m3_prefix_case_not_registered")
@@ -70,6 +70,17 @@ def m3_prefix_contract(case, *, mode="fixture", splashdown=True, legacy_call_lim
             maximum_ascent_jev_calls=4, maximum_booster_jev_calls=1,
             prefix_provider_policy="jev_only",
             maximum_model_calls=inner["deployment_authority"]["maximum_jev_calls"]+5)
+    if mode == "live" and not legacy_booster_jev:
+        from src.intelligence.starship_booster_recovery_evidence import mission_recovery_report
+        from .starship_recovery_reports import report_sources
+        report = mission_recovery_report() if recorded_booster_report is None else deepcopy(recorded_booster_report)
+        provenance = report_sources(report)
+        result.update(schema="missionos.starship_m3_prefix_authority.v4",
+            maximum_booster_jev_calls=0, maximum_booster_llm_calls=None,
+            prefix_provider_policy="jev_ascent_deepseek_booster_report_v1",
+            booster_recovery_report=report, booster_recovery_report_sha256=digest(report),
+            booster_recovery_report_source_sha256=provenance,
+            maximum_model_calls=None)
     return result
 
 

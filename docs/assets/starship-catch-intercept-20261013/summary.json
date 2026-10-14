@@ -1,0 +1,749 @@
+{
+  "schema": "missionos.starship_intercept_development_review.v1",
+  "review": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "rounds": 2,
+    "read_only": true,
+    "fixed_findings": [
+      "Reject contact before full closure instead of moving rigid pins independently.",
+      "Use one-pin viscous/Coulomb tangential law, with explicitly uncredited contact transient.",
+      "Reconstruct observation and gravity from the exact physical state before arm continuation.",
+      "Separate intercept interface from legacy eligibility and preserve legacy termination on overlap.",
+      "Retain original orientation, rate, vertical-speed and actual-entry clearance gates.",
+      "Keep undamped whole-mass stroke estimate diagnostic; actual mechanics enforce stroke/load limits.",
+      "Allow planned descent from hold height4.6m without pretending it is actual entry."
+    ],
+    "last_two_findings_fixed_after_external_rereview": true,
+    "external_final_signoff_claimed": false
+  },
+  "studies": [
+    {
+      "study_number": 52,
+      "study": "starship-catch-intercept-fixture-20261013-52",
+      "summary_sha256": "f9dd93009ac507e4638a3a114c88ee5a8ae458cc8d75f0224f9df03390870b1a",
+      "kind": "producer_boundary_failure",
+      "detail": {
+        "stage": "native_observation_json_boundary",
+        "reason": "invalid_intercept_pin_kinematics",
+        "arm_run_calls": 0,
+        "fixture_initialized": true,
+        "no_trajectory_executed": true
+      }
+    },
+    {
+      "study_number": 53,
+      "study": "starship-catch-intercept-fixture-20261013-53",
+      "summary_sha256": "d9d5eb47e2a7a39a5f283f9ca8a513c872aa3fdadad9470b69a5fc9e6518692b",
+      "kind": "independent_fixture",
+      "meta": {
+        "kind": "independent_half_metre_north_fixture",
+        "launch_connected": false
+      },
+      "cases": [
+        {
+          "state_sha256": "e08b948e96691c4cbbf1d834dd5babe50e7d4b331a3d44992f3a2a0700012be7",
+          "screen": {
+            "schema": "missionos.starship_catch_intercept_screen.v1",
+            "policy_id": "finite_pin_intercept_v1",
+            "arrival_sha256": "778d49e5fdd704a282ed29884d7f0c82df2723acaa827483bda0024a0cfda000",
+            "configuration_sha256": "ffdf48a2ab406187b9c556f6d690dc17774dab19b19671fc2c8c5f9f0744d50c",
+            "gravity_mps2": 9.81,
+            "planned_descent": false,
+            "position_margin_m": 0.08000000000000002,
+            "fuel_reserve_met": true,
+            "pins": [
+              {
+                "contact_time_s": 3.0245598991425937,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  -5.9999516626813545,
+                  0.4999999994133916
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 5.430359579238968e-06,
+                "predicted_stopped_xy_m": [
+                  -5.999951662637962,
+                  0.4999999994133916
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_bound_m": 0.595610241515914,
+                "initial_contact_damping_load_n": 1587007.7510143004,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              },
+              {
+                "contact_time_s": 3.0245598994062517,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  6.00004833731178,
+                  0.49999999928585154
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 5.430359579045631e-06,
+                "predicted_stopped_xy_m": [
+                  6.000048337355173,
+                  0.49999999928585154
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_bound_m": 0.5956102415159147,
+                "initial_contact_damping_load_n": 1587007.7510143106,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              }
+            ],
+            "entry_screen_passed": true,
+            "supported_catch_demonstrated": false,
+            "physical_state_assigned": false,
+            "production_policy_admitted": false,
+            "model_assumptions": [
+              "Frozen observed material-pin velocity until contact.",
+              "Constant scalar friction deceleration after contact; no credited pre-contact braking.",
+              "Scalar whole-mass spring-energy screen and initial damping reaction; future peak load requires finite execution.",
+              "Configured surrogate geometry, not identified SpaceX hardware."
+            ]
+          },
+          "binding_check": {
+            "passed": true,
+            "independent_physics_validation": false,
+            "supported_catch_demonstrated": false
+          },
+          "old_entry_eligible": false,
+          "arm_run_executed": true,
+          "verification": {
+            "schema": "missionos.starship_booster_catch_verification.v1",
+            "passed": true,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "physical_execution_invoked": false,
+            "mission_completed": false,
+            "issues": [],
+            "frame_count": 789,
+            "limitations": [
+              "Independent consistency checks, not an integrator replay or identified SpaceX model.",
+              "Terminal support evidence is not a launch-connected catch or hardware certification."
+            ],
+            "observed_settle_s": 1.999999999998181,
+            "peak_support_force_n": 1578044.271441398,
+            "peak_compression_m": 0.1447346527514668,
+            "termination": "supported_settled",
+            "launch_connected": false
+          },
+          "outcome": {
+            "termination": "supported_settled",
+            "phase": "catch_support_response",
+            "duration_s": 7.879999999992833,
+            "start_time_s": 600.0,
+            "end_time_s": 607.8799999999928,
+            "orbit_gate_reached": false,
+            "payload_released_count": 0,
+            "max_altitude_m": 75.3214285923168,
+            "max_body_rate_rad_s": 0.01234581514543223,
+            "max_attitude_error_deg": 2.7290188152549217,
+            "final_ground_speed_mps": 0.18633971669850044,
+            "final_altitude_m": 72.16158281825483,
+            "mission_completed": false,
+            "physical_execution_invoked": false,
+            "integration_steps": 788,
+            "six_dof_integrated": true,
+            "attitude_prescribed": false,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "starship_vehicle_validated": false,
+            "landing_hardware_validated": false
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 54,
+      "study": "starship-catch-intercept-scan-20261013-54",
+      "summary_sha256": "7d813c50fa81939d2b581fb1c6ef3a0a0aad2697ecdb752acaa442f3d4367ce8",
+      "kind": "saved_state_scan",
+      "meta": {
+        "kind": "saved_run_scan",
+        "matching_samples": 0,
+        "first_match_only": true,
+        "source_run_sha256": "13f4bc06916e060debe0ab64c4e6668acb2d254cdffbcc16531d30e433c1a8f9",
+        "navigation_metadata_trusted": false
+      },
+      "cases": []
+    },
+    {
+      "study_number": 55,
+      "study": "starship-catch-intercept-flight-20261013-55",
+      "summary_sha256": "d9f69de033ee3bafc7d25d0b67a0df715a70c6ea0514a69bf8adcdc372740e83",
+      "kind": "source_bound_full_forecast",
+      "protocol_sha256": "a58c9bd087b9de32715116fbd227f084625138e66e6d92b380fa4907bfe667dd",
+      "source_archive_sha256": "5ef980c0f7e98267d0abc5fd75211bde99b4ab317d60c8eba344adce9ea6f770",
+      "baseline": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "parameters": {
+        "burn_tangent1_rad": 0.0,
+        "burn_tangent2_rad": 0.0,
+        "cut_projection_delta_mps": 0.0,
+        "entry_angle_deg": 35.0,
+        "landing_onset_altitude_m": 1000,
+        "braking_horizon_scale": 1.0,
+        "braking_feedback_gain": 0.0,
+        "braking_aero_fraction": 1,
+        "landing_duration_s": null,
+        "terminal_pd_frequency_rad_s": null,
+        "approach_duration_s": 25,
+        "braking_tilt_limit_deg": 60,
+        "post_approach_descent_time_s": 15.0,
+        "powered_landing_controller": "higher_bandwidth_nominal_v1",
+        "terminal_reference_mode": "direct_pd",
+        "terminal_thrust_trim": false,
+        "approach_reference": "receding_point",
+        "braking_roll_reference": "transported",
+        "landing_projection_mode": "least_squares",
+        "landing_allocation": "balanced_finite",
+        "landing_tvc": "finite_prediction",
+        "coast_gimbal_preposition": true,
+        "terminal_gimbal_translation": true,
+        "approach_reference_mode": "tracking",
+        "approach_thrust_trim": false,
+        "approach_perpendicular_feedback": false,
+        "catch_entry_policy": "finite_pin_intercept_v1"
+      },
+      "outcome": {
+        "termination": "surface_contact",
+        "phase": "recovery_landing_13",
+        "start_time_s": 135.59999999999658,
+        "end_time_s": 587.3054869204359,
+        "duration_s": 451.7054869204393,
+        "integration_steps": 975,
+        "final_ground_speed_mps": 25.277140327877643,
+        "final_hull_clearance_m": -6.51925802230835e-09,
+        "handoff_reached": false,
+        "physical_execution": false,
+        "mission_completed": false
+      },
+      "fuel_kg": 0.0,
+      "remaining_lateral_error_m": [
+        -0.056108472841953194,
+        0.4085684534227241
+      ],
+      "arm_continuation": {
+        "executed": false,
+        "supported": false
+      },
+      "elapsed_s": 292.78613749996293,
+      "raw_run_sha256": "f41a244ae2aafb47c6b6b6c35bec6a0a5b0723ec7207bae42d326151de573db7",
+      "pre_review_or_unfixed_revision": true
+    },
+    {
+      "study_number": 56,
+      "study": "starship-catch-intercept-flight-20261013-56",
+      "summary_sha256": "d4a7fcffbe5d24d24964cace81e728754527c0f0946409ce7402d20906eed59a",
+      "kind": "source_bound_full_forecast",
+      "protocol_sha256": "477e8a47e205937351d512269f7f87f52b67cd6425c5189a012bbabdca6f916e",
+      "source_archive_sha256": "ee6a511e89a039fc314a294a01154bf996e0b867f4933aae8c170a0bda1481af",
+      "baseline": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "parameters": {
+        "burn_tangent1_rad": 0.0,
+        "burn_tangent2_rad": 0.0,
+        "cut_projection_delta_mps": 0.0,
+        "entry_angle_deg": 35.0,
+        "landing_onset_altitude_m": 1000,
+        "braking_horizon_scale": 1.0,
+        "braking_feedback_gain": 0.0,
+        "braking_aero_fraction": 1,
+        "landing_duration_s": null,
+        "terminal_pd_frequency_rad_s": null,
+        "approach_duration_s": 25,
+        "braking_tilt_limit_deg": 60,
+        "post_approach_descent_time_s": 15.0,
+        "powered_landing_controller": "higher_bandwidth_nominal_v1",
+        "terminal_reference_mode": "direct_pd",
+        "terminal_thrust_trim": false,
+        "approach_reference": "receding_point",
+        "braking_roll_reference": "transported",
+        "landing_projection_mode": "least_squares",
+        "landing_allocation": "balanced_finite",
+        "landing_tvc": "finite_prediction",
+        "coast_gimbal_preposition": true,
+        "terminal_gimbal_translation": true,
+        "approach_reference_mode": "tracking",
+        "approach_thrust_trim": false,
+        "approach_perpendicular_feedback": false,
+        "catch_entry_policy": "finite_pin_intercept_v1"
+      },
+      "outcome": {
+        "termination": "surface_contact",
+        "phase": "recovery_landing_13",
+        "start_time_s": 135.59999999999658,
+        "end_time_s": 587.3054869204359,
+        "duration_s": 451.7054869204393,
+        "integration_steps": 975,
+        "final_ground_speed_mps": 25.277140327877643,
+        "final_hull_clearance_m": -6.51925802230835e-09,
+        "handoff_reached": false,
+        "physical_execution": false,
+        "mission_completed": false,
+        "intercept_handoff_reached": false
+      },
+      "fuel_kg": 0.0,
+      "remaining_lateral_error_m": [
+        -0.056108472841953194,
+        0.4085684534227241
+      ],
+      "arm_continuation": {
+        "executed": false,
+        "supported": false
+      },
+      "elapsed_s": 291.03372437506914,
+      "raw_run_sha256": "ecba5049e9234d34275b403ef6eede8f89c17d66a77cd9779742a0ac8b25004a",
+      "pre_review_or_unfixed_revision": true
+    },
+    {
+      "study_number": 57,
+      "study": "starship-catch-intercept-fixture-20261013-57",
+      "summary_sha256": "3a761348e7bfc24c3053834e324098a2c1c95ab776de5cd29b759114bc953201",
+      "kind": "independent_fixture",
+      "meta": {
+        "kind": "independent_half_metre_north_fixture",
+        "launch_connected": false
+      },
+      "cases": [
+        {
+          "state_sha256": "e08b948e96691c4cbbf1d834dd5babe50e7d4b331a3d44992f3a2a0700012be7",
+          "screen": {
+            "schema": "missionos.starship_catch_intercept_screen.v1",
+            "policy_id": "finite_pin_intercept_v1",
+            "arrival_sha256": "778d49e5fdd704a282ed29884d7f0c82df2723acaa827483bda0024a0cfda000",
+            "configuration_sha256": "ffdf48a2ab406187b9c556f6d690dc17774dab19b19671fc2c8c5f9f0744d50c",
+            "gravity_mps2": 9.810603769767718,
+            "planned_descent": false,
+            "position_margin_m": 0.08000000000000002,
+            "fuel_reserve_met": true,
+            "pins": [
+              {
+                "contact_time_s": 3.0245598991425937,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  -5.9999516626813545,
+                  0.4999999994133916
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 0.0,
+                "predicted_stopped_xy_m": [
+                  -5.9999516626813545,
+                  0.4999999994133916
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_diagnostic_m": 0.5956416164308205,
+                "compression_diagnostic_exceeds_stroke": false,
+                "credited_friction_transient_delay_s": 2.0,
+                "initial_contact_damping_load_n": 1587007.7510143004,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              },
+              {
+                "contact_time_s": 3.0245598994062517,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  6.00004833731178,
+                  0.49999999928585154
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 0.0,
+                "predicted_stopped_xy_m": [
+                  6.00004833731178,
+                  0.49999999928585154
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_diagnostic_m": 0.595641616430821,
+                "compression_diagnostic_exceeds_stroke": false,
+                "credited_friction_transient_delay_s": 2.0,
+                "initial_contact_damping_load_n": 1587007.7510143106,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              }
+            ],
+            "retained_measured_checks": {
+              "tilt": true,
+              "clocking": true,
+              "body_rate": true,
+              "clearance": true
+            },
+            "entry_screen_passed": true,
+            "supported_catch_demonstrated": false,
+            "physical_state_assigned": false,
+            "production_policy_admitted": false,
+            "model_assumptions": [
+              "Frozen observed material-pin velocity until contact.",
+              "No friction credited for model settle interval; then one-pin viscous/Coulomb law assuming full weight normal load. Actual support-load establishment is unproven.",
+              "Scalar whole-mass spring-energy screen and initial damping reaction; future peak load requires finite execution.",
+              "Configured surrogate geometry, not identified SpaceX hardware."
+            ]
+          },
+          "binding_check": {
+            "passed": true,
+            "independent_physics_validation": false,
+            "supported_catch_demonstrated": false
+          },
+          "old_entry_eligible": false,
+          "arm_run_executed": true,
+          "state_transferred_exactly": true,
+          "observation_recomputed_from_state": true,
+          "verification": {
+            "schema": "missionos.starship_booster_catch_verification.v1",
+            "passed": true,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "physical_execution_invoked": false,
+            "mission_completed": false,
+            "issues": [],
+            "frame_count": 789,
+            "limitations": [
+              "Independent consistency checks, not an integrator replay or identified SpaceX model.",
+              "Terminal support evidence is not a launch-connected catch or hardware certification."
+            ],
+            "observed_settle_s": 1.999999999998181,
+            "peak_support_force_n": 1578044.271441398,
+            "peak_compression_m": 0.1447346527514668,
+            "termination": "supported_settled",
+            "launch_connected": false
+          },
+          "supported": true,
+          "launch_reexecuted": false,
+          "independent_full_return_admission": false,
+          "outcome": {
+            "termination": "supported_settled",
+            "phase": "catch_support_response",
+            "duration_s": 7.879999999992833,
+            "start_time_s": 600.0,
+            "end_time_s": 607.8799999999928,
+            "orbit_gate_reached": false,
+            "payload_released_count": 0,
+            "max_altitude_m": 75.3214285923168,
+            "max_body_rate_rad_s": 0.01234581514543223,
+            "max_attitude_error_deg": 2.7290188152549217,
+            "final_ground_speed_mps": 0.18633971669850044,
+            "final_altitude_m": 72.16158281825483,
+            "mission_completed": false,
+            "physical_execution_invoked": false,
+            "integration_steps": 788,
+            "six_dof_integrated": true,
+            "attitude_prescribed": false,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "starship_vehicle_validated": false,
+            "landing_hardware_validated": false
+          }
+        }
+      ],
+      "contact_prediction_diagnostic": {
+        "predicted_xy": [
+          [
+            -5.9999516626813545,
+            0.4999999994133916
+          ],
+          [
+            6.00004833731178,
+            0.49999999928585154
+          ]
+        ],
+        "actual_first_contact_xy": [
+          [
+            -6.386572742888417,
+            -0.1826320903010341
+          ],
+          [
+            5.613419168406009,
+            -0.18327381179906155
+          ]
+        ],
+        "finite_executor_changes_velocity_after_entry": true,
+        "prediction_accuracy_qualified": false
+      }
+    },
+    {
+      "study_number": 58,
+      "study": "starship-catch-intercept-scan-20261013-58",
+      "summary_sha256": "7d813c50fa81939d2b581fb1c6ef3a0a0aad2697ecdb752acaa442f3d4367ce8",
+      "kind": "saved_state_scan",
+      "meta": {
+        "kind": "saved_run_scan",
+        "matching_samples": 0,
+        "first_match_only": true,
+        "source_run_sha256": "13f4bc06916e060debe0ab64c4e6668acb2d254cdffbcc16531d30e433c1a8f9",
+        "navigation_metadata_trusted": false
+      },
+      "cases": []
+    },
+    {
+      "study_number": 59,
+      "study": "starship-catch-intercept-fixture-20261013-59",
+      "summary_sha256": "3a761348e7bfc24c3053834e324098a2c1c95ab776de5cd29b759114bc953201",
+      "kind": "independent_fixture",
+      "meta": {
+        "kind": "independent_half_metre_north_fixture",
+        "launch_connected": false
+      },
+      "cases": [
+        {
+          "state_sha256": "e08b948e96691c4cbbf1d834dd5babe50e7d4b331a3d44992f3a2a0700012be7",
+          "screen": {
+            "schema": "missionos.starship_catch_intercept_screen.v1",
+            "policy_id": "finite_pin_intercept_v1",
+            "arrival_sha256": "778d49e5fdd704a282ed29884d7f0c82df2723acaa827483bda0024a0cfda000",
+            "configuration_sha256": "ffdf48a2ab406187b9c556f6d690dc17774dab19b19671fc2c8c5f9f0744d50c",
+            "gravity_mps2": 9.810603769767718,
+            "planned_descent": false,
+            "position_margin_m": 0.08000000000000002,
+            "fuel_reserve_met": true,
+            "pins": [
+              {
+                "contact_time_s": 3.0245598991425937,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  -5.9999516626813545,
+                  0.4999999994133916
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 0.0,
+                "predicted_stopped_xy_m": [
+                  -5.9999516626813545,
+                  0.4999999994133916
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_diagnostic_m": 0.5956416164308205,
+                "compression_diagnostic_exceeds_stroke": false,
+                "credited_friction_transient_delay_s": 2.0,
+                "initial_contact_damping_load_n": 1587007.7510143004,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              },
+              {
+                "contact_time_s": 3.0245598994062517,
+                "failed_checks": [],
+                "contact_xy_m": [
+                  6.00004833731178,
+                  0.49999999928585154
+                ],
+                "contact_arm_half_span_m": 6.0,
+                "closure_time_s": 2.0,
+                "tangential_stop_time_s": 0.0,
+                "predicted_stopped_xy_m": [
+                  6.00004833731178,
+                  0.49999999928585154
+                ],
+                "stopping_arm_half_span_m": 6.0,
+                "scalar_compression_diagnostic_m": 0.595641616430821,
+                "compression_diagnostic_exceeds_stroke": false,
+                "credited_friction_transient_delay_s": 2.0,
+                "initial_contact_damping_load_n": 1587007.7510143106,
+                "coupled_peak_load_requires_finite_arm_execution": true
+              }
+            ],
+            "retained_measured_checks": {
+              "tilt": true,
+              "clocking": true,
+              "body_rate": true,
+              "clearance": true
+            },
+            "entry_screen_passed": true,
+            "supported_catch_demonstrated": false,
+            "physical_state_assigned": false,
+            "production_policy_admitted": false,
+            "model_assumptions": [
+              "Frozen observed material-pin velocity until contact.",
+              "No friction credited for model settle interval; then one-pin viscous/Coulomb law assuming full weight normal load. Actual support-load establishment is unproven.",
+              "Scalar whole-mass spring-energy screen and initial damping reaction; future peak load requires finite execution.",
+              "Configured surrogate geometry, not identified SpaceX hardware."
+            ]
+          },
+          "binding_check": {
+            "passed": true,
+            "independent_physics_validation": false,
+            "supported_catch_demonstrated": false
+          },
+          "old_entry_eligible": false,
+          "arm_run_executed": true,
+          "state_transferred_exactly": true,
+          "observation_recomputed_from_state": true,
+          "verification": {
+            "schema": "missionos.starship_booster_catch_verification.v1",
+            "passed": true,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "physical_execution_invoked": false,
+            "mission_completed": false,
+            "issues": [],
+            "frame_count": 789,
+            "limitations": [
+              "Independent consistency checks, not an integrator replay or identified SpaceX model.",
+              "Terminal support evidence is not a launch-connected catch or hardware certification."
+            ],
+            "observed_settle_s": 1.999999999998181,
+            "peak_support_force_n": 1578044.271441398,
+            "peak_compression_m": 0.1447346527514668,
+            "termination": "supported_settled",
+            "launch_connected": false
+          },
+          "supported": true,
+          "launch_reexecuted": false,
+          "independent_full_return_admission": false,
+          "outcome": {
+            "termination": "supported_settled",
+            "phase": "catch_support_response",
+            "duration_s": 7.879999999992833,
+            "start_time_s": 600.0,
+            "end_time_s": 607.8799999999928,
+            "orbit_gate_reached": false,
+            "payload_released_count": 0,
+            "max_altitude_m": 75.3214285923168,
+            "max_body_rate_rad_s": 0.01234581514543223,
+            "max_attitude_error_deg": 2.7290188152549217,
+            "final_ground_speed_mps": 0.18633971669850044,
+            "final_altitude_m": 72.16158281825483,
+            "mission_completed": false,
+            "physical_execution_invoked": false,
+            "integration_steps": 788,
+            "six_dof_integrated": true,
+            "attitude_prescribed": false,
+            "simulated_catch_supported": true,
+            "catch_verified": false,
+            "physical_execution": false,
+            "starship_vehicle_validated": false,
+            "landing_hardware_validated": false
+          }
+        }
+      ],
+      "contact_prediction_diagnostic": {
+        "predicted_xy": [
+          [
+            -5.9999516626813545,
+            0.4999999994133916
+          ],
+          [
+            6.00004833731178,
+            0.49999999928585154
+          ]
+        ],
+        "actual_first_contact_xy": [
+          [
+            -6.386572742888417,
+            -0.1826320903010341
+          ],
+          [
+            5.613419168406009,
+            -0.18327381179906155
+          ]
+        ],
+        "finite_executor_changes_velocity_after_entry": true,
+        "prediction_accuracy_qualified": false
+      }
+    },
+    {
+      "study_number": 60,
+      "study": "starship-catch-intercept-flight-20261013-60",
+      "summary_sha256": "e8ead89f9e412107111999a20e6b3fe5c33f10c44d3c358b264d4c8e5471ad40",
+      "kind": "source_bound_full_forecast",
+      "protocol_sha256": "1e9c44a62827d37af18404419b6144a0211d76b9b0339e51fd2bdfcda89a0dc4",
+      "source_archive_sha256": "d90e29ce74d0e379599da43c2e7644c0457b0fa0c67033f62ed6952a418a2f4b",
+      "baseline": {
+        "exact": true,
+        "source_suffix_count": 1019,
+        "actual_count": 1019
+      },
+      "parameters": {
+        "burn_tangent1_rad": 0.0,
+        "burn_tangent2_rad": 0.0,
+        "cut_projection_delta_mps": 0.0,
+        "entry_angle_deg": 35.0,
+        "landing_onset_altitude_m": 1000,
+        "braking_horizon_scale": 1.0,
+        "braking_feedback_gain": 0.0,
+        "braking_aero_fraction": 1,
+        "landing_duration_s": null,
+        "terminal_pd_frequency_rad_s": null,
+        "approach_duration_s": 25,
+        "braking_tilt_limit_deg": 60,
+        "post_approach_descent_time_s": 15.0,
+        "powered_landing_controller": "higher_bandwidth_nominal_v1",
+        "terminal_reference_mode": "direct_pd",
+        "terminal_thrust_trim": false,
+        "approach_reference": "receding_point",
+        "braking_roll_reference": "transported",
+        "landing_projection_mode": "least_squares",
+        "landing_allocation": "balanced_finite",
+        "landing_tvc": "finite_prediction",
+        "coast_gimbal_preposition": true,
+        "terminal_gimbal_translation": true,
+        "approach_reference_mode": "tracking",
+        "approach_thrust_trim": false,
+        "approach_perpendicular_feedback": false,
+        "catch_entry_policy": "finite_pin_intercept_v1"
+      },
+      "outcome": {
+        "termination": "surface_contact",
+        "phase": "recovery_landing_13",
+        "start_time_s": 135.59999999999658,
+        "end_time_s": 587.3054869204359,
+        "duration_s": 451.7054869204393,
+        "integration_steps": 975,
+        "final_ground_speed_mps": 25.277140327877643,
+        "final_hull_clearance_m": -6.51925802230835e-09,
+        "handoff_reached": false,
+        "physical_execution": false,
+        "mission_completed": false,
+        "intercept_handoff_reached": false
+      },
+      "fuel_kg": 0.0,
+      "remaining_lateral_error_m": [
+        -0.056108472841953194,
+        0.4085684534227241
+      ],
+      "arm_continuation": {
+        "executed": false,
+        "supported": false
+      },
+      "elapsed_s": 291.44763724994846,
+      "raw_run_sha256": "702c169376e277644577792024cb6a07467dcbef18f692c437fdf0bd0553744e",
+      "pre_review_or_unfixed_revision": false
+    },
+    {
+      "study_number": 61,
+      "study": "starship-catch-intercept-scan-20261013-61",
+      "summary_sha256": "7d813c50fa81939d2b581fb1c6ef3a0a0aad2697ecdb752acaa442f3d4367ce8",
+      "kind": "saved_state_scan",
+      "meta": {
+        "kind": "saved_run_scan",
+        "matching_samples": 0,
+        "first_match_only": true,
+        "source_run_sha256": "13f4bc06916e060debe0ab64c4e6668acb2d254cdffbcc16531d30e433c1a8f9",
+        "navigation_metadata_trusted": false
+      },
+      "cases": []
+    }
+  ],
+  "fixture_repeats_are_independent_successes": false,
+  "launch_derived_supported_catches_demonstrated": 0,
+  "missionos_jev_calls": 0,
+  "missionos_deepseek_calls": 0,
+  "physical_execution": false,
+  "raw_private_evidence_exported": false,
+  "production_policy_admitted": false,
+  "limitations": [
+    "Screening equations are not coupled dynamics or hardware certification.",
+    "Normal load reaching weight after the uncredited transient is an assumption, not a guaranteed stopping bound.",
+    "Fixture support checks the finite executor after it changes velocity, not accuracy of the frozen-velocity predictor.",
+    "Full return v16/intercept qualification and MissionOS capture permission remain unimplemented."
+  ]
+}

@@ -1,0 +1,1666 @@
+{
+  "schema": "missionos.starship_catch_guidance_continuation_scalars.v1",
+  "date": "2026-10-13",
+  "extends_studies_01_to_15": true,
+  "studies": [
+    {
+      "study_number": 16,
+      "study": "starship-catch-receding-offline-20261013-16",
+      "evidence_file_sha256": "22ea302e764da6efe1a4fb4cdc462366b030b51687122273014f0829ab05f674",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "8a1d9d6242d6cc2374b4b91bd7298a053503e8a80b54c91bc837f6c75fc08a13",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 58,
+          "wall_s": 2.001675416948274,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -45.2208562549113,
+              59.921821841398895,
+              169.2408417456867
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              2.798418614663728,
+              -1.2659669543328054,
+              -3.000001584713943
+            ],
+            "ideal_main_fuel_used_kg": 35145.99805205905,
+            "ideal_remaining_fuel_kg": 28622.857413358623,
+            "minimum_constraint_margin": -55.355505732196995
+          }
+        },
+        {
+          "duration_s": 30.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 59,
+          "wall_s": 2.000211791950278,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -21.634677608712618,
+              77.60825575476106,
+              168.91847540979202
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              3.010251390297583,
+              -2.913995011934285,
+              -3.000002333257422
+            ],
+            "ideal_main_fuel_used_kg": 39298.07421790391,
+            "ideal_remaining_fuel_kg": 24470.78124751376,
+            "minimum_constraint_margin": -63.911006365293346
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 17,
+      "study": "starship-catch-receding-headroom-20261013-17",
+      "evidence_file_sha256": "a3b3e58b3d2b5a163329e1ae098e52b1904b843e98b3c23fdab8330f0fcfe46b",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "1bf8025d1629455c420cce2528087afc9a2e08d01df8a6ae522de9545d4850da",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "optimizer_failed",
+          "iterations": 158,
+          "wall_s": 5.603730709059164,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -40.76247889603081,
+              63.01786769476986,
+              169.26058009395345
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              2.886182128894455,
+              -1.0579821050008174,
+              -2.9997258801459035
+            ],
+            "ideal_main_fuel_used_kg": 35158.2145937056,
+            "ideal_remaining_fuel_kg": 28610.640871712072,
+            "minimum_constraint_margin": -55.32831334544876
+          }
+        },
+        {
+          "duration_s": 30.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "optimizer_failed",
+          "iterations": 186,
+          "wall_s": 6.580020833062008,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -22.3286566484314,
+              77.40397387211624,
+              168.92057704989244
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              2.95421387453655,
+              -2.9707987358594137,
+              -2.999997071305083
+            ],
+            "ideal_main_fuel_used_kg": 39299.27483864914,
+            "ideal_remaining_fuel_kg": 24469.580626768533,
+            "minimum_constraint_margin": -63.899440789187935
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 18,
+      "study": "starship-catch-receding-claude18-offline-20261013-18",
+      "evidence_file_sha256": "7c1a80461cde815a1e1fa24c99279fffc1fcedbcbe78ca458bab47ad7df8bb1a",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "9ce9744eb717599316dc6de44472852b7afae7dad64ee4deb059e2563dd71651",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 18.0,
+          "accepted": true,
+          "solver_success": true,
+          "reason": "planned",
+          "iterations": 46,
+          "wall_s": 1.508945042034611,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -5.132051639446694,
+              8.582659403813462,
+              171.60970515776373
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              1.7054151550788061,
+              -1.0447771153472765,
+              -5.794489747778805
+            ],
+            "ideal_main_fuel_used_kg": 29757.308442000383,
+            "ideal_remaining_fuel_kg": 34011.54702341728,
+            "minimum_constraint_margin": -2.4499999540239514e-08
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 19,
+      "study": "starship-catch-receding18-20261013-19",
+      "evidence_file_sha256": "87d61a5be876888239ef01cfeabef83f5e9d4b44b3dd327bf7a6e518df37b23c",
+      "evidence_file_kind": "summary",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "c927ea47e7d311d13a3a79b9f15e86088bd57cb4dafeeee30c21d1cebc65885e",
+      "source_archive_sha256": "81f59bc3dc1d021130a46a878f038f46b80ba39dbb85723f61438183ff922482",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 59.262747825803515,
+        "remaining_fuel_kg": 39497.96608868198,
+        "tilt_deg": 34.26413685996241,
+        "handoff_reached": false,
+        "run_stored_sha256": "08efcd182061c6c06b0fbfbcfd820490369133e06b37d20ed37abfb47b3fd697"
+      }
+    },
+    {
+      "study_number": 20,
+      "study": "starship-catch-tracking18-20261013-20",
+      "evidence_file_sha256": "44e73fdb757776738e34632e6313023f10a8dccc7c4b009e646b81735f89cdaa",
+      "evidence_file_kind": "summary",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "303bff3d9a99a9ee234deabb88a340bb2748fc7066fc4d7ff9bdd26369842b64",
+      "source_archive_sha256": "ee308cadea43ac1c0663ff2746263d578476b39b74a71c72d71b95a2e3ef6512",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 77.48508726032699,
+        "remaining_fuel_kg": 42107.430866520575,
+        "tilt_deg": 45.73051522996444,
+        "handoff_reached": false,
+        "run_stored_sha256": "ab16f29e04f879f799a2f4d7241ab6e0b6c10671db2b1e0e40a63ba0200b71ff"
+      }
+    },
+    {
+      "study_number": 21,
+      "study": "starship-catch-panel-consistency-20261013-21",
+      "evidence_file_sha256": "27a155cef6b574fbecb22eb32229e6cb5112afd4beb5ba796cfd68c88140e6e2",
+      "evidence_file_kind": "summary",
+      "kind": "offline_conditional_panel_check",
+      "rows": 10,
+      "panel_median_error_mps2": 0.1201379566045005,
+      "frozen_median_error_mps2": 0.929490247158276,
+      "panel_max_error_mps2": 0.3360870836562876,
+      "future_observed_pose_velocity_supplied_only_for_offline_model_check": true,
+      "prospective_trajectory_prediction": false,
+      "flight_calls": 0
+    },
+    {
+      "study_number": 22,
+      "study": "starship-catch-panel18-offline-20261013-22",
+      "evidence_file_sha256": "70572c4ac2ab7b3bd559c1d704e1fdacd5eaa2500af3d463415b06a5b2213d5d",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "47608410a9fb0616131effc696a9ba1e68d41e721547e96040e5ac45db9b4ddb",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 18.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 112,
+          "wall_s": 30.00124999997206,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -53.8702300463182,
+              130.73688705405505,
+              723.5358846590941
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              -2.153853648537344,
+              15.363401447885765,
+              64.72043281746849
+            ],
+            "ideal_main_fuel_used_kg": 40446.42267949071,
+            "ideal_remaining_fuel_kg": 23322.43278592696,
+            "minimum_constraint_margin": -198.94135321827991
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 23,
+      "study": "starship-catch-panel18-scaled-20261013-23",
+      "evidence_file_sha256": "52ff7cca742d1c798cd7d1bf856dadb2c1ef7c1eeee92d04a8cd138ac7241e6a",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "5f8a53cd833a0822e0b7bde678c095009055a3e49e2416c1e339cc5313fbd6d1",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 18.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 112,
+          "wall_s": 30.002841750043444,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              9.282750999240891,
+              -4.1738443541699315,
+              179.5612409522879
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              -1.1670485492284715,
+              1.635369778371036,
+              -7.978301624156346
+            ],
+            "ideal_main_fuel_used_kg": 33895.98210806905,
+            "ideal_remaining_fuel_kg": 29872.873357348617,
+            "minimum_constraint_margin": -0.2266571942617528
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 24,
+      "study": "starship-catch-panel20-scaled-20261013-24",
+      "evidence_file_sha256": "5dd469be0d81623bd3e54a3504f19f40bb156c0544dea71e64a70ba0d04455fb",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "f81935d7fe1f067b4b69ee4bc157e0d470ac94e1c1143b3fa107af4c7daa4848",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 20.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 119,
+          "wall_s": 30.00229929201305,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.013334860604137114,
+              -0.019788479681330608,
+              179.4642411006904
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.001572846022524655,
+              0.007318524079106515,
+              -8.000258995383076
+            ],
+            "ideal_main_fuel_used_kg": 35810.45556057309,
+            "ideal_remaining_fuel_kg": 27958.399904844577,
+            "minimum_constraint_margin": -0.0074246804958870705
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 25,
+      "study": "starship-catch-panel20-fast-20261013-25",
+      "evidence_file_sha256": "d8467485a977a3540c954a0685b0d329418b4f00a8694861edf39e180b931f94",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "f81935d7fe1f067b4b69ee4bc157e0d470ac94e1c1143b3fa107af4c7daa4848",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 20.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 206,
+          "wall_s": 30.00165645906236,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              0.013136844417630555,
+              0.0003001349516859736,
+              179.4682972373249
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.0021137949852415537,
+              0.004097014903476439,
+              -7.9999602282492415
+            ],
+            "ideal_main_fuel_used_kg": 35810.76998839887,
+            "ideal_remaining_fuel_kg": 27958.0854770188,
+            "minimum_constraint_margin": -0.0031083353134793157
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 26,
+      "study": "starship-catch-panel25-fast-20261013-26",
+      "evidence_file_sha256": "0347a7b1b89299d87ac62cfd480d29d6aa441d0485d5ce6e48911c911dc348fe",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "8de1c9d444eaed6995100625263c575aac30664dba3377e830326fccac6965bd",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 206,
+          "wall_s": 30.002020417014137,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              0.006676624245636599,
+              0.00792741604138889,
+              179.46704826553187
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.004136618726620191,
+              -0.0006430771871211985,
+              -8.00006314692782
+            ],
+            "ideal_main_fuel_used_kg": 40478.428179199465,
+            "ideal_remaining_fuel_kg": 23290.427286218204,
+            "minimum_constraint_margin": -0.00011579227360036803
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 27,
+      "study": "starship-catch-panel25-headroom-20261013-27",
+      "evidence_file_sha256": "d6ec1b36af0dc9b3516f58ec57ac9c873636cbe68dd324521d18a924795d8eae",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "fe137967345e549589efe6b6c7f0e6ec68881c21b2531f942a101b8870de1038",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "optimizer_failed",
+          "iterations": 400,
+          "wall_s": 58.65108662494458,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.010408354405782678,
+              0.0007631929210801225,
+              179.4676911458412
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              -0.0002597490912505246,
+              -0.0006626237708090201,
+              -8.000012183311599
+            ],
+            "ideal_main_fuel_used_kg": 40401.59926101963,
+            "ideal_remaining_fuel_kg": 23367.256204398036,
+            "minimum_constraint_margin": -8.631442881879003e-05
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 28,
+      "study": "starship-catch-angular25-offline-20261013-28",
+      "evidence_file_sha256": "e9e4036a3a6d706f9fc1ad65af305b29b63b458c5a3e114e3dd25c902e492e1b",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "5eb6d8c8fc9a3079b8734faf234330a38056363f11c5a3b30403bbb6294891b8",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 203,
+          "wall_s": 30.000434166984633,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.008593597170250607,
+              0.01393222801575081,
+              177.4651366134403
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.002134315574791419,
+              -0.0026589330649859546,
+              -8.000196441087319
+            ],
+            "ideal_main_fuel_used_kg": 40443.79186258306,
+            "ideal_remaining_fuel_kg": 23325.063602834613,
+            "minimum_constraint_margin": -0.0034208436100007233
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 29,
+      "study": "starship-catch-feasibility-restore-20261013-29",
+      "evidence_file_sha256": "f17af97e7b5b48d15873e65328c08c036fd435861edccbe7a9019c6b0c32a024",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "2ad80a739b55e8af55a8d51697aafff99efb6438d1462fad083573261736b63a",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "constraint_accepted": false,
+          "wall_s": 14.415320624946617,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              0.0035882375195223277,
+              0.023099888948509607,
+              177.50093127221348
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.0038845915308452564,
+              -0.003777096314863184,
+              -7.9963806079710125
+            ],
+            "ideal_main_fuel_used_kg": 40444.11806043684,
+            "ideal_remaining_fuel_kg": 23324.737404980828,
+            "minimum_constraint_margin": -4.9191301303430635e-05
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 30,
+      "study": "starship-catch-feasibility-restore-20261013-30",
+      "evidence_file_sha256": "1e07fa67880fc8e83567fd59fdd6b3794cdf93d9364ebd295792ce4529f947b8",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "dffb25095442a512a58791d9b6d2f01a2e5e4e856e0799cf6f0065b56dfe3dc0",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "constraint_accepted": true,
+          "wall_s": 2.190091082942672,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.01132118891564105,
+              0.09154265277667227,
+              177.51059978058925
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.0030802238830086835,
+              0.00024037666062836326,
+              -7.99580075387822
+            ],
+            "ideal_main_fuel_used_kg": 40444.122017896334,
+            "ideal_remaining_fuel_kg": 23324.733447521336,
+            "minimum_constraint_margin": 2.823804083118553e-06
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 31,
+      "study": "starship-catch-feasible25-offline-20261013-31",
+      "evidence_file_sha256": "8283baf4a9075089c50fd43a2b892f839de884c07ff18d3017b927d6fe74e13b",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "44e2e1b905053dbce2e2032109d199e45cc854024fdaea1b95534cc7d5f1e042",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "duration_s": 25.0,
+          "accepted": true,
+          "solver_success": false,
+          "reason": "feasible_after_restoration",
+          "iterations": 148,
+          "wall_s": 20.997192125068977,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.00934933588229701,
+              0.07807304351972104,
+              179.46761391815298
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.007335850357148793,
+              -0.00010994222871300863,
+              -7.999549800673572
+            ],
+            "ideal_main_fuel_used_kg": 40379.83021574398,
+            "ideal_remaining_fuel_kg": 23389.025249673687,
+            "minimum_constraint_margin": 3.475985181022878e-06
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 32,
+      "study": "starship-catch-panel25-20261013-32",
+      "evidence_file_sha256": "f4d9dd1e7131fff151f3cd65c4bc8fee297154e3cbf2642266269f8a62de35fd",
+      "evidence_file_kind": "failure",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "f5f6c7794de5c40ec64de91285305726c0aedc878ccf74cbd489d6399708e9fe",
+      "source_archive_sha256": "613db9d37f2def7eb8bbbd709849f3428749ac60283eaa7e0de8b94a6741f8e5",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome_not_retained": true,
+        "reason": "wall_limit",
+        "elapsed_s": 924.9082996249199,
+        "raw_result_saved": false
+      }
+    },
+    {
+      "study_number": 33,
+      "study": "starship-catch-warm-short-20261013-33",
+      "evidence_file_sha256": "53934769312353c107f3ff5e62117b0e24527e33e98e2d2b8bb699ceb1fa98f8",
+      "evidence_file_kind": "failure",
+      "kind": "baseline_smoke_or_preflight",
+      "protocol_sha256": "c8d5e1d83497532c2d0a49f3181595442b30776eede76d031142b64d3c439264",
+      "source_archive_sha256": "3fe45282fd590363ebff580b05988c61431757ac0e63871536d2e7611adeefe7",
+      "candidate_calls": 0,
+      "baseline_calls": 1,
+      "reason": "diagnostic_comparison_used_live_tuples_vs_saved_arrays_and_final_clipped_macrostep"
+    },
+    {
+      "study_number": 34,
+      "study": "starship-catch-warm-short-20261013-34",
+      "evidence_file_sha256": "37bcb7d09951e1521fe9618e40f281af61c51086488956856aa69c80aee22caa",
+      "evidence_file_kind": "summary",
+      "kind": "short_partial_forecast",
+      "protocol_sha256": "5f3042216988d90eddce9a9860a5e4a322ce2c8d1ba45e2826a632e8bc92afdf",
+      "source_archive_sha256": "2edcbbf7dcd20847260248dae6552453717b3e184806c03c2c2e9bc6b6444430",
+      "candidate_calls": 1,
+      "baseline_calls": 0,
+      "candidate_flight_completed": false,
+      "partial_simulated_duration_s": 43.5,
+      "actual_end_time_s": 533.3525733798122,
+      "remaining_fuel_kg": 53063.87524721743,
+      "handoff_reached": false,
+      "source_unchanged": true,
+      "elapsed_s": 268.18017033301294,
+      "solver_attempts": [
+        {
+          "accepted": false,
+          "reason": "restoration_infeasible",
+          "wall_s": 53.99077187490184,
+          "minimum_constraint_margin": -3.794550992175516e-05
+        },
+        {
+          "accepted": false,
+          "reason": "restoration_infeasible",
+          "wall_s": 52.18592770898249,
+          "minimum_constraint_margin": -0.7023416032013954
+        },
+        {
+          "accepted": false,
+          "reason": "restoration_infeasible",
+          "wall_s": 51.438356624916196,
+          "minimum_constraint_margin": -1.1656565995995498
+        },
+        {
+          "accepted": false,
+          "reason": "restoration_infeasible",
+          "wall_s": 46.676384833059274,
+          "minimum_constraint_margin": -2.1286292322737053
+        },
+        {
+          "accepted": false,
+          "reason": "restoration_infeasible",
+          "wall_s": 58.00436850008555,
+          "minimum_constraint_margin": -3.448213701884783
+        }
+      ],
+      "run_stored_sha256": "a01dee3962dd47b5758691006fac3c651a52666f3f77aa94a07007bb5b794669"
+    },
+    {
+      "study_number": 35,
+      "study": "starship-catch-seed-check-20261013-35",
+      "evidence_file_sha256": "b632c7845fda23f6c81534cb7a0acb098f1fb36a23b8f4ad62d3f1cf6aee5626",
+      "evidence_file_kind": "summary",
+      "kind": "offline_saved_state_model_check",
+      "flight_calls": 0,
+      "optimization_calls": 0,
+      "input_matches_actual_attempt": true,
+      "source_current_model_rejected_prior_controls": true
+    },
+    {
+      "study_number": 36,
+      "study": "starship-catch-seed-restore-20261013-36",
+      "evidence_file_sha256": "ccb3e8da3079c3fd7e08c1cc1f90378c566651a63247350b643a0910f02bc336",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "1d2f2998525ccfa2b95861b0bb51c2c2cf2eaf1488398e696686643c494ade43",
+      "source_archive_sha256": "a3b2e5a77eba522eb57baa7da2ee4a437d8ec75cb76b174ea668d43018413fc7",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "accepted": false,
+          "solver_success": false,
+          "reason": "wall_deadline",
+          "iterations": 0,
+          "wall_s": 10.001736582955346,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              6.94452257555424,
+              7.2076759494276,
+              179.47309567804749
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.14800889501313735,
+              0.31583200652847676,
+              -4.9478224168678056
+            ],
+            "ideal_main_fuel_used_kg": 40824.726239899785,
+            "ideal_remaining_fuel_kg": 22941.551766726618,
+            "minimum_constraint_margin": -0.0812691129006089
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 37,
+      "study": "starship-catch-cold-iteration-20261013-37",
+      "evidence_file_sha256": "f37ac5c378103504faf8d0c3c4e11c43e3a12aa98770c2affb15a967dc019fe4",
+      "evidence_file_kind": "summary",
+      "kind": "offline_point_solver",
+      "protocol_sha256": "be3b96e6f0e3f86b9c27b6bd82a3a2e4f3e0679f35037670e805f96384a6f7a2",
+      "source_archive_sha256": "854adc67ed566a32197603ac2a6ed24c96776f67d5464ac66139bad1caca30ec",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "accepted": false,
+          "solver_success": false,
+          "reason": "restoration_infeasible",
+          "iterations": 400,
+          "wall_s": 52.59074612497352,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.0010424016707321184,
+              0.07948013818365147,
+              179.46759529462943
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.001532734667304395,
+              -0.011697752146938715,
+              -3.074852391409292
+            ],
+            "ideal_main_fuel_used_kg": 41104.33854131286,
+            "ideal_remaining_fuel_kg": 22661.93946531354,
+            "minimum_constraint_margin": -4.034498823024535e-05,
+            "constraint_groups": {
+              "force_cone": {
+                "minimum_margin": 0.2946876280918143,
+                "argmin_index": 0
+              },
+              "terminal_axis_cone": {
+                "minimum_margin": 1.0,
+                "argmin_index": 0
+              },
+              "angular_rate": {
+                "minimum_margin": -1.0447924410073028e-05,
+                "argmin_index": 6
+              },
+              "angular_acceleration": {
+                "minimum_margin": -4.034498823024535e-05,
+                "argmin_index": 1
+              },
+              "interpolation_acceleration": {
+                "minimum_margin": 0.9672001381308077,
+                "argmin_index": 6
+              },
+              "terminal_xy_position": {
+                "minimum_margin": 0.9920513026432406,
+                "argmin_index": 0
+              },
+              "terminal_xy_speed": {
+                "minimum_margin": 0.9941011297511395,
+                "argmin_index": 0
+              },
+              "terminal_z_position": {
+                "minimum_margin": 9.995775860716094e-05,
+                "argmin_index": 0
+              },
+              "terminal_vz_min": {
+                "minimum_margin": 0.9850295217181415,
+                "argmin_index": 0
+              },
+              "terminal_vz_max": {
+                "minimum_margin": 0.014970478281858402,
+                "argmin_index": 0
+              },
+              "material_pin_floor": {
+                "minimum_margin": 9.911117050762642e-05,
+                "argmin_index": 33
+              },
+              "main_propellant": {
+                "minimum_margin": 0.25543836651547586,
+                "argmin_index": 0
+              }
+            }
+          },
+          "solver_details": {
+            "slsqp_callback_iterations": 100,
+            "slsqp_status": null,
+            "initial_handoff_reason": "initial_phase_iteration_budget",
+            "restoration_status": 0,
+            "restoration_nfev": 300,
+            "restoration_njev": 260,
+            "restoration_residual_calls": 14860,
+            "initial_handoff_uses_best_callback_iterate": true,
+            "iteration_field_is_exact_optimizer_steps": false
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 38,
+      "study": "starship-catch-local-feasibility-20261013-38",
+      "evidence_file_sha256": "3ba78e358c7c0eadf9d9e4ae1332ca7ce5e7d4948b3b3e87424b51d1ae25f4b5",
+      "evidence_file_kind": "failure",
+      "kind": "offline_one_linear_feasibility_step",
+      "protocol_sha256": "2b2d639cc8a30786872d602192c9915fd94977dc774c42d867ebc09602d55a68",
+      "lp_calls": 1,
+      "flight_calls": 0,
+      "reason": "numpy_boolean_in_diagnostic_result_not_json_serializable",
+      "numerical_result_retained": false
+    },
+    {
+      "study_number": 39,
+      "study": "starship-catch-local-feasibility-json-20261013-39",
+      "evidence_file_sha256": "caa45b26835ce7ef89f3d815e22b495ea75f7c6c608f9914b2856d39db51943a",
+      "evidence_file_kind": "summary",
+      "kind": "offline_one_linear_feasibility_step",
+      "protocol_sha256": "c709d6fd1014d22d6ff486b3eb35e47899ae1a998e6e45c5889263b71febb3e5",
+      "lp_calls": 1,
+      "flight_calls": 0,
+      "lp_success": true,
+      "linear_maximum_minimum_margin": 0.0014482731637740637,
+      "nonlinear_minimum_margin": 0.00011439856780681712,
+      "candidate_constraint_accepted": true,
+      "point_rollouts": 58,
+      "elapsed_s": 0.15093520795926452
+    },
+    {
+      "study_number": 40,
+      "study": "starship-catch-cli-smoke-20261013-40",
+      "evidence_file_sha256": "e3c159988ca835b62bdca7fc512049eeb0484aa87593f7e04e958be3c13f1778",
+      "evidence_file_kind": "failure",
+      "kind": "baseline_smoke_or_preflight",
+      "candidate_calls": 0,
+      "baseline_calls": 0,
+      "reason": "landing_decision_requires_pre_landing_coast_context"
+    },
+    {
+      "study_number": 41,
+      "study": "starship-catch-cli-smoke-20261013-41",
+      "evidence_file_sha256": "7a5b32ef834fa5f2aca8df50402db9b7de0db42033b7db0e8697bcb20ce2df4c",
+      "evidence_file_kind": "summary",
+      "kind": "baseline_smoke_or_preflight",
+      "protocol_sha256": "0ecb65ea26ec8c794b751cbf1af3d801ab6aa5d22265aeaef620d379c5ff62fb",
+      "source_archive_sha256": "8dbcb767eac7e9d8940ba31aea0ef1bb56157203455243ab5caf73cba1dda372",
+      "candidate_calls": 0,
+      "baseline_calls": 1,
+      "baseline_smoke_only": true
+    },
+    {
+      "study_number": 42,
+      "study": "starship-catch-elastic25-20261013-42",
+      "evidence_file_sha256": "24f4dfe9e4ca87f649e80d09da85d7296d4760210c5bd3adac3a5d4b65d2d73a",
+      "evidence_file_kind": "summary",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "75d041395023d52ddb6edfbe53e7c9763064653c74eccb07556224e767b6f0a0",
+      "source_archive_sha256": "81cf8e31ce87344d27f769516e789b2e9ed4cdb6a7e3d1d20a34eabc6821a252",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 53.363603748330156,
+        "remaining_fuel_kg": 0.0,
+        "tilt_deg": 1.5670019455229116,
+        "handoff_reached": false,
+        "run_stored_sha256": "00be174e8fc955db0fa72a65343f46ae906795edb7e078151054ff631f9b1e81"
+      }
+    },
+    {
+      "study_number": 43,
+      "study": "starship-catch-fins-diagnosis-20261013-43",
+      "evidence_file_sha256": "4d4216f7244af92bda7efa4412d39460d10102627c2a64999597f4cae7364078",
+      "evidence_file_kind": "summary",
+      "kind": "offline_conditional_fin_check",
+      "flight_calls": 0,
+      "optimization_calls": 0,
+      "diagnostic_rows": [
+        {
+          "elapsed_s": 0,
+          "frozen_fins_error_mps2": 2.220446049250313e-16,
+          "actual_fins_only_error_mps2": 2.220446049250313e-16,
+          "actual_fins_and_spin_error_mps2": 2.220446049250313e-16,
+          "all_current_model_error_mps2": 2.220446049250313e-16
+        },
+        {
+          "elapsed_s": 2,
+          "frozen_fins_error_mps2": 0.35776422535482116,
+          "actual_fins_only_error_mps2": 0.00445672893151626,
+          "actual_fins_and_spin_error_mps2": 0.00027975748737501816,
+          "all_current_model_error_mps2": 2.175583928816829e-15
+        },
+        {
+          "elapsed_s": 4,
+          "frozen_fins_error_mps2": 0.31705583513595753,
+          "actual_fins_only_error_mps2": 0.00963524228343752,
+          "actual_fins_and_spin_error_mps2": 0.00046363647543874135,
+          "all_current_model_error_mps2": 2.3075552236602768e-15
+        },
+        {
+          "elapsed_s": 6,
+          "frozen_fins_error_mps2": 0.20060787360153373,
+          "actual_fins_only_error_mps2": 0.0113456609045098,
+          "actual_fins_and_spin_error_mps2": 0.0009947784899450418,
+          "all_current_model_error_mps2": 4.965068306494546e-16
+        },
+        {
+          "elapsed_s": 8,
+          "frozen_fins_error_mps2": 0.03675699782605032,
+          "actual_fins_only_error_mps2": 0.007894969674716392,
+          "actual_fins_and_spin_error_mps2": 0.0014539988406113077,
+          "all_current_model_error_mps2": 9.650801630464006e-16
+        },
+        {
+          "elapsed_s": 10,
+          "frozen_fins_error_mps2": 0.005941277275730756,
+          "actual_fins_only_error_mps2": 0.005399848804215517,
+          "actual_fins_and_spin_error_mps2": 0.0013055526165298818,
+          "all_current_model_error_mps2": 1.6653345369377348e-16
+        },
+        {
+          "elapsed_s": 12,
+          "frozen_fins_error_mps2": 0.0028326327344092195,
+          "actual_fins_only_error_mps2": 0.0030543481875826618,
+          "actual_fins_and_spin_error_mps2": 0.0007557704638802658,
+          "all_current_model_error_mps2": 1.1443916996305594e-16
+        },
+        {
+          "elapsed_s": 14,
+          "frozen_fins_error_mps2": 0.0015482887468417279,
+          "actual_fins_only_error_mps2": 0.001542534572966392,
+          "actual_fins_and_spin_error_mps2": 0.00030172683589382133,
+          "all_current_model_error_mps2": 1.6023437075456793e-16
+        },
+        {
+          "elapsed_s": 16,
+          "frozen_fins_error_mps2": 0.0003175844950228456,
+          "actual_fins_only_error_mps2": 0.000332267106396483,
+          "actual_fins_and_spin_error_mps2": 0.00010908777433631612,
+          "all_current_model_error_mps2": 4.9065389333867974e-18
+        },
+        {
+          "elapsed_s": 18,
+          "frozen_fins_error_mps2": 0.00024218615732546925,
+          "actual_fins_only_error_mps2": 9.886940474144302e-05,
+          "actual_fins_and_spin_error_mps2": 0.00011098598364348879,
+          "all_current_model_error_mps2": 2.375367947065671e-18
+        },
+        {
+          "elapsed_s": 20,
+          "frozen_fins_error_mps2": 0.0014976439607177479,
+          "actual_fins_only_error_mps2": 0.0001425259348667522,
+          "actual_fins_and_spin_error_mps2": 6.230010618941946e-05,
+          "all_current_model_error_mps2": 1.781732143502339e-18
+        }
+      ],
+      "prospective_prediction": false
+    },
+    {
+      "study_number": 44,
+      "study": "starship-catch-axis-rate-check-20261013-44",
+      "evidence_file_sha256": "60f07c88f73dfb6cf930089135158fcb00b5510f0c6e8d878bdf17d0737b4733",
+      "evidence_file_kind": "summary",
+      "kind": "offline_measured_axis_rate_check",
+      "flight_calls": 0,
+      "optimization_calls": 0,
+      "diagnostic_rows": [
+        {
+          "time_s": 529.052573379821,
+          "interval_s": 0.10000000000002274,
+          "body_proxy_rate_per_s": 0.09058622328593856,
+          "measured_main_axis_backward_rate_per_s": 0.18187920580698455,
+          "vector_difference_per_s": 0.17715984085855946
+        },
+        {
+          "time_s": 529.8525733798211,
+          "interval_s": 0.10000000000002274,
+          "body_proxy_rate_per_s": 0.0712097274387882,
+          "measured_main_axis_backward_rate_per_s": 0.07846109566715055,
+          "vector_difference_per_s": 0.019585064524306035
+        },
+        {
+          "time_s": 530.8525733798214,
+          "interval_s": 0.10000000000002274,
+          "body_proxy_rate_per_s": 0.0609590514884372,
+          "measured_main_axis_backward_rate_per_s": 0.06360986831518001,
+          "vector_difference_per_s": 0.01582620492552488
+        },
+        {
+          "time_s": 531.8525733798216,
+          "interval_s": 0.10000000000002274,
+          "body_proxy_rate_per_s": 0.06297959095599906,
+          "measured_main_axis_backward_rate_per_s": 0.05986472502889855,
+          "vector_difference_per_s": 0.029644789301201634
+        }
+      ]
+    },
+    {
+      "study_number": 45,
+      "study": "starship-catch-warm-axis-pairs-20261013-45",
+      "evidence_file_sha256": "d2b1fc0257613576da44a435f95bbcbc0bf472e1890c93d9792715b2528d9001",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "6526d300a2422f87a33ca98e0e79c9320365a774c1cb9648b07bc272f9b77ab0",
+      "kind": "offline_local_constraint_diagnosis",
+      "flight_calls": 0,
+      "elapsed_s": 0.44424420804716647,
+      "cases": [
+        {
+          "convention": "as_run_mixed_pair",
+          "initial_minimum_margin": -0.1521368637003031,
+          "lp_success": true,
+          "lp_status": 0,
+          "point_rollouts": 58,
+          "linear_minimum_margin": -0.11599148676587864,
+          "nonlinear_minimum_margin": -0.972568239946412,
+          "largest_local_dual_weights": [
+            {
+              "constraint_index": 44,
+              "absolute_weight": 0.4429973539531833
+            },
+            {
+              "constraint_index": 43,
+              "absolute_weight": 0.3426327605268756
+            },
+            {
+              "constraint_index": 45,
+              "absolute_weight": 0.21436988551994113
+            },
+            {
+              "constraint_index": 54,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 61,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 60,
+              "absolute_weight": 0.0
+            }
+          ]
+        },
+        {
+          "convention": "consistent_body_pair",
+          "initial_minimum_margin": -0.29829479310305484,
+          "lp_success": true,
+          "lp_status": 0,
+          "point_rollouts": 58,
+          "linear_minimum_margin": -0.22458379971245823,
+          "nonlinear_minimum_margin": -0.25185195360310475,
+          "largest_local_dual_weights": [
+            {
+              "constraint_index": 44,
+              "absolute_weight": 1.0
+            },
+            {
+              "constraint_index": 169,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 53,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 61,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 60,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 59,
+              "absolute_weight": 0.0
+            }
+          ]
+        },
+        {
+          "convention": "consistent_resultant_pair",
+          "initial_minimum_margin": -1.4551235740572888,
+          "lp_success": true,
+          "lp_status": 0,
+          "point_rollouts": 58,
+          "linear_minimum_margin": -1.4010341921443081,
+          "nonlinear_minimum_margin": -1.4012791765428325,
+          "largest_local_dual_weights": [
+            {
+              "constraint_index": 43,
+              "absolute_weight": 1.0
+            },
+            {
+              "constraint_index": 53,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 61,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 60,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 59,
+              "absolute_weight": 0.0
+            },
+            {
+              "constraint_index": 58,
+              "absolute_weight": 0.0
+            }
+          ]
+        }
+      ],
+      "global_infeasibility_established": false
+    },
+    {
+      "study_number": 46,
+      "study": "starship-catch-warm-trust-repair-20261013-46",
+      "evidence_file_sha256": "8cec6f697a0dd75d35b80620435a9d49be2e09e4b97f7b8e103cc7b24ffc1d86",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "a66bb42ee0484e48f69aabb6a8b3f2e544e7c6476e98dedd7f90430a01830208",
+      "kind": "offline_local_constraint_diagnosis",
+      "flight_calls": 0,
+      "elapsed_s": 2.1415375829674304,
+      "cases": [
+        {
+          "convention": "consistent_body_pair",
+          "point_rollouts": 870,
+          "lp_calls": 15,
+          "accepted_improvement_steps": 5,
+          "candidate_constraints_accepted": false,
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              1.7380608476310058,
+              9.544170480713966,
+              178.0952046537038
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              -1.7233863242667118,
+              -1.0691760754179218,
+              -3.126182877092654
+            ],
+            "predicted_initial_main_thrust_n": 15327789.95185216,
+            "ideal_main_fuel_used_kg": 37233.849974094344,
+            "ideal_remaining_fuel_kg": 23126.241131011062,
+            "minimum_constraint_margin": -0.27835297989675345,
+            "constraint_groups": {
+              "force_cone": {
+                "minimum_margin": 0.34822628574470676,
+                "argmin_index": 0
+              },
+              "terminal_axis_cone": {
+                "minimum_margin": 1.0,
+                "argmin_index": 0
+              },
+              "angular_rate": {
+                "minimum_margin": -0.08014167770092806,
+                "argmin_index": 4
+              },
+              "angular_acceleration": {
+                "minimum_margin": -0.27835297989675345,
+                "argmin_index": 1
+              },
+              "interpolation_acceleration": {
+                "minimum_margin": 0.9603199868938505,
+                "argmin_index": 4
+              },
+              "terminal_xy_position": {
+                "minimum_margin": 0.02988636915565568,
+                "argmin_index": 0
+              },
+              "terminal_xy_speed": {
+                "minimum_margin": -0.014051022251296619,
+                "argmin_index": 0
+              },
+              "terminal_z_position": {
+                "minimum_margin": 0.6275094013157627,
+                "argmin_index": 0
+              },
+              "terminal_vz_min": {
+                "minimum_margin": 0.9747634245814691,
+                "argmin_index": 0
+              },
+              "terminal_vz_max": {
+                "minimum_margin": 0.025236575418530815,
+                "argmin_index": 0
+              },
+              "material_pin_floor": {
+                "minimum_margin": -0.014683745648042645,
+                "argmin_index": 31
+              },
+              "main_propellant": {
+                "minimum_margin": 0.2824857027042146,
+                "argmin_index": 0
+              }
+            }
+          },
+          "trace": [
+            {
+              "step": 0,
+              "radius": 0.001,
+              "linear_minimum_margin": -0.22458379971245823,
+              "nonlinear_minimum_margin": -0.25185195360310475,
+              "violation_squared_norm": 0.23108675048647945,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 1,
+              "radius": 0.0005,
+              "linear_minimum_margin": -0.26143929640775654,
+              "nonlinear_minimum_margin": -0.2618003896376324,
+              "violation_squared_norm": 0.1837027741748133,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 2,
+              "radius": 0.00025,
+              "linear_minimum_margin": -0.2798670447554057,
+              "nonlinear_minimum_margin": -3.4101080401730997,
+              "violation_squared_norm": 11.952975997591937,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 3,
+              "radius": 0.000125,
+              "linear_minimum_margin": -0.28908091892923027,
+              "nonlinear_minimum_margin": -0.5951600518075963,
+              "violation_squared_norm": 0.4712625393606838,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 4,
+              "radius": 6.25e-05,
+              "linear_minimum_margin": -0.29368785601614256,
+              "nonlinear_minimum_margin": -0.2936934134969087,
+              "violation_squared_norm": 0.1170895558679563,
+              "accepted_nonlinear_improvement": true
+            },
+            {
+              "step": 5,
+              "radius": 9.375e-05,
+              "linear_minimum_margin": -0.2867995162630234,
+              "nonlinear_minimum_margin": -1.198833902576098,
+              "violation_squared_norm": 1.5516553618145226,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 6,
+              "radius": 4.6875e-05,
+              "linear_minimum_margin": -0.2902464648799661,
+              "nonlinear_minimum_margin": -0.2902496337974221,
+              "violation_squared_norm": 0.11542354054296729,
+              "accepted_nonlinear_improvement": true
+            },
+            {
+              "step": 7,
+              "radius": 7.031250000000001e-05,
+              "linear_minimum_margin": -0.2850885846670139,
+              "nonlinear_minimum_margin": -0.28509574500882673,
+              "violation_squared_norm": 0.1142925225139346,
+              "accepted_nonlinear_improvement": true
+            },
+            {
+              "step": 8,
+              "radius": 0.00010546875000000001,
+              "linear_minimum_margin": -0.277375476478089,
+              "nonlinear_minimum_margin": -0.9689539272584966,
+              "violation_squared_norm": 1.0501126425976044,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 9,
+              "radius": 5.2734375000000006e-05,
+              "linear_minimum_margin": -0.2812356107434579,
+              "nonlinear_minimum_margin": -0.28123969681827776,
+              "violation_squared_norm": 0.11223762887631801,
+              "accepted_nonlinear_improvement": true
+            },
+            {
+              "step": 10,
+              "radius": 7.910156250000002e-05,
+              "linear_minimum_margin": -0.27546160740352554,
+              "nonlinear_minimum_margin": -0.3027445958535395,
+              "violation_squared_norm": 0.20360208834559768,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 11,
+              "radius": 3.955078125000001e-05,
+              "linear_minimum_margin": -0.27835065211090165,
+              "nonlinear_minimum_margin": -0.27835297989675345,
+              "violation_squared_norm": 0.11175625217686151,
+              "accepted_nonlinear_improvement": true
+            },
+            {
+              "step": 12,
+              "radius": 5.932617187500001e-05,
+              "linear_minimum_margin": -0.27402628030819015,
+              "nonlinear_minimum_margin": -0.2740315282150674,
+              "violation_squared_norm": 0.12802184484790863,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 13,
+              "radius": 2.9663085937500006e-05,
+              "linear_minimum_margin": -0.2761896301024718,
+              "nonlinear_minimum_margin": -0.2761909553387154,
+              "violation_squared_norm": 0.11376385046619031,
+              "accepted_nonlinear_improvement": false
+            },
+            {
+              "step": 14,
+              "radius": 1.4831542968750003e-05,
+              "linear_minimum_margin": -0.2772713049996126,
+              "nonlinear_minimum_margin": -0.27727164377018143,
+              "violation_squared_norm": 0.1118407052201106,
+              "accepted_nonlinear_improvement": false
+            }
+          ]
+        }
+      ],
+      "global_infeasibility_established": false
+    },
+    {
+      "study_number": 47,
+      "study": "starship-catch-body-warm-cold-20261013-47",
+      "evidence_file_sha256": "1fef92c42e66810e3f838aacef2244f692f7720fbd48cc86591b069ac6bf243d",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "e0a8ae4ddb873948f498540832380ca3eeec3cfce56fbdfde2935bcde439f945",
+      "source_archive_sha256": "58da43f95a508a61c9371ba9d797b7df772254e1bc52d40544af6fc5aea74c26",
+      "kind": "offline_point_solver",
+      "flight_calls": 0,
+      "solver_attempts": [
+        {
+          "accepted": false,
+          "solver_success": false,
+          "reason": "restoration_infeasible",
+          "iterations": 400,
+          "wall_s": 52.56464229198173,
+          "solver_details": {
+            "slsqp_callback_iterations": 100,
+            "slsqp_status": null,
+            "initial_handoff_reason": "initial_phase_iteration_budget",
+            "restoration_status": 0,
+            "restoration_nfev": 299,
+            "restoration_njev": 247,
+            "restoration_residual_calls": 14131,
+            "initial_handoff_uses_best_callback_iterate": true,
+            "iteration_field_is_exact_optimizer_steps": false,
+            "elastic_step": {
+              "success": true,
+              "status": 0,
+              "linear_minimum_margin": -0.09854371379323261,
+              "nonlinear_minimum_margin": -0.10015034556847491,
+              "linear_feasibility_is_acceptance": false,
+              "constraint_rollouts": 58
+            }
+          },
+          "metrics": {
+            "predicted_final_cg_position_enu_m": [
+              -0.9208220499414391,
+              10.951879286279103,
+              177.37123198734764
+            ],
+            "predicted_final_cg_velocity_enu_mps": [
+              0.3004810856211419,
+              -2.071213871684444,
+              -2.5071601458704027
+            ],
+            "predicted_initial_main_thrust_n": 15327789.95185216,
+            "ideal_main_fuel_used_kg": 37283.66390552829,
+            "ideal_remaining_fuel_kg": 23076.42719957712,
+            "minimum_constraint_margin": -0.10015034556847491,
+            "constraint_groups": {
+              "force_cone": {
+                "minimum_margin": 0.34822628574470676,
+                "argmin_index": 0
+              },
+              "terminal_axis_cone": {
+                "minimum_margin": 1.0,
+                "argmin_index": 0
+              },
+              "angular_rate": {
+                "minimum_margin": -0.06757827471227063,
+                "argmin_index": 4
+              },
+              "angular_acceleration": {
+                "minimum_margin": -0.10015034556847491,
+                "argmin_index": 0
+              },
+              "interpolation_acceleration": {
+                "minimum_margin": 0.961688529890538,
+                "argmin_index": 4
+              },
+              "terminal_xy_position": {
+                "minimum_margin": -0.09905219689006417,
+                "argmin_index": 0
+              },
+              "terminal_xy_speed": {
+                "minimum_margin": -0.046448253029518494,
+                "argmin_index": 0
+              },
+              "terminal_z_position": {
+                "minimum_margin": -0.09646326504039848,
+                "argmin_index": 0
+              },
+              "terminal_vz_min": {
+                "minimum_margin": 1.0985679708259195,
+                "argmin_index": 0
+              },
+              "terminal_vz_max": {
+                "minimum_margin": -0.09856797082591946,
+                "argmin_index": 0
+              },
+              "material_pin_floor": {
+                "minimum_margin": -0.09853107971333941,
+                "argmin_index": 28
+              },
+              "main_propellant": {
+                "minimum_margin": 0.2815257641527827,
+                "argmin_index": 0
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "study_number": 48,
+      "study": "starship-catch-feedback-20261013-48",
+      "evidence_file_sha256": "98a3249815677b231746fc6db68fa5cf7e8559f5471188365138bef38480d381",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "e7c7dea37ff7adea4202639d592e366a36e6983902eb6d50d1f8a18564cec0f5",
+      "source_archive_sha256": "ea192af515036851a4937b4247e25bd066031e7394476abe6a1155ee4b875c40",
+      "kind": "full_forecast_study",
+      "baseline_calls": 1,
+      "candidate_calls": 2,
+      "baseline_exact_suffix": true,
+      "candidates": [
+        {
+          "name": "candidate-00",
+          "parameters": {
+            "burn_tangent1_rad": 0.0,
+            "burn_tangent2_rad": 0.0,
+            "cut_projection_delta_mps": 0.0,
+            "entry_angle_deg": 35.0,
+            "landing_onset_altitude_m": 1000,
+            "braking_horizon_scale": 1.0,
+            "braking_feedback_gain": 0.0,
+            "braking_aero_fraction": 1,
+            "landing_duration_s": null,
+            "terminal_pd_frequency_rad_s": null,
+            "approach_duration_s": 25,
+            "braking_tilt_limit_deg": 60,
+            "terminal_reference_mode": "direct_pd",
+            "terminal_thrust_trim": false,
+            "approach_reference": "receding_point",
+            "braking_roll_reference": "transported",
+            "landing_projection_mode": "least_squares",
+            "landing_allocation": "balanced_finite",
+            "landing_tvc": "finite_prediction",
+            "coast_gimbal_preposition": true,
+            "terminal_gimbal_translation": true,
+            "approach_reference_mode": "tracking",
+            "approach_thrust_trim": false,
+            "approach_perpendicular_feedback": false
+          },
+          "outcome": "surface_contact",
+          "speed_mps": 53.36360379428615,
+          "remaining_fuel_kg": 0.0,
+          "tilt_deg": 1.5670010299182253,
+          "position_error_enu_m": [
+            -39.25553525949044,
+            18.74814355194424,
+            -39.899535794014184
+          ],
+          "handoff_reached": false,
+          "run_stored_sha256": "e986f8e88c702f6aa40767114a622ef1d6f3f0394dcbc14e8b68e85292782726"
+        },
+        {
+          "name": "candidate-01",
+          "parameters": {
+            "burn_tangent1_rad": 0.0,
+            "burn_tangent2_rad": 0.0,
+            "cut_projection_delta_mps": 0.0,
+            "entry_angle_deg": 35.0,
+            "landing_onset_altitude_m": 1000,
+            "braking_horizon_scale": 1.0,
+            "braking_feedback_gain": 0.0,
+            "braking_aero_fraction": 1,
+            "landing_duration_s": null,
+            "terminal_pd_frequency_rad_s": null,
+            "approach_duration_s": 25,
+            "braking_tilt_limit_deg": 60,
+            "terminal_reference_mode": "direct_pd",
+            "terminal_thrust_trim": false,
+            "approach_reference": "receding_point",
+            "braking_roll_reference": "transported",
+            "landing_projection_mode": "least_squares",
+            "landing_allocation": "balanced_finite",
+            "landing_tvc": "finite_prediction",
+            "coast_gimbal_preposition": true,
+            "terminal_gimbal_translation": true,
+            "approach_reference_mode": "tracking",
+            "approach_thrust_trim": false,
+            "approach_perpendicular_feedback": true
+          },
+          "outcome": "surface_contact",
+          "speed_mps": 63.91728533202349,
+          "remaining_fuel_kg": 0.0,
+          "tilt_deg": 1.3736874180997405,
+          "position_error_enu_m": [
+            8.880980308741599,
+            43.257282125305814,
+            -39.90950172314663
+          ],
+          "handoff_reached": false,
+          "run_stored_sha256": "0636d6645cd8a48e362af6fdc91f06c3beca837bb084a4f218669af01f363fb4"
+        }
+      ]
+    },
+    {
+      "study_number": 49,
+      "study": "starship-catch-descent-20261013-49",
+      "evidence_file_sha256": "5ba8626267ef6d3a7269334ae8f03da1175b5f3c732fbef043239a3594217433",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "d8e74ad7cd540ef828ee4b82def54d524f4ba96a5618e4ab62ee4be833472d28",
+      "source_archive_sha256": "242da00ef0acdca79ee7558e6a6f20722dd961af436e78a2cc3e601017a88bee",
+      "kind": "full_forecast_study",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidates": [
+        {
+          "name": "candidate-00",
+          "parameters": {
+            "burn_tangent1_rad": 0.0,
+            "burn_tangent2_rad": 0.0,
+            "cut_projection_delta_mps": 0.0,
+            "entry_angle_deg": 35.0,
+            "landing_onset_altitude_m": 1000,
+            "braking_horizon_scale": 1.0,
+            "braking_feedback_gain": 0.0,
+            "braking_aero_fraction": 1,
+            "landing_duration_s": null,
+            "terminal_pd_frequency_rad_s": null,
+            "approach_duration_s": 25,
+            "braking_tilt_limit_deg": 60,
+            "post_approach_descent_time_s": 15.0,
+            "powered_landing_controller": "baseline",
+            "terminal_reference_mode": "direct_pd",
+            "terminal_thrust_trim": false,
+            "approach_reference": "receding_point",
+            "braking_roll_reference": "transported",
+            "landing_projection_mode": "least_squares",
+            "landing_allocation": "balanced_finite",
+            "landing_tvc": "finite_prediction",
+            "coast_gimbal_preposition": true,
+            "terminal_gimbal_translation": true,
+            "approach_reference_mode": "tracking",
+            "approach_thrust_trim": false,
+            "approach_perpendicular_feedback": false
+          },
+          "outcome": "surface_contact",
+          "speed_mps": 25.430477058548234,
+          "remaining_fuel_kg": 0.0,
+          "tilt_deg": 1.2878446244108854,
+          "position_error_enu_m": [
+            -0.2343493080636132,
+            -15.652957130450284,
+            -39.91404534972611
+          ],
+          "handoff_reached": false,
+          "run_stored_sha256": "87a7cf2ca26b5a675d45d04164409fc858e596a2ac9ac1db85590f4b1b7de36d"
+        }
+      ]
+    },
+    {
+      "study_number": 50,
+      "study": "starship-catch-powered-20261013-50",
+      "evidence_file_sha256": "1eb9f62c34dcbc9ddd7c49bc8ebf5a01196c89ef6f3841743aafa6d0d6b38ead",
+      "evidence_file_kind": "summary",
+      "protocol_sha256": "28d3580b535429a1493ff18f4116aeb606de2a853186e0aac8e03b1a0d095545",
+      "source_archive_sha256": "7a9475546e20da97db93e80a3365601a0f1153f38c795521a53888f753c47bf3",
+      "kind": "full_forecast_study",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidates": [
+        {
+          "name": "candidate-00",
+          "parameters": {
+            "burn_tangent1_rad": 0.0,
+            "burn_tangent2_rad": 0.0,
+            "cut_projection_delta_mps": 0.0,
+            "entry_angle_deg": 35.0,
+            "landing_onset_altitude_m": 1000,
+            "braking_horizon_scale": 1.0,
+            "braking_feedback_gain": 0.0,
+            "braking_aero_fraction": 1,
+            "landing_duration_s": null,
+            "terminal_pd_frequency_rad_s": null,
+            "approach_duration_s": 25,
+            "braking_tilt_limit_deg": 60,
+            "post_approach_descent_time_s": 15.0,
+            "powered_landing_controller": "higher_bandwidth_nominal_v1",
+            "terminal_reference_mode": "direct_pd",
+            "terminal_thrust_trim": false,
+            "approach_reference": "receding_point",
+            "braking_roll_reference": "transported",
+            "landing_projection_mode": "least_squares",
+            "landing_allocation": "balanced_finite",
+            "landing_tvc": "finite_prediction",
+            "coast_gimbal_preposition": true,
+            "terminal_gimbal_translation": true,
+            "approach_reference_mode": "tracking",
+            "approach_thrust_trim": false,
+            "approach_perpendicular_feedback": false
+          },
+          "outcome": "surface_contact",
+          "speed_mps": 25.277140327877643,
+          "remaining_fuel_kg": 0.0,
+          "tilt_deg": 0.5032336334121403,
+          "position_error_enu_m": [
+            -0.056108472841953194,
+            0.4085684534227241,
+            -39.96279189621353
+          ],
+          "handoff_reached": false,
+          "run_stored_sha256": "13f4bc06916e060debe0ab64c4e6668acb2d254cdffbcc16531d30e433c1a8f9"
+        }
+      ]
+    },
+    {
+      "study_number": 55,
+      "study": "starship-catch-intercept-flight-20261013-55",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "a58c9bd087b9de32715116fbd227f084625138e66e6d92b380fa4907bfe667dd",
+      "source_archive_sha256": "5ef980c0f7e98267d0abc5fd75211bde99b4ab317d60c8eba344adce9ea6f770",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 25.277140327877643,
+        "remaining_fuel_kg": 0.0,
+        "handoff_reached": false,
+        "run_stored_sha256": "f41a244ae2aafb47c6b6b6c35bec6a0a5b0723ec7207bae42d326151de573db7"
+      },
+      "revision_scope": "Earlier unfixed experimental implementation"
+    },
+    {
+      "study_number": 56,
+      "study": "starship-catch-intercept-flight-20261013-56",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "477e8a47e205937351d512269f7f87f52b67cd6425c5189a012bbabdca6f916e",
+      "source_archive_sha256": "ee6a511e89a039fc314a294a01154bf996e0b867f4933aae8c170a0bda1481af",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 25.277140327877643,
+        "remaining_fuel_kg": 0.0,
+        "handoff_reached": false,
+        "run_stored_sha256": "ecba5049e9234d34275b403ef6eede8f89c17d66a77cd9779742a0ac8b25004a"
+      },
+      "revision_scope": "Earlier unfixed experimental implementation"
+    },
+    {
+      "study_number": 60,
+      "study": "starship-catch-intercept-flight-20261013-60",
+      "kind": "full_forecast_study",
+      "protocol_sha256": "1e9c44a62827d37af18404419b6144a0211d76b9b0339e51fd2bdfcda89a0dc4",
+      "source_archive_sha256": "d90e29ce74d0e379599da43c2e7644c0457b0fa0c67033f62ed6952a418a2f4b",
+      "baseline_calls": 1,
+      "candidate_calls": 1,
+      "baseline_exact_suffix": true,
+      "candidate": {
+        "outcome": "surface_contact",
+        "speed_mps": 25.277140327877643,
+        "remaining_fuel_kg": 0.0,
+        "handoff_reached": false,
+        "run_stored_sha256": "702c169376e277644577792024cb6a07467dcbef18f692c437fdf0bd0553744e"
+      },
+      "revision_scope": "Final tested intercept implementation"
+    }
+  ],
+  "candidate_handoffs_demonstrated": 0,
+  "supported_catches": 0,
+  "physical_execution": false,
+  "missionos_jev_calls_in_engineering_studies": 0,
+  "missionos_deepseek_calls_in_engineering_studies": 0,
+  "independent_final_v16_admission_performed": false,
+  "raw_evidence_included": false,
+  "limitations": [
+    "These are sequential engineering trials on one saved launch-derived separation; no success rate or hardware fidelity is estimated.",
+    "Point, local-linear and conditional panel checks are not six-DOF flight or catch evidence.",
+    "Study32 lost its returned raw candidate after a compute overrun; its physical outcome is unknown.",
+    "Study33 stopped before any candidate on a comparison-format/last-macrostep issue; executed saved checkpoints were later found exact.",
+    "Study38 lost its local-linear result on a numpy Boolean serialization error. Study39 records a separate corrected diagnostic.",
+    "Study40 stopped before calls because the wrong source artifact was supplied; study41 uses the verified historical source.",
+    "Older offline studies archived the main planner alone, not all transitive runtime dependencies. Source archives bind caller-provided provenance, not external authentication."
+  ]
+}

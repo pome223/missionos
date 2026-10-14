@@ -168,7 +168,7 @@ def _coast_control_profile(profile, observed, *, include_spooled_tvc=False):
 
 def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None,
                             development_coast_control="fixed_v1", development_coast_restart=None,
-                            development_coast_from_separation=False):
+                            development_coast_from_separation=False, _trouble_engine=None, _trouble_control=None):
     """Continue from the exact supplied state for at most 2000 elapsed seconds.
 
     The return site is the rotating launch location. This is a geometric target,
@@ -255,6 +255,9 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
               source_sample_index=restart["sample_index"], controller=development_coast_control)
     while state.time_s < start_time+duration-1e-9:
         from .starship_concurrent import PhysicsTick
+        if _trouble_engine is not None:
+            state, booster = _trouble_engine.before_step(state, booster, "booster", phase)
+            tower_ready = tower_ready and _trouble_engine.tower_ready(state.time_s)
         yield PhysicsTick("booster", state.time_s, phase, state)
         if mission_director is not None:
             mission_director.pace("booster", state.time_s)
@@ -266,6 +269,17 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
                     action=action, return_site_sha256=active_site.sha256)
             mission_director.confirm("booster", row)
         observed = dyn.observe(state, booster)
+        if _trouble_control is not None:
+            from .starship_trouble_control import observe as trouble_observe
+            row = trouble_observe(state, booster, _trouble_engine, "booster", phase)
+            witness_count = len(_trouble_control.observations)
+            action = _trouble_control.step(row, asdict(state))
+            if len(_trouble_control.observations) != witness_count:
+                witness = _sample_booster(state, booster, phase, diagnostics={"component_health": row["component_health"]})
+                witness["trouble_control_observation"] = row
+                samples.append(witness)
+            if action is not None:
+                event("trouble_control_command", "experimental independently checked monitoring action; no recovery qualification", action=action)
         up, east, north, velocity, displacement, site_distance = _navigation(state, profile, return_site=active_site)
         altitude, vertical = observed["altitude_m"], env.dot(velocity, up)
         horizontal_velocity = _horizontal(velocity, up)
@@ -372,6 +386,8 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
             elif site_feedback:
                 # A gimbal cannot rotate the booster with its engine off.
                 count, throttle = min(3, profile["booster"]["engine_count"]), configuration["boostback_slew_throttle"]
+        if _trouble_engine is not None:
+            state, booster = _trouble_engine.before_step(state, booster, "booster", phase)
         control_profile = profile
         if drag_aware and phase == "booster_entry_coast":
             control_profile, bandwidth, alpha = _coast_control_profile(profile, observed, include_spooled_tvc=mitigate_infeasible_burn)
@@ -385,6 +401,9 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
         else:
             command, diagnostic = control(state, booster, target, throttle, count, control_profile,
                                           use_flaps=phase in ("booster_entry_coast", "booster_landing_burn"))
+        if _trouble_engine is not None:
+            command = _trouble_engine.command(command, state, booster, "booster")
+            diagnostic["component_health"] = _trouble_engine.observation(state, booster, "booster")
         diagnostic.update(guidance)
         if restart is not None and phase == "booster_landing_burn":
             terminal_boundary = {"time_s": state.time_s, "controller": diagnostic,
@@ -405,6 +424,8 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
         dt = min(start_time+duration-state.time_s,
                  profile["integration"]["powered_dt_s"] if throttle > 0 or altitude < 100_000
                  else profile["integration"]["coast_dt_s"])
+        if _trouble_engine is not None:
+            dt = _trouble_engine.limit_step(state.time_s, dt, "booster", phase)
         if type(dt) not in (int, float) or not math.isfinite(dt) or not 0 < dt <= 10:
             raise ValueError("invalid_booster_integration_step")
         # A conservative clearance bound avoids repeatedly solving near-Earth
@@ -485,11 +506,11 @@ def _simulate_booster_steps(profile, separation_state_dict, duration_s=None, *, 
 
 def simulate_booster(profile, separation_state_dict, duration_s=None, *, guidance_policy="fixed_v1", mission_director=None, return_sites=None, tower_ready=True, splashdown_goal=None,
                      development_coast_control="fixed_v1", development_coast_restart=None,
-                     development_coast_from_separation=False):
+                     development_coast_from_separation=False, _trouble_engine=None):
     """Legacy synchronous API; draining does not change any integration step."""
     from .starship_concurrent import drain
     return drain(_simulate_booster_steps(profile, separation_state_dict, duration_s,
         guidance_policy=guidance_policy, mission_director=mission_director, return_sites=return_sites,
         tower_ready=tower_ready, splashdown_goal=splashdown_goal,
         development_coast_control=development_coast_control, development_coast_restart=development_coast_restart,
-        development_coast_from_separation=development_coast_from_separation))
+        development_coast_from_separation=development_coast_from_separation, _trouble_engine=_trouble_engine))

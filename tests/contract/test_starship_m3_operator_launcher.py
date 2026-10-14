@@ -33,3 +33,13 @@ def test_operator_token_opt_in_not_ambient(tmp_path, monkeypatch):
     env = build_environment(args)
     assert env["MISSIONOS_STARSHIP_INFLIGHT_OPERATOR_TOKEN"] == "b" * 48
     assert env["MISSIONOS_STARSHIP_INFLIGHT_OPERATOR_SOURCE"] == "scripted_test_driver"
+
+
+def test_explicit_model_is_validated_and_passed_without_ambient_override(tmp_path):
+    args = SimpleNamespace(port=18870, state_dir=tmp_path/"state", enable_live_models=False,
+        project=None, deepseek_secret="deepseek-api-key", jev_secret="jev-api-key", fixture_planner=True,
+        deepseek_model="deepseek-flash")
+    assert build_environment(args)["MISSIONOS_AGENT_MISSIONOS_STARSHIP_PLANNER_AGENT_MODEL_ID"] == "deepseek-flash"
+    args.deepseek_model = "bad/model"
+    with pytest.raises(ValueError, match="invalid_model"):
+        build_environment(args)

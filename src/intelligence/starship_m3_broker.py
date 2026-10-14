@@ -38,7 +38,15 @@ def _number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
+def _deep_booster(authority, phase):
+    return phase == "booster" and authority.get("prefix_provider_policy") == "jev_ascent_deepseek_booster_report_v1"
+
+
 def _prefix_limit(authority, phase):
+    if _deep_booster(authority, phase):
+        if authority.get("maximum_booster_jev_calls") != 0 or authority.get("maximum_booster_llm_calls", 0) is not None:
+            raise ValueError("m3_booster_provider_scope")
+        return None
     expected = {"ascent": 4, "booster": 1}
     value = authority["maximum_" + phase + "_jev_calls"]
     if type(value) is not int or value != expected[phase]:
@@ -63,7 +71,7 @@ def require_live_configuration(authority):
 
 
 class PrefixAgent:
-    """One bounded Jev choice, using observed data and no raw plant state."""
+    """Approved host provider choice; observations and frozen report, never plant truth."""
 
     def __init__(self, authority, phase, run_id, transport):
         if phase not in ("ascent", "booster"):
@@ -189,10 +197,24 @@ class PrefixAgent:
             "allowed_actions": request["allowed_actions"],
             "decision_deadline_s": deadline,
         }
+        if phase == "booster":
+            if _deep_booster(authority, phase):
+                report = authority["booster_recovery_report"]
+                if digest(report) != authority["booster_recovery_report_sha256"]:
+                    raise ValueError("m3_recovery_report_binding")
+                public.update(recovery_report=deepcopy(report),
+                    recovery_report_sha256=digest(report),
+                    objectives_to_compare=["capture", "splashdown"],
+                    capture_controller_connected=envelope["capture_controller_connected"])
+            else:
+                from .starship_booster_recovery_evidence import model_history
+                public["recovery_history"] = model_history()
         return public, instruction
 
     def assess(self, request):
         public, instruction = self._context(request)
+        if _deep_booster(self.authority, self.phase):
+            return self._assess_booster(request, public)
         receipt = _receipt("live", "typesafe", public)
         response = {
             "request_id": request["request_id"],
@@ -259,6 +281,71 @@ class PrefixAgent:
         return response
 
 
+    def _assess_booster(self, request, public):
+        """DeepSeek judges the recovery objective; the actor still checks execution."""
+        from .space_ops_investigator import _deepseek_model, _json, canonical_bytes
+        if os.environ.get(MODE_ENV) != "live":
+            raise ValueError("m3_live_configuration_changed")
+        model = _deepseek_model()
+        receipt = _receipt("live", "deepseek", public)
+        receipt.update(maximum_output_tokens=800, maximum_instance_calls=None,
+            decoder="missionos.booster_answer.v2")
+        response = {"request_id": request["request_id"], "request_sha256": digest(request),
+            "action": None, "mode": "live", "jev_invocation": None,
+            "llm_invocation": receipt, "model_inference_invoked": False,
+            "recovery_report_sha256": public["recovery_report_sha256"],
+            "decision_context": public, "decision_summary": None,
+            "free_text_summary_verified": False}
+        # The mailbox consumes this request identity once; no retry or persistent
+        # DeepSeek call ceiling is introduced. The actual flight deadline applies.
+        if self.transport.remaining() - APPLY_MARGIN_S < MIN_PROVIDER_S:
+            receipt["status"] = "insufficient_deadline_headroom"
+            return response
+        payload = {"model": model, "stream": False, "thinking": {"type": "disabled"},
+            "temperature": 0, "max_tokens": 800, "response_format": {"type": "json_object"},
+            "messages": [{"role": "system", "content":
+                "You supervise this simulator mission's booster recovery. Compare tower capture "
+                "and ocean splashdown using the approved historical report AND current observations. "
+                "Choose a recovery objective; allowed_actions separately states what the executor "
+                "can execute now. Do not command engines, attitude or arms. Zero demonstrated catches "
+                "does not prove impossibility; nominal splashdown evidence is NOT perturbation qualification. "
+                "Return exactly JSON action (capture or splashdown) and summary (brief external decision "
+                "explanation, not hidden reasoning). Do not invent a demonstrated catch or current-state certification."},
+                {"role": "user", "content": canonical_bytes(public).decode()}]}
+        def reject(category):
+            receipt["validation_failure_reason"] = category
+            raise ValueError("invalid_booster_model_response")
+        def decode(value):
+            if (type(value) is not dict or value.get("model") != model
+                    or type(value.get("choices")) is not list or len(value["choices"]) != 1):
+                reject("model_or_choices_shape")
+            choice = value["choices"][0]
+            message = choice.get("message", {})
+            if (choice.get("finish_reason") != "stop" or message.get("role") != "assistant"
+                    or message.get("tool_calls") or message.get("function_call")):
+                reject("completion_not_stop_or_tool_call")
+            try:
+                answer = _json(message["content"])
+            except (ValueError, KeyError, TypeError):
+                reject("answer_json")
+            # Some valid provider answers include a descriptive type wrapper.
+            # It is bounded metadata only: never an action, grant or instruction.
+            if (type(answer) is not dict or set(answer) not in (
+                    {"action", "summary"}, {"action", "summary", "type"})
+                    or "type" in answer and (type(answer["type"]) is not str or not 1 <= len(answer["type"]) <= 64)
+                    or answer["action"] not in public["objectives_to_compare"]
+                    or type(answer["summary"]) is not str or not 1 <= len(answer["summary"]) <= 1600):
+                reject("answer_shape_or_objective")
+            receipt["provider_type_metadata_observed"] = "type" in answer
+            return {k: answer[k] for k in ("action", "summary")}, model
+        answer = self.transport._invoke("deepseek", payload, receipt, decode)
+        self.calls += int(receipt["call_attempted"])
+        if answer:
+            response.update(action=answer["action"], decision_summary=answer["summary"])
+        response["model_inference_invoked"] = receipt["model_inference_invoked"]
+        return response
+
+
 class PrefixHostAttempts(HostAttempts):
     """Reuse durable attempt events; bind their identities to the prefix grant."""
 
@@ -267,8 +354,8 @@ class PrefixHostAttempts(HostAttempts):
         self.current, self.phase = current, phase
         self.authority = {
             phase + "_authority": {
-                "maximum_jev_calls": _prefix_limit(authority, phase),
-                "maximum_llm_calls": 0,
+                "maximum_jev_calls": 0 if _deep_booster(authority, phase) else _prefix_limit(authority, phase),
+                "maximum_llm_calls": None if _deep_booster(authority, phase) else 0,
             }
         }
         self.record = empty(authority, run_id, phase)
@@ -313,7 +400,7 @@ def serve_phase(root, authority, phase, run_id, child, sources_current, *, infli
     transport = DeadlineTransport(
         request_current,
         lambda: current.get("deadline", 0.0) - time.monotonic(),
-        jev_only=True,
+        jev_only=not _deep_booster(authority["prefix_authority"], phase),
         audit=ledger.event,
     )
     agent = PrefixAgent(authority["prefix_authority"], phase, run_id, transport)

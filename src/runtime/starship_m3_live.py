@@ -23,7 +23,7 @@ SCENARIOS = {"sixdof_m3_orbital_comparison": "orbital_update",
              **{f"sixdof_m3_{case}": case for case in REGISTERED_CASES}}
 SCOPE = "local_simulation_concurrent_ascent_booster_deployment_return_control"
 EXTRA_SOURCES = (
-    "src/runtime/starship_m3_live.py", "scripts/run_starship_m3.py",
+    "src/runtime/starship_m3_live.py", "src/runtime/starship_recovery_reports.py", "scripts/run_starship_m3.py", "scripts/start_starship_gateway.py",
     "src/intelligence/starship_m3_broker.py", "src/gateway/starship_chat.py",
     "src/intelligence/starship_mission_planner.py", "src/runtime/starship_runtime_budget.py",
     "src/runtime/starship_mission_control.py", "scripts/run_starship_mission_worker.py",
@@ -33,14 +33,15 @@ EXTRA_SOURCES = (
 )
 
 
-def contract(mode, case="orbital_update", *, legacy_call_limits=False, authority_gap_reasoning=None):
+def contract(mode, case="orbital_update", *, legacy_call_limits=False, authority_gap_reasoning=None, legacy_booster_jev=False, recorded_booster_report=None):
     if mode not in {"fixture", "live"} or (case not in {"orbital_update", "release_fault", *INFLIGHT_CASES} and not is_trial(case)):
         raise ValueError("m3_control_case_not_registered")
     base_case = INFLIGHT_CASES.get(case, case)
     inner = m2_contract(mode, base_case, legacy_call_limits=legacy_call_limits,
                         authority_gap_reasoning=authority_gap_reasoning)
     prefix = m3_prefix_contract(base_case, mode=mode, legacy_call_limits=legacy_call_limits,
-                                authority_gap_reasoning=authority_gap_reasoning)
+                                authority_gap_reasoning=authority_gap_reasoning, legacy_booster_jev=legacy_booster_jev,
+                                recorded_booster_report=recorded_booster_report)
     extra = 5 if mode == "live" else 0
     result = {
         "schema": "missionos.starship_m3_control_authority.v1", "scope": SCOPE,
@@ -65,6 +66,10 @@ def contract(mode, case="orbital_update", *, legacy_call_limits=False, authority
         result["phase_provider_policy"] = (
             "jev_ascent_booster_deployment_deepseek_admitted_comparison_or_authority_gap"
         )
+    if mode == "live" and not legacy_booster_jev:
+        result["maximum_jev_calls"] -= 1
+        result["maximum_llm_calls"] = None
+        result["phase_provider_policy"] = "jev_ascent_deployment_deepseek_booster_report_and_admitted_return"
     if case in INFLIGHT_CASES:
         result.update(inflight_scope_amendment_enabled=True, maximum_inflight_scope_amendments=1,
             inflight_policy=inflight_policy(inner["return_authority"]))
@@ -73,12 +78,16 @@ def contract(mode, case="orbital_update", *, legacy_call_limits=False, authority
 
 def sources():
     from .starship_m3_fixture import sources as existing_sources
+    from src.intelligence.starship_booster_recovery_evidence import REPORT_SOURCES
     return {**existing_sources(include_inflight=True), **{
-        name: sha256((ROOT / name).read_bytes()).hexdigest() for name in EXTRA_SOURCES}}
+        name: sha256((ROOT / name).read_bytes()).hexdigest() for name in (*EXTRA_SOURCES, "src/intelligence/starship_booster_recovery_evidence.py", *REPORT_SOURCES)}}
 
 
 def plan_fields(mode, case, source_sha256):
     authority = contract(mode, case)
+    report_sources = authority["prefix_authority"].get("booster_recovery_report_source_sha256", {})
+    if any(source_sha256.get(name) != value for name, value in report_sources.items()):
+        raise ValueError("approved_recovery_report_source_mismatch")
     from src.intelligence.starship_m2_broker import require_live_configuration
     require_live_configuration(authority)
     if case in INFLIGHT_CASES:
@@ -197,13 +206,16 @@ def verify(study, *, expected_authority, expected_sources, expected_return_sourc
     result = {"schema": "missionos.starship_m3_control_verification.v1",
         "passed": False, "issues": [], "case_accepted": False, "case_issues": [],
         "ai_control_demonstrated": False, "m3_completed": False,
+        "booster_recovery_judgment_observed": False, "live_phase_decisions": {},
         "mission_completed": False, "physical_execution": False}
     try:
         if (study["schema"] != "missionos.starship_m3_control_study.v1"
                 or digest(study["authority"]) != digest(expected_authority)
                 or not any(digest(expected_authority) == digest(contract(
                     expected_authority["mode"], expected_authority["case"],
-                    legacy_call_limits=legacy, authority_gap_reasoning=gap))
+                    legacy_call_limits=legacy, authority_gap_reasoning=gap,
+                    legacy_booster_jev=expected_authority["prefix_authority"].get("prefix_provider_policy") == "jev_only",
+                    recorded_booster_report=expected_authority["prefix_authority"].get("booster_recovery_report")))
                     for legacy in (False, True) for gap in (None, False))
                 or study["run_id"] != expected_run_id or study["source_sha256"] != expected_sources
                 or study["sources_unchanged"] is not True
@@ -211,6 +223,9 @@ def verify(study, *, expected_authority, expected_sources, expected_return_sourc
                 or study["human_inflight_commands"] != 0
                 or study["retry_performed"] is not False or study["physical_execution"] is not False):
             raise ValueError("m3_approved_inputs_or_runtime_mismatch")
+        report_sources = expected_authority["prefix_authority"].get("booster_recovery_report_source_sha256", {})
+        if any(expected_sources.get(name) != value for name, value in report_sources.items()):
+            raise ValueError("approved_recovery_report_source_mismatch")
         base_case = expected_authority["m2_authority"]["case"]
         if is_trial(base_case):
             manifest = study.get("operational_trial_manifest")
@@ -291,17 +306,23 @@ def verify(study, *, expected_authority, expected_sources, expected_return_sourc
                 if isinstance((r.get("response") or {}).get(key), dict))
         result["live_phase_decisions"] = {
             "ascent_jev": live_adopted(ascent, "jev_invocation", ascent=True),
-            "booster_jev": live_adopted(booster, "jev_invocation"),
+            ("booster_deepseek" if prefix["authority"].get("prefix_provider_policy") == "jev_ascent_deepseek_booster_report_v1" else "booster_jev"):
+                live_adopted(booster, "llm_invocation" if prefix["authority"].get("maximum_booster_llm_calls") is None and "maximum_booster_llm_calls" in prefix["authority"] else "jev_invocation"),
             "deployment_jev": live_adopted(deployment, "jev_invocation"),
             "return_jev": live_adopted(returning, "jev_invocation"),
             "return_deepseek": live_adopted(returning, "llm_invocation"),
         }
+        result["booster_recovery_judgment_observed"] = result["passed"] and any(
+            (r.get("response") or {}).get("action") in {"capture", "splashdown"}
+            and ((r.get("response") or {}).get("llm_invocation") or {}).get("model_inference_invoked") is True
+            for r in booster)
         result["ai_control_demonstrated"] = result["passed"] and all(result["live_phase_decisions"].values())
         # Per-flight survival and record acceptance are separate from aggregate
         # live phase coverage. A normal flight need not invent a DeepSeek call.
         result["live_phase_coverage_complete"] = result["ai_control_demonstrated"]
         result["case_accepted"] = result["passed"] and not result["case_issues"]
     except (ValueError, KeyError, TypeError, IndexError, OverflowError) as error:
-        result.update(passed=False, case_accepted=False, ai_control_demonstrated=False)
+        result.update(passed=False, case_accepted=False, ai_control_demonstrated=False,
+            booster_recovery_judgment_observed=False, live_phase_decisions={})
         result["issues"].append(str(error) if isinstance(error, ValueError) else type(error).__name__)
     return result

@@ -336,3 +336,79 @@ def test_prefix_navigation_boolean_time_is_not_numeric():
         broker.PrefixAgent(
             a, "ascent", "run", common.DeadlineTransport(lambda: True, lambda: 12.0)
         ).assess(req)
+
+
+def deep_request():
+    from src.runtime.starship_m3_prefix import m3_prefix_contract
+    a, req = request("booster")
+    a = m3_prefix_contract("orbital_update", mode="live")
+    req["envelope_sha256"] = digest(a["booster_authority"])
+    return a, req
+
+
+@pytest.mark.parametrize("action", ["capture", "splashdown"])
+def test_deepseek_mission_booster_reads_frozen_report_and_current_state(monkeypatch, tmp_path, action):
+    a, req = deep_request()
+    seen = []
+    monkeypatch.setattr("src.intelligence.space_ops_investigator._deepseek_model", lambda: "deepseek-flash")
+    current = {"request_id": req["request_id"], "sha256": digest(req), "request_age_s": 0.0}
+    ledger = broker.PrefixHostAttempts(tmp_path, a, "run", "booster", current)
+    def send(endpoint, wire, _key, **kwargs):
+        payload = json.loads(wire)
+        context = json.loads(payload["messages"][1]["content"])
+        seen.append(context)
+        assert endpoint == common.DEEPSEEK_ENDPOINT and kwargs["timeout_s"] == 30.0
+        assert context["recovery_report"]["catch"]["launch_derived_supported_catches_demonstrated"] == 0
+        assert context["recovery_report"]["catch"]["completed_development_candidates"] == 88
+        assert not context["recovery_report"]["splashdown"]["perturbation_robustness_qualified"]
+        assert context["allowed_actions"] == ["splashdown"]
+        assert context["objectives_to_compare"] == ["capture", "splashdown"]
+        assert context["observation"] == req["observation"]
+        assert not context["capture_controller_connected"]
+        assert json.loads((tmp_path / "host-attempts.json").read_text())["attempts"][0]["provider"] == "deepseek"
+        return "response", json.dumps({"model": "deepseek-flash", "choices": [{"finish_reason": "stop",
+            "message": {"role": "assistant", "content": json.dumps({"action": action, "summary": "Historical evidence considered; execution must still be checked."})}}]}).encode()
+    monkeypatch.setattr(common, "_send_once", send)
+    answer = broker.PrefixAgent(a, "booster", "run", common.DeadlineTransport(
+        lambda: True, lambda: 75.0, audit=ledger.event)).assess(req)
+    assert answer["action"] == action and answer["model_inference_invoked"]
+    assert answer["jev_invocation"] is None and answer["llm_invocation"]["maximum_instance_calls"] is None
+    assert answer["llm_invocation"]["public_input_sha256"] == digest(seen[0])
+    assert answer["recovery_report_sha256"] == a["booster_recovery_report_sha256"]
+    # A requested tower objective does not become executable authority.
+    from src.runtime.starship_mission_director import check_action
+    reason = check_action(a["booster_authority"], "booster_selection", action, req["observation"],
+        elapsed_s=1.0, observation_requests=0, hold_used_s=0.0)
+    assert (reason is None) is (action == "splashdown")
+
+
+def test_report_tamper_rejected_before_model():
+    a, req = deep_request()
+    a["booster_recovery_report"]["catch"]["launch_derived_supported_catches_demonstrated"] = 1
+    with pytest.raises(ValueError, match="report_binding"):
+        broker.PrefixAgent(a, "booster", "run", common.DeadlineTransport(lambda: True, lambda: 75.)).assess(req)
+
+
+def test_deep_booster_timeout_keeps_null_action_and_evidence(monkeypatch):
+    a, req = deep_request()
+    monkeypatch.setattr("src.intelligence.space_ops_investigator._deepseek_model", lambda: "deepseek-flash")
+    monkeypatch.setattr(common, "_send_once", lambda *_a, **_kw: ("transport_timeout", None))
+    answer = broker.PrefixAgent(a, "booster", "run", common.DeadlineTransport(lambda: True, lambda: 75.)).assess(req)
+    assert answer["action"] is None and answer["llm_invocation"]["status"] == "transport_timeout"
+    assert not answer["model_inference_invoked"] and answer["decision_context"]["recovery_report"]
+
+
+@pytest.mark.parametrize("extra,valid", [({"type": "choice"}, True), ({"type": "capture"}, True),
+    ({"type": "choice", "command": "capture"}, False), ({"type": "x" * 65}, False),
+    ({"type": ["splashdown"]}, False), ({"type": ""}, False),
+    ({"command": "open_arms"}, False), ({"approval": True}, False)])
+def test_optional_provider_metadata_cannot_expand_authority(monkeypatch, extra, valid):
+    a, req = deep_request()
+    monkeypatch.setattr("src.intelligence.space_ops_investigator._deepseek_model", lambda: "deepseek-flash")
+    wire = json.dumps({"model": "deepseek-flash", "choices": [{"finish_reason": "stop", "message": {
+        "role": "assistant", "content": json.dumps({"action": "splashdown", "summary": "Use nominal ocean recovery.", **extra})}}]}).encode()
+    monkeypatch.setattr(common, "_send_once", lambda *_a, **_kw: ("response", wire))
+    answer = broker.PrefixAgent(a, "booster", "run", common.DeadlineTransport(lambda: True, lambda: 75.)).assess(req)
+    assert answer["model_inference_invoked"] is valid
+    assert (answer["action"] == "splashdown") is valid
+    assert "type" not in answer and "command" not in answer and "approval" not in answer

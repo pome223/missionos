@@ -15,9 +15,9 @@ def _authority(study):
     mode = authority["mode"]
     _require(mode in {"fixture", "live"}, "prefix_mode")
     _require(authority["case"] in {"normal", "operations_notice", "release_fault", "orbital_update", *REGISTERED_CASES}, "unregistered_prefix_case")
-    _require(authority["schema"] in {"missionos.starship_m3_prefix_authority.v1", "missionos.starship_m3_prefix_authority.v2", "missionos.starship_m3_prefix_authority.v3"}, "prefix_authority_version")
+    _require(authority["schema"] in {"missionos.starship_m3_prefix_authority.v1", "missionos.starship_m3_prefix_authority.v2", "missionos.starship_m3_prefix_authority.v3", "missionos.starship_m3_prefix_authority.v4"}, "prefix_authority_version")
     splashdown = authority["schema"] != "missionos.starship_m3_prefix_authority.v1"
-    _require((mode == "live") is (authority["schema"] == "missionos.starship_m3_prefix_authority.v3")
+    _require((mode == "live") is (authority["schema"] in {"missionos.starship_m3_prefix_authority.v3", "missionos.starship_m3_prefix_authority.v4"})
 , "prefix_live_scope")
     inner = authority["m2_authority"]
     _require(m2_contract_matches(inner) and inner["mode"] == mode
@@ -41,6 +41,19 @@ def _authority(study):
             maximum_ascent_jev_calls=4, maximum_booster_jev_calls=1,
             prefix_provider_policy="jev_only",
             maximum_model_calls=inner["deployment_authority"]["maximum_jev_calls"]+5)
+    if authority["schema"] == "missionos.starship_m3_prefix_authority.v4":
+        report = authority["booster_recovery_report"]
+        from .starship_recovery_reports import report_sources
+        provenance = report_sources(report)
+        _require(type(report) is dict and report.get("schema") == "missionos.booster_recovery_mission_report.v1"
+            and report.get("grants_execution_authority") is False
+            and report.get("physical_execution") is False
+            and report["catch"]["capture_controller_connected"] is False,
+            "recovery_report_scope")
+        expected.update(schema=authority["schema"], maximum_booster_jev_calls=0,
+            maximum_booster_llm_calls=None, prefix_provider_policy="jev_ascent_deepseek_booster_report_v1",
+            booster_recovery_report=report, booster_recovery_report_sha256=_digest(report),
+            booster_recovery_report_source_sha256=provenance, maximum_model_calls=None)
     _require(_same(authority, expected) and _digest(profile) == authority["profile_sha256"], "outer_authority_or_profile")
     expected_binding = {"schema": "missionos.starship_m3_prefix_approval_binding.v1",
         "mode": mode, "outer_authority_sha256": _digest(authority),
@@ -356,12 +369,13 @@ def _deployment_sequences(run, trace):
     _require(_same(dispatched, [{k: e[k] for k in ("point", "action", "time_s")} for e in commands]), "deployment_core_dispatch")
 
 
-def _successful_live_response(response):
-    receipt = response.get("jev_invocation")
+def _successful_live_response(response, provider="typesafe"):
+    key, other = ("llm_invocation", "jev_invocation") if provider == "deepseek" else ("jev_invocation", "llm_invocation")
+    receipt = response.get(key)
     return (response.get("mode") == "live" and response.get("model_inference_invoked") is True
-            and response.get("llm_invocation") is None and type(receipt) is dict
+            and response.get(other) is None and type(receipt) is dict
             and receipt.get("call_attempted") is True and receipt.get("model_inference_invoked") is True
-            and receipt.get("provider") == "typesafe" and receipt.get("status") == "succeeded")
+            and receipt.get("provider") == provider and receipt.get("status") == "succeeded")
 
 
 def _providers(study):
@@ -381,6 +395,9 @@ def _providers(study):
     _require(type(ledgers) is dict and set(ledgers) == {"ascent", "booster"}, "prefix_host_ledgers_required")
     summary = {"attempted": 0, "actor_valid_responses": 0, "rules_accepted": 0}
     for phase in ("ascent", "booster"):
+        deep = phase == "booster" and authority["schema"] == "missionos.starship_m3_prefix_authority.v4"
+        wanted = "deepseek" if deep else "typesafe"
+        key, other = ("llm_invocation", "jev_invocation") if deep else ("jev_invocation", "llm_invocation")
         records = (study["ascent"]["decisions"] if phase == "ascent"
                    else study["prefix_run"]["booster_mission_director"]["records"])
         canonical = {"schema": "missionos.starship_m3_host_attempts.v1",
@@ -391,12 +408,12 @@ def _providers(study):
         _require(type(ledger) is dict and set(ledger) == set(canonical)
                  and all(_same(ledger[k], v) for k, v in canonical.items() if k != "attempts")
                  and type(ledger["attempts"]) is list
-                 and len(ledger["attempts"]) <= authority[f"maximum_{phase}_jev_calls"], "prefix_host_ledger_binding")
+                 and len(ledger["attempts"]) <= (len(records) if deep else authority[f"maximum_{phase}_jev_calls"]), "prefix_host_ledger_binding")
         known, seen, matched = {r["request"]["request_id"]: r for r in records}, set(), set()
         for number, attempt in enumerate(ledger["attempts"], 1):
             _require(type(attempt) is dict and set(attempt) == FIELDS, "prefix_host_attempt_schema")
             token, provider = attempt["request_id"], attempt["provider"]
-            _require(token in known and token not in seen and provider == "typesafe"
+            _require(token in known and token not in seen and provider == wanted
                      and type(attempt["sequence"]) is int and attempt["sequence"] == number,
                      "prefix_host_attempt_identity")
             seen.add(token)
@@ -415,7 +432,7 @@ def _providers(study):
                      and (not attempt["response_published"] or attempt["completed"]), "prefix_host_attempt_status")
             response = entry.get("response")
             _require(response is None or type(response) is dict, "prefix_response_object")
-            receipt = (response or {}).get("jev_invocation")
+            receipt = (response or {}).get(key)
             _require(receipt is None or type(receipt) is dict, "prefix_receipt_object")
             if receipt and receipt.get("call_attempted"):
                 _require(attempt["completed"] and attempt["response_published"]
@@ -427,8 +444,22 @@ def _providers(study):
         for entry in records:
             response = entry.get("response") or {}
             _require(type(response) is dict, "prefix_response_object")
-            _require(response.get("llm_invocation") is None, "short_phase_jev_only")
-            receipt = response.get("jev_invocation")
+            _require(response.get(other) is None, "short_phase_approved_provider_only")
+            if deep and response:
+                request = entry["request"]
+                context = response.get("decision_context")
+                expected_context = {"scope": "bounded_booster_supervision",
+                    "observation": request["observation"], "allowed_actions": request["allowed_actions"],
+                    "decision_deadline_s": request["decision_deadline_s"],
+                    "recovery_report": authority["booster_recovery_report"],
+                    "recovery_report_sha256": authority["booster_recovery_report_sha256"],
+                    "objectives_to_compare": ["capture", "splashdown"],
+                    "capture_controller_connected": authority["booster_authority"]["capture_controller_connected"]}
+                _require(_same(context, expected_context)
+                    and response.get("recovery_report_sha256") == authority["booster_recovery_report_sha256"]
+                    and response.get("free_text_summary_verified") is False,
+                    "booster_model_report_or_context_binding")
+            receipt = response.get(key)
             invoked = False
             if receipt is not None:
                 _require(type(receipt) is dict and type(receipt.get("call_attempted")) is bool,
@@ -436,16 +467,24 @@ def _providers(study):
                 if receipt["call_attempted"]:
                     _require(entry["request"]["request_id"] in matched
                              and receipt.get("schema_version") == "runtime_invocation_evidence.v1"
-                             and receipt.get("provider") == "typesafe" and receipt.get("mode") == "live"
+                             and receipt.get("provider") == wanted and receipt.get("mode") == "live"
                              and receipt.get("application_margin_s") == 2. and receipt.get("retries") == 0
                              and type(receipt.get("model_inference_invoked")) is bool
                              and receipt["model_inference_invoked"] is (receipt.get("status") == "succeeded"),
                              "prefix_actor_receipt_without_attempt")
                     invoked = receipt["model_inference_invoked"]
+            if deep and receipt:
+                _require(receipt.get("public_input_sha256") == _digest(response["decision_context"])
+                    and receipt.get("maximum_instance_calls") is None,
+                    "booster_approved_report_input_receipt")
+                if invoked:
+                    _require(response.get("action") in {"capture", "splashdown"}
+                        and type(response.get("decision_summary")) is str
+                        and 1 <= len(response["decision_summary"]) <= 1600, "booster_external_summary")
             _require(response.get("model_inference_invoked", False) is invoked, "prefix_inference_claim")
             accepted = (entry["accepted_action"] is not None if phase == "ascent"
                         else entry["dispatch"]["rules_accepted"])
-            _require(not accepted or _successful_live_response(response), "accepted_short_phase_requires_live_receipt")
+            _require(not accepted or _successful_live_response(response, wanted), "accepted_short_phase_requires_live_receipt")
             summary["actor_valid_responses"] += invoked
             summary["rules_accepted"] += accepted
     inner, deployment = authority["m2_authority"], study["deployment_attempt_ledger"]
@@ -459,8 +498,9 @@ def _providers(study):
                     "model_calls": len(deployment["attempts"])},
         "provider_attempt_ledger": {"deployment": deployment, "return": empty(inner, run_id, "return")}})
     summary["deployment"] = deployed
+    from .starship_call_limits import call_count_allowed
     _require(study["model_calls"] == summary["attempted"]+len(deployment["attempts"])
-             <= authority["maximum_model_calls"], "prefix_total_model_budget")
+             and call_count_allowed(study["model_calls"], authority["maximum_model_calls"]), "prefix_total_model_budget")
     return summary
 
 

@@ -58,8 +58,13 @@ def phase_coverage(study):
         )
         if any(type(value) is not list for value in rows):
             raise ValueError("m3_phase_decision_rows")
-        return dict(zip(PHASES, (
-            *(_adopted(value, "jev_invocation", "typesafe") for value in rows),
+        deep = prefix.get("authority", {}).get("prefix_provider_policy") == "jev_ascent_deepseek_booster_report_v1"
+        phases = tuple("booster_deepseek" if deep and k == "booster_jev" else k for k in PHASES)
+        return dict(zip(phases, (
+            _adopted(rows[0], "jev_invocation", "typesafe"),
+            _adopted(rows[1], "llm_invocation" if deep else "jev_invocation", "deepseek" if deep else "typesafe"),
+            _adopted(rows[2], "jev_invocation", "typesafe"),
+            _adopted(rows[3], "jev_invocation", "typesafe"),
             _adopted(rows[-1], "llm_invocation", "deepseek"),
         )))
     except (KeyError, TypeError, ValueError):
@@ -307,6 +312,11 @@ def verify_completion(protocol, flight_studies, runtime_records, *, expected_pro
                                    return_source_sha256=protocol["return_source_sha256"],
                                    matrix=protocol.get("flight_matrix", "original_v1"))
         _require(digest(protocol) == digest(canonical), "m3_matrix_protocol_modified")
+        policies = {b["authority"].get("prefix_authority", {}).get("prefix_provider_policy")
+                    for b in protocol["flight_bindings"].values()}
+        _require(len(policies) == 1, "m3_matrix_mixed_booster_provider_scope")
+        if policies == {"jev_ascent_deepseek_booster_report_v1"}:
+            result["live_phase_coverage"]["booster_deepseek"] = result["live_phase_coverage"].pop("booster_jev")
         _require(type(flight_studies) is dict and set(flight_studies) == set(FLIGHT_CASES), "m3_matrix_missing_flight")
         _require(type(runtime_records) is dict and set(runtime_records) == {"scope", "ascent"}, "m3_matrix_missing_runtime")
         _require(type(gateway_records) is dict and set(gateway_records) == set(FLIGHT_CASES), "m3_gateway_bindings_missing")
