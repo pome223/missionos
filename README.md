@@ -115,11 +115,11 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
-**MissionOS asks DeepSeek to judge tower or ocean recovery during the mission; only ocean return is currently executable.**
-DeepSeek selected splashdown; its returned explanation cited the prior catch
-history and unconnected capture controller. Independent scope checks accepted
-that choice; later
-telemetry confirmed it, and the recorded flight released 26 payloads.
+**Live AI judgments, approved bounds, 6DOF execution and later observations run together in MissionOS.**
+For booster recovery, DeepSeek received the current observation and catch-development
+history, selected splashdown and passed the independent execution check. A later
+observation confirmed the selection. Only ocean return is currently executable;
+the same flight's separate Ship sequence released 26 payloads.
 
 **Play the new 120-second mission — tower, ocean, AI judgment and metrics.**
 
@@ -127,6 +127,15 @@ https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72
 
 *Generic rigid-body payloads: unfolding, communications and orbit raising are
 not modeled. The tower cutaway illustrates an option; no catch was executed.*
+
+Follow the judgment in the video; these are simulation times from the same saved flight:
+
+| Mission time | What to watch |
+| --- | --- |
+| T+135.6 s | MissionOS gives DeepSeek the current Booster observation and reviewed catch history. |
+| T+137.0 s | DeepSeek selects splashdown; the independent execution check accepts it without fallback. |
+| T+137.1 s | A separate later observation confirms the selected recovery objective. |
+| T+619.655 s | The recorded Booster reaches nominal sea contact at 1.847 m/s CG speed, with 11.42 t propellant. |
 
 [Open video](https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72) ·
 [Interactive replay](docs/assets/starship-booster-recovery-decision-20261014/index.html) ·
@@ -137,6 +146,12 @@ checked action and later motion. Booster CG contact speed was 1.847 m/s; Ship
 contact-point speed was 4.608 m/s. A separate Ship comparison response was
 rejected, so that flight's overall comparison gate remains incomplete. It is
 recovery-judgment evidence, not a new completed M3 campaign or demonstrated catch.
+
+The engineering contribution is the traceable connection from model judgment to
+approved execution and observed outcome while simulation time continues during
+inference. It provides a reference implementation for mission supervision;
+application to hardware requires its own sensors, execution model and validation.
+[Engineering value, prior work and evidence boundaries](docs/examples/starship-booster-recovery-decision.md#engineering-value-and-prior-work).
 
 **Seeded fault notifications trigger real MissionOS monitoring and inhibition decisions.**
 The opt-in [fault-notification experiment](docs/examples/starship-trouble-engine.md)

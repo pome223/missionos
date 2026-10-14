@@ -158,3 +158,27 @@ keeps source/record hashes, negative prototype and API-diagnosis receipts separa
 The player/MP4 contain only reviewed numerical display fields, actual actions and
 external summaries. They never manufacture a catch pose, support, hidden thought
 or completed comparison. Model/template changes do not change raw flight states.
+
+## Public explanation and reuse boundary
+
+The public video timeline must derive from its own `data.json` and `summary.json`:
+request T+135.6 s, accepted dispatch T+137.0 s, later objective observation
+T+137.1 s, and Booster terminal sample T+619.655 s. Keep the separate randomized
+fault trial and earlier completed M3 campaign out of that timeline. Payload releases
+are a separate Ship sequence; do not attribute them causally to the Booster choice.
+
+Describe the contribution as implemented integration and evidence traceability.
+Autonomous mission planning and runtime assurance are established prior work,
+linked from the human example. No research priority, formal safety proof or
+hard real-time deadline guarantee has been established for this implementation.
+Reuse is an architecture reference, not hardware deployment qualification.
+
+Jev runs on periodic and event-triggered requests, rather than every telemetry
+sample. The fault CLI receives idealized current health flags and cannot perform
+corrective Booster trajectory changes; it is distinct from the M3 HTTP grant.
+There is no DeepSeek call-count ceiling. Finite deadlines and independently
+checked fallback do not by themselves guarantee safe recovery. The credential-free
+worker does not verify an HMAC with a key it does not possess: it consumes the
+host-owned pipe result and checks its request binding. Host signing/approval and
+worker execution checks must remain separate claims. A recorded failed recovery
+is not evidence that recovery was physically impossible.
