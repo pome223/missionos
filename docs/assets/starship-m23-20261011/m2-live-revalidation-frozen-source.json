@@ -1,0 +1,119 @@
+{
+  "schema": "missionos.m2_saved_revalidation.v1",
+  "scope": "executed_source_verifier_with_only_scalar_timestamp_comparison_corrected",
+  "new_model_calls": 0,
+  "new_flights": 0,
+  "original_verification": {
+    "schema": "missionos.starship_m2_verification.v1",
+    "passed": false,
+    "issues": [
+      "search_trial_binding"
+    ],
+    "case_accepted": false,
+    "case_issues": [],
+    "outcome": "unresolved",
+    "mission_completed": false,
+    "physical_execution": false,
+    "independent_physics_validation": false,
+    "provider_attempts": {
+      "deployment_jev": 1,
+      "deployment_llm": 0,
+      "return_jev": 10,
+      "return_llm": 0,
+      "host_accounting": {
+        "attempted": 11,
+        "host_valid_responses": 11,
+        "host_published_responses": 11,
+        "actor_receipts": 11,
+        "actor_valid_responses": 11,
+        "actor_rules_accepted": 11,
+        "incomplete_attempts": 0
+      }
+    }
+  },
+  "verification": {
+    "schema": "missionos.starship_m2_verification.v1",
+    "passed": true,
+    "issues": [],
+    "case_accepted": true,
+    "case_issues": [],
+    "outcome": "contact_and_recovery_area_met",
+    "mission_completed": false,
+    "physical_execution": false,
+    "independent_physics_validation": false,
+    "provider_attempts": {
+      "deployment_jev": 1,
+      "deployment_llm": 0,
+      "return_jev": 10,
+      "return_llm": 0,
+      "host_accounting": {
+        "attempted": 11,
+        "host_valid_responses": 11,
+        "host_published_responses": 11,
+        "actor_receipts": 11,
+        "actor_valid_responses": 11,
+        "actor_rules_accepted": 11,
+        "incomplete_attempts": 0
+      }
+    },
+    "deployment_binding": {
+      "handoff_sha256": "70dbd7bf66c54fc2799bc56aecc145af9e64f2b14401204c18d895ae4543135b",
+      "authority_sha256": "f1937451cd558f1fc8bcfccfbd3de6b90525759184bfd646318164b14e95bf91",
+      "profile_sha256": "d0d05785333300ed76aab209749c94c5fa34b209a764e310c1c04e93eaa8d013",
+      "generation": 2,
+      "released_count": 0,
+      "retained_count": 26
+    },
+    "return_verification": {
+      "schema": "missionos.starship_m1_verification.v2",
+      "study_canonical_sha256": "57be08fe6f469d4b8aff4e4630dd51db159bd5ed7fd0d84505d7b3fbd491ba03",
+      "expected_case": "event_normal",
+      "expected_run_id": "4b7a11a14c0442f3a293aa52ca2b108c-return",
+      "observed_run_id": "4b7a11a14c0442f3a293aa52ca2b108c-return",
+      "expected_sources_sha256": "10a2568b286b9af93d3b7bfdac08a201f72c63e255aec2e9a7d1ed0290ec8d0b",
+      "expected_envelope_sha256": "70cb93aa92f4e800a7146ac66ef1e54600443aeebc1a444296b236ba2c28b93e",
+      "verifier_source_sha256": "13495df77396e2bcbec4bef15b20c059d1916ba2249c305a649a70ae3acf4d89",
+      "binding_unavailable": [],
+      "binding_complete": true,
+      "passed": true,
+      "issues": [],
+      "outcome": "contact_and_recovery_area_met",
+      "case_accepted": false,
+      "case_issues": [
+        "normal_return_changed"
+      ],
+      "mission_completed": false,
+      "physical_execution": false,
+      "independent_physics_validation": false
+    }
+  },
+  "saved_inputs_unchanged": true,
+  "saved_source_maps_match": true,
+  "current_checkout_is_not_the_executed_source": true,
+  "executed_outer_source_file_count": 83,
+  "executed_return_source_file_count": 73,
+  "original_verifier_sha256": "9dd53969058b3f5544cc47f1314dc7a9a820e5123bfa342a91ff13e0afc60f64",
+  "corrected_verifier_sha256": "dfa3e78c62402c438c9a43b70aa3c3757ae71c761d5ccbe7be3b7551e0064dd4",
+  "loaded_starship_module_sha256": {
+    "src.runtime.starship_m2_verifier": "dfa3e78c62402c438c9a43b70aa3c3757ae71c761d5ccbe7be3b7551e0064dd4",
+    "src.runtime.starship_deployment_handoff_verifier": "c7ba5e3c74633f2ef9a8247e6521d862aec3fb6428811e7c4ba9fb1777f627fd",
+    "src.runtime.starship_replanning_verifier": "13495df77396e2bcbec4bef15b20c059d1916ba2249c305a649a70ae3acf4d89",
+    "src.runtime.starship_orbital_window": "6a72c9e64abf9ce2c45835c96fd3de91a0974f3a19fcaab61a10ae7dba600d07",
+    "src.runtime.starship_mission_director": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src.runtime.starship_replanning": "88ce534fc45e0d26e9233a45bc92f594750ec8b26ec5a6ab10ad86a458932e78",
+    "src.runtime.starship_m2_decision_verifier": "ab8950282359e1c1546fc9d86bde664bf26bc6e8514be603b5919162525a2864",
+    "src.runtime.starship_return_feasibility": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src.runtime.starship_m2_attempts": "9e85b350c86aab153cd6a72a29739b45633ce81e639fd0d6330065772893ee82",
+    "src.runtime.starship_sixdof_verifier": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src.runtime.starship_wind_verifier": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "src.runtime.starship_replanning_events": "b4a3c596daec6e89137a2d4cd64cfea72adf27ad9235432cee14f36c250135a4"
+  },
+  "original_artifacts_sha256": {
+    "study.json": "6510133a9649988fde122a08580c168a1384d7dddef886d2b91f4bb34f4c889d",
+    "inputs.json": "2ae31742007de05ae02cd22e40bcb1cb81f5fbe4bb3972a0b3de8bacf5533fb3",
+    "verification.json": "553da34900a60dc666e995957101802cc6a48b04f7f45c3e83f2fa5abc2d2adb",
+    "summary.json": "4c4ab0db921847951b10a42c35ebc47ec4fc5a444357e82d5d52f1175602f46b",
+    "manifest.json": "957e0bbba1b26b37817d467092bbca9a98fb754d0164fdb1c7139b074f815c14"
+  },
+  "correction": "Finite scalar return_time absolute tolerance 1e-7 seconds, zero relative tolerance; no other source changed."
+}

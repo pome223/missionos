@@ -1,0 +1,72 @@
+{
+  "candidate_sha256": "d6257f413d19e141b704b0347ed96a4a7ed279a901eb4d2059494bbc73ed8666",
+  "canonical_candidate_bytes": 5271754,
+  "compact_coast_samples": [
+    3367,
+    3367,
+    3367,
+    3367
+  ],
+  "digest_semantics": {
+    "hash": "sha256",
+    "serialization": "json.dumps(sort_keys=True,separators=(comma,colon),allow_nan=False).encode()"
+  },
+  "extra_model_calls": 0,
+  "extra_simulator_runs": 0,
+  "flight_source_modified": false,
+  "input_artifacts": [
+    "flight/mission/return/forecast-4.json",
+    "flight/mission/return/forecast-5.json",
+    "flight/mission/return/forecast-6.json",
+    "flight/mission/return/forecast-7.json"
+  ],
+  "limitations": [
+    "One timing sample, not a benchmark distribution.",
+    "Extrapolation excludes physics, I/O and scheduling overhead.",
+    "No in-process CPU profile; measured cost and source call graph explain a bottleneck, not exact elapsed-run attribution."
+  ],
+  "matches_saved_approval_candidate": true,
+  "proposed_fix": "Reference the selected saved plan revision in per-tick reservation snapshots; preserve full current-candidate hashing and fresh physical admission at selection, approval consumption and dispatch.",
+  "scaling": {
+    "approval_sim_time_s": 1403.95,
+    "burn_sim_time_s": 7731.351388986685,
+    "candidate_digest_calls_per_step": 4,
+    "coast_step_s": 0.25,
+    "derivation": "ceil((7731.351388986685-1403.95)/0.25)*4*0.07861399999999996",
+    "estimated_candidate_digest_cpu_s_to_burn": 7958.881359999996,
+    "estimated_remaining_steps": 25310,
+    "fixed_flight_wall_budget_s": 2400.0
+  },
+  "schema": "missionos.reservation_hash_performance_diagnostic.v1",
+  "single_digest_cpu_s": 0.07861399999999996,
+  "single_digest_measurements": 1,
+  "single_digest_wall_s": 0.07883608399424702,
+  "source_boundary": "saved prediction artifacts and frozen implementation; no simulator or provider invocation",
+  "source_commit": "09db378d",
+  "source_locations": [
+    {
+      "basis": "Each compact trial retains all orbital_coast samples.",
+      "end_line": 84,
+      "path": "src/runtime/starship_replanning_executor.py",
+      "start_line": 60
+    },
+    {
+      "basis": "One candidate contains four compact trials plus bound source and deployment identities.",
+      "end_line": 705,
+      "path": "src/runtime/starship_replanning_executor.py",
+      "start_line": 690
+    },
+    {
+      "basis": "Each approval_snapshot calls reservation twice; each reservation hashes the full selected candidate.",
+      "end_line": 105,
+      "path": "src/runtime/starship_inflight_executor.py",
+      "start_line": 91
+    },
+    {
+      "basis": "Each pre-dispatch step publishes two snapshots.",
+      "end_line": 123,
+      "path": "src/runtime/starship_inflight_executor.py",
+      "start_line": 117
+    }
+  ]
+}

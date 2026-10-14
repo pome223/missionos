@@ -10,11 +10,12 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from src.runtime.starship_replanning import contract, source_hashes  # noqa: E402
+from src.runtime.starship_replanning import SCENARIOS, contract, source_hashes  # noqa: E402
 from src.runtime.starship_replanning_executor import ReplanningExecutor  # noqa: E402
 from src.runtime.starship_replanning_verifier import verify, metrics  # noqa: E402
 from src.runtime.starship_artifacts import write_verified_input  # noqa: E402
 from src.runtime.starship_return_feasibility import readiness  # noqa: E402
+from src.runtime.starship_model_diagnostics import summarize_model_diagnostics  # noqa: E402
 
 
 def report(study, verdict):
@@ -42,6 +43,41 @@ def report(study, verdict):
             for r in study["decisions"]
         ),
         "human_inflight_commands": 0,
+        "supervision_events": study.get("supervision_events", []),
+        "event_scope": study["envelope"].get("event_supervision"),
+        "comparison_preparations": [
+            {
+                k: row[k]
+                for k in (
+                    "preparation_id",
+                    "generation_sha256",
+                    "start_time_s",
+                    "end_time_s",
+                    "reused_candidate_ids",
+                    "requested_candidate_ids",
+                    "remaining_candidate_ids",
+                    "status",
+                    "reason",
+                    "budget",
+                )
+            }
+            for row in study.get("comparison_preparations", [])
+        ],
+        "provider_calls": {
+            provider: {
+                "attempts": sum(
+                    bool(((r["response"] or {}).get(field) or {}).get("call_attempted"))
+                    for r in study["decisions"]
+                ),
+                "valid_responses": sum(
+                    bool(((r["response"] or {}).get(field) or {}).get("model_inference_invoked"))
+                    for r in study["decisions"]
+                ),
+            }
+            for provider, field in (("jev", "jev_invocation"), ("deepseek", "llm_invocation"))
+        },
+        "comparison_quality": verdict.get("comparison_quality"),
+        "model_diagnostics": summarize_model_diagnostics([study]),
     }
     rows = "".join(
         "<tr>"
@@ -71,7 +107,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--approve-simulation", action="store_true")
     parser.add_argument(
-        "--case", choices=("normal", "recovery_update", "decision_timeout"), required=True
+        "--case",
+        choices=tuple(SCENARIOS.values()),
+        required=True,
     )
     parser.add_argument("--mode", choices=("fixture", "live"), default="fixture")
     parser.add_argument("--mailbox", type=Path)
@@ -84,17 +122,21 @@ def main():
         or (args.mode == "live" and not args.mailbox)
     ):
         parser.error("explicit opt-in, fresh output and a live host broker are required")
-    if args.case == "decision_timeout" and args.mode != "fixture":
+    if (
+        args.case
+        in ("decision_timeout", "event_timeout", "comparison_timeout", "comparison_tool_failure")
+        and args.mode != "fixture"
+    ):
         parser.error("synthetic timeout is fixture only")
     p = json.loads((ROOT / "examples/spaceflight/starship-sixdof-profile.json").read_text())
     _, _, error = readiness(p)
     if error:
         parser.error(error)
     args.output_dir.mkdir(mode=0o700, parents=True)
-    envelope, sources = contract(args.mode), source_hashes()
+    envelope, sources = contract(args.mode, args.case), source_hashes()
     write_verified_input(
         args.output_dir / "inputs.json",
-        {"case": args.case, "envelope": envelope, "source_sha256": sources},
+        {"case": args.case, "run_id": args.run_id, "envelope": envelope, "source_sha256": sources},
     )
     for name in sources:
         target = args.output_dir / "source" / name
@@ -116,18 +158,25 @@ def main():
         study["runtime_failure"] = type(error).__name__ + ":" + str(error)
     study = write_verified_input(args.output_dir / "study.json", study)
     verdict = verify(
-        study, expected_envelope=envelope, expected_case=args.case, expected_sources=sources
+        study,
+        expected_envelope=envelope,
+        expected_case=args.case,
+        expected_sources=sources,
+        expected_run_id=args.run_id,
     )
     if sources != source_hashes() or "runtime_failure" in study:
         verdict["passed"] = False
         verdict["issues"].append("runtime_failure_or_source_change")
     write_verified_input(args.output_dir / "verification.json", verdict)
+    write_verified_input(
+        args.output_dir / "model-diagnostics.json", summarize_model_diagnostics([study])
+    )
     (args.output_dir / "report.html").write_text(report(study, verdict))
     manifest = {
         "schema": "missionos.starship_m1_manifest.v1",
         "files": {
             name: sha256((args.output_dir / name).read_bytes()).hexdigest()
-            for name in ("study.json", "verification.json", "report.html")
+            for name in ("study.json", "verification.json", "report.html", "model-diagnostics.json")
         },
     }
     write_verified_input(args.output_dir / "manifest.json", manifest)

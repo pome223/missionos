@@ -1,0 +1,1029 @@
+{
+  "schema": "missionos.starship_m3_live_flight_audit.v1",
+  "source_commit": "627e9647f306e1ee8961c9ba1e16200a4b231849",
+  "run_id": "1cc8a9c309544565bd37ff4dd4c711c6",
+  "scenario": "sixdof_m3_op_trial_03",
+  "result_records_extracted": 1,
+  "retry_performed": false,
+  "record_verification_passed": true,
+  "verification_reexecuted": false,
+  "case_accepted": true,
+  "case_issues": [],
+  "requested_both_model_control_demonstrated": true,
+  "live_phase_decisions": {
+    "ascent_jev": true,
+    "booster_jev": true,
+    "deployment_jev": true,
+    "return_jev": true,
+    "return_deepseek": true
+  },
+  "live_model_calls": {
+    "jev": 7,
+    "deepseek": 2
+  },
+  "phase_attempts": [
+    {
+      "phase": "ascent",
+      "attempted": 2,
+      "valid": 2,
+      "adopted": 2,
+      "providers": [
+        "typesafe"
+      ],
+      "statuses": [
+        "succeeded",
+        "succeeded"
+      ],
+      "by_provider": {
+        "jev": {
+          "attempted": 2,
+          "valid": 2,
+          "published": 2,
+          "adopted": 2
+        },
+        "deepseek": {
+          "attempted": 0,
+          "valid": 0,
+          "published": 0,
+          "adopted": 0
+        }
+      }
+    },
+    {
+      "phase": "booster",
+      "attempted": 1,
+      "valid": 1,
+      "adopted": 1,
+      "providers": [
+        "typesafe"
+      ],
+      "statuses": [
+        "succeeded"
+      ],
+      "by_provider": {
+        "jev": {
+          "attempted": 1,
+          "valid": 1,
+          "published": 1,
+          "adopted": 1
+        },
+        "deepseek": {
+          "attempted": 0,
+          "valid": 0,
+          "published": 0,
+          "adopted": 0
+        }
+      }
+    },
+    {
+      "phase": "deployment",
+      "attempted": 2,
+      "valid": 2,
+      "adopted": 2,
+      "providers": [
+        "typesafe"
+      ],
+      "statuses": [
+        "succeeded",
+        "succeeded"
+      ],
+      "by_provider": {
+        "jev": {
+          "attempted": 2,
+          "valid": 2,
+          "published": 2,
+          "adopted": 2
+        },
+        "deepseek": {
+          "attempted": 0,
+          "valid": 0,
+          "published": 0,
+          "adopted": 0
+        }
+      }
+    },
+    {
+      "phase": "return",
+      "attempted": 4,
+      "valid": 4,
+      "adopted": 4,
+      "providers": [
+        "deepseek",
+        "typesafe"
+      ],
+      "statuses": [
+        "succeeded",
+        "succeeded",
+        "succeeded",
+        "succeeded"
+      ],
+      "by_provider": {
+        "jev": {
+          "attempted": 2,
+          "valid": 2,
+          "published": 2,
+          "adopted": 2
+        },
+        "deepseek": {
+          "attempted": 2,
+          "valid": 2,
+          "published": 2,
+          "adopted": 2
+        }
+      }
+    }
+  ],
+  "adopted_jev_decisions": 7,
+  "adopted_deepseek_decisions": 2,
+  "human_inflight_commands": 0,
+  "authenticated_human_identity_verified": false,
+  "gateway": {
+    "worker_receipt_verified": true,
+    "provider_credentials_present_in_process": false,
+    "status": "verified",
+    "process_role": "credential_free_m3_simulator_worker",
+    "plan_sha256": "08e86cc9f773c73732b91f81c4f54ed67311630de93a3eda0932449816dcf8ae"
+  },
+  "budget": {
+    "maximum_attempts": 1,
+    "maximum_jev_calls": 27,
+    "maximum_wall_time_s": 2400,
+    "maximum_output_bytes": 1200000000,
+    "minimum_free_bytes": 1073741824,
+    "maximum_forecasts": 20,
+    "forecasts": 8,
+    "runtime_wall_s": 593.8351166249486,
+    "maximum_llm_calls": null,
+    "maximum_model_calls": null
+  },
+  "inventory": {
+    "released": 26,
+    "retained": 0,
+    "total": 26,
+    "handoff_time_s": 1000.7000000000407,
+    "same_state_continuation": true,
+    "release_observation_count": 26
+  },
+  "booster": {
+    "contact_time_s": 619.6551636219351,
+    "contact_point_speed_mps": 1.8835844992407478,
+    "fuel_kg": 11419.53848391343,
+    "tilt_deg": 0.2958207388750764,
+    "site_distance_m": 8370.115040440616,
+    "downward_speed_mps": 1.433398760021725,
+    "horizontal_speed_mps": 1.2219895910146696,
+    "body_rate_rad_s": 0.002505628255299652,
+    "water_entry_criteria_met": true,
+    "water_response_validated": false,
+    "criteria": {
+      "area_radius_m": 10000.0,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_downward_speed_mps": 2.0,
+      "maximum_horizontal_speed_mps": 3.0,
+      "maximum_tilt_deg": 5.0,
+      "maximum_body_rate_rad_s": 0.02,
+      "minimum_propellant_kg": 10000.0
+    },
+    "checks": {
+      "area": true,
+      "speed": true,
+      "vertical": true,
+      "horizontal": true,
+      "tilt": true,
+      "rate": true,
+      "reserve": true,
+      "no_overlap": true
+    }
+  },
+  "ship": {
+    "termination": "low_speed_surface_contact",
+    "return_dispatched": true,
+    "dispatch": {
+      "time_s": 2280.7000000000407,
+      "revision": 1,
+      "candidate_id": "nominal"
+    },
+    "contact": {
+      "event_time_s": 4929.856429758704,
+      "surface_relative_speed_mps": 4.608259493361677,
+      "surface_normal_speed_mps": -1.94363404337908,
+      "surface_tangential_speed_mps": 4.1783181142148464,
+      "propellant_kg": 62394.30546504836,
+      "contact": true,
+      "landing_verified": false
+    },
+    "final_time_s": 4929.856429758704,
+    "final_fuel_kg": 62394.30546504836,
+    "final_altitude_m": 22.79869177658111,
+    "recorded_return_outcome": "contact_and_recovery_area_met"
+  },
+  "decisions": [
+    {
+      "phase": "ascent",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-ascent-0",
+      "request_time_s": 0.0,
+      "applied_time_s": 0.30000000000000004,
+      "action": "continue_mission",
+      "accepted_action": "continue_mission",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": null,
+      "later_observation_time_s": 0.4,
+      "later_observation": {
+        "released_count": 0,
+        "deployment_withheld": false,
+        "phase": "stack_ascent",
+        "propellant_kg": 3640000.0,
+        "time_s": 0.4
+      },
+      "allowed_actions": [
+        "continue_mission",
+        "withhold_deployment"
+      ],
+      "planning_window": {},
+      "provider_budget": {}
+    },
+    {
+      "phase": "ascent",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-ascent-1",
+      "request_time_s": 135.59999999999658,
+      "applied_time_s": 135.99999999999656,
+      "action": "continue_mission",
+      "accepted_action": "continue_mission",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": null,
+      "later_observation_time_s": 136.09999999999656,
+      "later_observation": {
+        "released_count": 0,
+        "deployment_withheld": false,
+        "phase": "ship_ascent",
+        "propellant_kg": 1599060.0,
+        "time_s": 136.09999999999656
+      },
+      "allowed_actions": [
+        "continue_mission",
+        "withhold_deployment"
+      ],
+      "planning_window": {},
+      "provider_budget": {}
+    },
+    {
+      "phase": "booster",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-booster:1",
+      "request_time_s": 135.59999999999658,
+      "applied_time_s": 135.99999999999656,
+      "action": "splashdown",
+      "accepted_action": null,
+      "rules_accepted": true,
+      "fallback": null,
+      "request_disposition": null,
+      "later_observation_time_s": 136.09999999999656,
+      "later_observation": {
+        "released_count": 0,
+        "fuel_kg": 252700.0,
+        "release_acknowledged": false,
+        "phase": "booster_return",
+        "sequencer_state": "running",
+        "time_s": 136.09999999999656
+      },
+      "allowed_actions": [
+        "splashdown"
+      ],
+      "planning_window": {},
+      "provider_budget": {}
+    },
+    {
+      "phase": "deployment",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-deployment:1",
+      "request_time_s": 480.7000000000408,
+      "applied_time_s": 481.2000000000408,
+      "action": "continue",
+      "accepted_action": null,
+      "rules_accepted": true,
+      "fallback": null,
+      "request_disposition": null,
+      "later_observation_time_s": 481.4500000000408,
+      "later_observation": {
+        "released_count": 0,
+        "fuel_kg": 111100.0,
+        "release_acknowledged": false,
+        "phase": "orbital_coast",
+        "sequencer_state": "running",
+        "time_s": 481.4500000000408
+      },
+      "allowed_actions": [
+        "continue",
+        "hold",
+        "stop_deployment",
+        "collect_status"
+      ],
+      "planning_window": {},
+      "provider_budget": {}
+    },
+    {
+      "phase": "deployment",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-deployment:2",
+      "request_time_s": 525.9500000000407,
+      "applied_time_s": 526.4500000000407,
+      "action": "continue",
+      "accepted_action": null,
+      "rules_accepted": true,
+      "fallback": null,
+      "request_disposition": null,
+      "later_observation_time_s": 526.7000000000407,
+      "later_observation": {
+        "released_count": 1,
+        "fuel_kg": 110800.0,
+        "release_acknowledged": true,
+        "phase": "orbital_coast",
+        "sequencer_state": "running",
+        "time_s": 526.7000000000407
+      },
+      "allowed_actions": [
+        "continue",
+        "hold",
+        "stop_deployment",
+        "collect_status"
+      ],
+      "planning_window": {},
+      "provider_budget": {}
+    },
+    {
+      "phase": "return",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-0",
+      "request_time_s": 1162.2000000000407,
+      "applied_time_s": null,
+      "action": "select_nominal",
+      "accepted_action": "select_nominal",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": "submitted",
+      "later_observation_time_s": 1162.7000000000407,
+      "later_observation": {
+        "retained_count": 0,
+        "propellant_kg": 110790.0,
+        "time_s": 1162.7000000000407
+      },
+      "allowed_actions": [
+        "select_nominal",
+        "wait_for_update",
+        "refresh_observation"
+      ],
+      "planning_window": {
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates"
+      },
+      "provider_budget": {
+        "used_slots": 0,
+        "maximum_slots": 16,
+        "provider": "jev",
+        "previous_reservations_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+      }
+    },
+    {
+      "phase": "return",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-1",
+      "request_time_s": 1653.2000000000407,
+      "applied_time_s": null,
+      "action": "keep_plan",
+      "accepted_action": "keep_plan",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": "submitted",
+      "later_observation_time_s": 1681.9500000000407,
+      "later_observation": {
+        "retained_count": 0,
+        "propellant_kg": 110790.0,
+        "time_s": 1681.9500000000407
+      },
+      "allowed_actions": [
+        "select_nominal",
+        "select_next_orbit",
+        "keep_plan",
+        "refresh_observation"
+      ],
+      "planning_window": {
+        "duration_s": 150.0,
+        "provider_timeout_s": 120.0,
+        "protected_until_s": 2280.7000000000407,
+        "admitted": true,
+        "reason": "long_comparison_admitted"
+      },
+      "provider_budget": {
+        "used_slots": 0,
+        "provider": "deepseek",
+        "generation_sha256": "bd8c4c1e16f75206cd820aab03bffd446044b48f96005b9fe3a7ab3f55dd98ac",
+        "previous_reservations_sha256": "00e00f17471884665fe830afb89225880e289f813e7ae190bc641a63476a1db5"
+      }
+    },
+    {
+      "phase": "return",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-2",
+      "request_time_s": 1895.4500000000407,
+      "applied_time_s": null,
+      "action": "keep_plan",
+      "accepted_action": "keep_plan",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": "submitted",
+      "later_observation_time_s": 1919.4500000000407,
+      "later_observation": {
+        "retained_count": 0,
+        "propellant_kg": 110790.0,
+        "time_s": 1919.4500000000407
+      },
+      "allowed_actions": [
+        "select_nominal",
+        "select_next_orbit",
+        "keep_plan",
+        "refresh_observation"
+      ],
+      "planning_window": {
+        "duration_s": 150.0,
+        "provider_timeout_s": 120.0,
+        "protected_until_s": 2280.7000000000407,
+        "admitted": true,
+        "reason": "long_comparison_admitted"
+      },
+      "provider_budget": {
+        "used_slots": 1,
+        "provider": "deepseek",
+        "generation_sha256": "27d1b4feaec97bb171a3e57632f0424e4564f178358115aae624f110f596cdea",
+        "previous_reservations_sha256": "f68a4f738cececa2945d9af5ca812f573a8c86e848a1bf1eef9bc31ba84aaf9e"
+      }
+    },
+    {
+      "phase": "return",
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-3",
+      "request_time_s": 2220.7000000000407,
+      "applied_time_s": null,
+      "action": "keep_plan",
+      "accepted_action": "keep_plan",
+      "rules_accepted": null,
+      "fallback": false,
+      "request_disposition": "submitted",
+      "later_observation_time_s": 2221.4500000000407,
+      "later_observation": {
+        "retained_count": 0,
+        "propellant_kg": 110790.0,
+        "time_s": 2221.4500000000407
+      },
+      "allowed_actions": [
+        "select_nominal",
+        "select_next_orbit",
+        "keep_plan",
+        "refresh_observation"
+      ],
+      "planning_window": {
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "protected_until_s": 2280.7000000000407,
+        "admitted": false,
+        "reason": "insufficient_booking_margin"
+      },
+      "provider_budget": {
+        "used_slots": 1,
+        "maximum_slots": 16,
+        "provider": "jev",
+        "previous_reservations_sha256": "33ae15ca809711aaec976657acbef4eca19d81140d4180cb61729f9cdad2f3af"
+      }
+    }
+  ],
+  "deepseek_numeric_references": [
+    {
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-1",
+      "request_sha256": "0fc700b26dbb06d3ee1b16e41b30e2fb7f3dc80010b4a29b7bf9e3870b974e69",
+      "request_time_s": 1653.2000000000407,
+      "status": "valid",
+      "errors": [],
+      "compared_candidate_ids": [
+        "nominal",
+        "next_orbit"
+      ],
+      "reference_ids": [
+        "r_0fc700b26dbb_f6da134b4c4b42f1f8cb",
+        "r_0fc700b26dbb_b164b5dcc4696e875626",
+        "r_0fc700b26dbb_dbf759c4bc302679e8f6",
+        "r_0fc700b26dbb_fbb25c153dfbc62bb312",
+        "r_0fc700b26dbb_80f780251993b4e901e5",
+        "r_0fc700b26dbb_10ad1727ae084e21af2c",
+        "r_0fc700b26dbb_9a561eeae4e72ae44b77",
+        "r_0fc700b26dbb_3011e97c3d8ebd791838",
+        "r_0fc700b26dbb_a3e63253142c388b9bd5",
+        "r_0fc700b26dbb_434bdfdc7bd62b7ad8cc",
+        "r_0fc700b26dbb_1246699843a3a4e0c943",
+        "r_0fc700b26dbb_a58f2373306441f96b24",
+        "r_0fc700b26dbb_949fc7bb69101bec027d"
+      ],
+      "resolved_references": [
+        {
+          "candidate_id": "nominal",
+          "field_path": "/return_time_s",
+          "value": 2280.7000000000407,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 22.0,
+          "unit": "kWh"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 0.0,
+          "unit": "kg"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/temperature_upper_k",
+          "value": 295.0,
+          "unit": "K"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/0",
+          "value": 11185.44753772155,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/1",
+          "value": 15232.624042684063,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/return_time_s",
+          "value": 7731.351388986685,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/elapsed_wait_s",
+          "value": 5450.651388986645,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 12.915581018355592,
+          "unit": "kWh"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 109.0130277797329,
+          "unit": "kg"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/temperature_upper_k",
+          "value": 300.45065138898667,
+          "unit": "K"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/0",
+          "value": 11475.525671435324,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/1",
+          "value": 12374.150626491657,
+          "unit": "s"
+        }
+      ],
+      "host_resolved_values": true,
+      "response_bound_to_request": true,
+      "adopted": true,
+      "invocation": {
+        "timeout_seconds": 120.0,
+        "maximum_output_tokens": 16384,
+        "latency_ms": 28434.229,
+        "reasoning_tokens": 4682,
+        "call_attempted": true,
+        "model_inference_invoked": true,
+        "response_received": true,
+        "call_succeeded": true,
+        "status": "succeeded",
+        "reference_protocol": "ids_orbital_low_16384",
+        "requested_model_id": "deepseek-flash",
+        "model_id": "deepseek-flash",
+        "request_sha256": "f8d3e65656d7e38ff53beced3046c433bf0c573eb99242a46c7d41db4eeb388f",
+        "response_sha256": "c2110720206bb40bd98199aa2fb959581497d9c1f6cbcabf1600ffc5b4d85694"
+      },
+      "free_prose_verified": false,
+      "internal_reasoning_verified": false,
+      "forecast_truth_verified": false,
+      "affects_action_admission": false
+    },
+    {
+      "request_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-2",
+      "request_sha256": "ebdafad4dbd6c0d7bb452b6e208353c0440c632319d16224303c9b6949216f54",
+      "request_time_s": 1895.4500000000407,
+      "status": "valid",
+      "errors": [],
+      "compared_candidate_ids": [
+        "nominal",
+        "next_orbit"
+      ],
+      "reference_ids": [
+        "r_ebdafad4dbd6_72a09af90d75d9e4715d",
+        "r_ebdafad4dbd6_87e1608cc8d6151d62a0",
+        "r_ebdafad4dbd6_76043aee94cbee9e7959",
+        "r_ebdafad4dbd6_134735cc8af7518657c9",
+        "r_ebdafad4dbd6_4ebea0a0f06eeaa72584",
+        "r_ebdafad4dbd6_b5cf5cc826b2039a014c",
+        "r_ebdafad4dbd6_b717934466cca9eee5cb",
+        "r_ebdafad4dbd6_fa861af74394f96ebef1",
+        "r_ebdafad4dbd6_b4f090e11a42ae593cc7",
+        "r_ebdafad4dbd6_4bc6e65d60d4a43eef24",
+        "r_ebdafad4dbd6_d09ee6aae5ba6356ce9b",
+        "r_ebdafad4dbd6_6320820534813c2e700e"
+      ],
+      "resolved_references": [
+        {
+          "candidate_id": "nominal",
+          "field_path": "/return_time_s",
+          "value": 2280.7000000000407,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 22.0,
+          "unit": "kWh"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 0.0,
+          "unit": "kg"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/temperature_upper_k",
+          "value": 295.0,
+          "unit": "K"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/0",
+          "value": 11262.70853772155,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/1",
+          "value": 15984.811042684065,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/return_time_s",
+          "value": 7731.351388986685,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 12.915581018355592,
+          "unit": "kWh"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 109.0130277797329,
+          "unit": "kg"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/temperature_upper_k",
+          "value": 300.45065138898667,
+          "unit": "K"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/0",
+          "value": 11475.525671435324,
+          "unit": "s"
+        },
+        {
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/1",
+          "value": 12374.150626491657,
+          "unit": "s"
+        }
+      ],
+      "host_resolved_values": true,
+      "response_bound_to_request": true,
+      "adopted": true,
+      "invocation": {
+        "timeout_seconds": 120.0,
+        "maximum_output_tokens": 16384,
+        "latency_ms": 23806.426,
+        "reasoning_tokens": 3960,
+        "call_attempted": true,
+        "model_inference_invoked": true,
+        "response_received": true,
+        "call_succeeded": true,
+        "status": "succeeded",
+        "reference_protocol": "ids_orbital_low_16384",
+        "requested_model_id": "deepseek-flash",
+        "model_id": "deepseek-flash",
+        "request_sha256": "925ad7088b97eaa0df945b537c51d45e7fe5be71aec47ea06ae795af9d7dda98",
+        "response_sha256": "3b2e857819f7716db9a3fbd3e1ad6d5724130fa84462e4f4036350c6fadf6bc4"
+      },
+      "free_prose_verified": false,
+      "internal_reasoning_verified": false,
+      "forecast_truth_verified": false,
+      "affects_action_admission": false
+    }
+  ],
+  "comparison_preparations": [
+    {
+      "start_time_s": 1000.7000000000407,
+      "end_time_s": 1162.2000000000407,
+      "forecast_count_before": 0,
+      "forecast_count_after": 4,
+      "pending_operation_index": 0,
+      "pending_operation_end_index": 1,
+      "initial": true,
+      "work_performed": true,
+      "preparation_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-comparison-0",
+      "status": "completed",
+      "reason": "predictions_available",
+      "generation_sha256": "4033b7896ce185746738532f1aac0344c59f179a29de67aa6b292b152399a7ba",
+      "budget": {
+        "maximum_forecasts": 20,
+        "batch_timeout_s": 600.0,
+        "decision_timeout_s": 150.0,
+        "deadline_margin_s": 60.0,
+        "coast_dt_s": 0.25,
+        "opportunity_cutoff_time_s": 2070.4500000000407,
+        "cutoff_time_s": 1600.7000000000407,
+        "available_sim_s": 600.0
+      },
+      "requested_candidate_ids": [
+        "nominal"
+      ],
+      "reused_candidate_ids": [],
+      "missing_candidate_ids": [
+        "nominal"
+      ],
+      "remaining_candidate_ids": [],
+      "pending_operations": [
+        {
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1162.2000000000407,
+          "wall_time_s": 161.37730083300266,
+          "cutoff_time_s": 1600.6999988750613,
+          "expired": false,
+          "cutoff_reached": false,
+          "clock_accounting_overrun": false,
+          "operation": "return_forecasts"
+        }
+      ]
+    },
+    {
+      "start_time_s": 1388.2000000000407,
+      "end_time_s": 1653.2000000000407,
+      "forecast_count_before": 4,
+      "forecast_count_after": 8,
+      "pending_operation_index": 2,
+      "pending_operation_end_index": 3,
+      "initial": false,
+      "work_performed": true,
+      "preparation_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-comparison-1",
+      "status": "completed",
+      "reason": "predictions_available",
+      "generation_sha256": "bd8c4c1e16f75206cd820aab03bffd446044b48f96005b9fe3a7ab3f55dd98ac",
+      "budget": {
+        "maximum_forecasts": 20,
+        "batch_timeout_s": 600.0,
+        "decision_timeout_s": 150.0,
+        "deadline_margin_s": 60.0,
+        "coast_dt_s": 0.25,
+        "protected_burn_s": 2280.7000000000407,
+        "opportunity_cutoff_time_s": 2070.4500000000407,
+        "cutoff_time_s": 1988.2000000000407,
+        "available_sim_s": 600.0
+      },
+      "requested_candidate_ids": [
+        "nominal",
+        "next_orbit"
+      ],
+      "reused_candidate_ids": [
+        "nominal"
+      ],
+      "missing_candidate_ids": [
+        "next_orbit"
+      ],
+      "remaining_candidate_ids": [],
+      "pending_operations": [
+        {
+          "start_time_s": 1388.2000000000407,
+          "end_time_s": 1653.2000000000407,
+          "wall_time_s": 264.9971127080498,
+          "cutoff_time_s": 1988.1995716670353,
+          "expired": false,
+          "cutoff_reached": false,
+          "clock_accounting_overrun": false,
+          "operation": "return_forecasts"
+        }
+      ]
+    },
+    {
+      "start_time_s": 1895.4500000000407,
+      "end_time_s": 1895.4500000000407,
+      "forecast_count_before": 8,
+      "forecast_count_after": 8,
+      "pending_operation_index": 4,
+      "pending_operation_end_index": 4,
+      "initial": false,
+      "work_performed": false,
+      "preparation_id": "1cc8a9c309544565bd37ff4dd4c711c6-return-comparison-2",
+      "status": "ready",
+      "reason": "fresh_predictions_reused",
+      "generation_sha256": "27d1b4feaec97bb171a3e57632f0424e4564f178358115aae624f110f596cdea",
+      "budget": {
+        "maximum_forecasts": 20,
+        "batch_timeout_s": 600.0,
+        "decision_timeout_s": 150.0,
+        "deadline_margin_s": 60.0,
+        "coast_dt_s": 0.25,
+        "protected_burn_s": 2280.7000000000407,
+        "opportunity_cutoff_time_s": 2070.4500000000407,
+        "cutoff_time_s": 2070.4500000000407,
+        "available_sim_s": 175.0
+      },
+      "requested_candidate_ids": [
+        "nominal",
+        "next_orbit"
+      ],
+      "reused_candidate_ids": [
+        "nominal",
+        "next_orbit"
+      ],
+      "missing_candidate_ids": [],
+      "remaining_candidate_ids": [],
+      "pending_operations": []
+    }
+  ],
+  "return_time_search": {
+    "start_time_s": 1388.2000000000407,
+    "end_time_s": 1388.2000000000407,
+    "wall_time_s": 0.0,
+    "center_s": 7731.351388986685,
+    "cutoff_time_s": 1645.3428571428979,
+    "forecast_count_before": 4,
+    "forecast_count_after": 4,
+    "clock_debt_s": 0.0,
+    "clock_horizon_s": 8280.70000000004,
+    "reserved_trial_count": 4,
+    "work_started": false,
+    "accepted_for_trial": false,
+    "return_admission_granted": false,
+    "clock_budget_exhausted": false,
+    "search_cutoff_exceeded": false,
+    "reason": "search_budget_booking_or_deadline",
+    "budget": {
+      "total_budget_s": 600.0,
+      "preparation_cutoff_time_s": 1988.2000000000407,
+      "minimum_admission_budget_s": 180.0,
+      "reserved_admission_budget_s": 342.85714285714283,
+      "screen_budget_s": 257.14285714285717
+    },
+    "suggestion": {}
+  },
+  "m3_completed": false,
+  "mission_completed": false,
+  "physical_execution": false,
+  "source_file_count": 96,
+  "source_sha256": {
+    "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "07bc62cfd2013c15b2d9f2d9e3de7df3d20d77fdb323ddcb08e80071a798b24b",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "3e7a6df57b175baeebcb8eeb2edf397858cb0fb21b46e0ddb146f3be0d41343b",
+    "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+    "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "64bb446a893f0d678375b4d2004e335cd303dc305fcaed10dc3ba048b873dcc4",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+    "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+    "docs/assets/starship-state-return-qualification/qualification.json": "dc925be6529d2d17a4de38ad89c8ecf66ccfe5e4285f2d0bace77bd20f20eced",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "4972ef7dba3512daba990b07e15b14d62c5d7f65cbdc7793d12629bcb42ea81f",
+    "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "dc4d3825428b7ad44e156397eb63101022449ad2ef2439745d02dbc51b54f497",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "24ac28dfe2f6672b188a458b2578916b8262dc5b621d6ad049e01e117ce73568",
+    "src/gateway/starship_chat.py": "08b73f9711569940864a454c034cbc7866159abcfcc774be2aa2b24163979968",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_orbital_window.py": "a7b2c96bb12d9dc806deb277696ec5255735ca11d391a7e36b15c453d8eb7d72",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/intelligence/starship_reference_protocol.py": "453e303f028bb132900a1855f92e5a14a1eebf7c671bdcc4853bedb0067a4a59",
+    "src/runtime/starship_replanning.py": "dd0a0d78b5fb9f17a412986418ad5d9e7a10f213845a6b53752f86f7e111cfc9",
+    "src/runtime/starship_call_limits.py": "7192671ffcd0dd72fc31ab983a05f0d75e1d4f65110673fd8fa318c377715f89",
+    "src/runtime/starship_operational_trials.py": "960c2d7128ca8c8c33507779b0561ba7f684792da4d7fb23f5ea008d2d0a6f62",
+    "src/runtime/starship_replanning_executor.py": "24a0a806b1f227ca0407e815f258603c6e792e1f3c9b727302e3db808c042093",
+    "src/runtime/starship_m2_contract.py": "b2081db50d4d13b7b5ef773748ee35c606604212ab4c9cd513cb3f8c00546342",
+    "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+    "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+    "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+    "src/runtime/starship_replanning_verifier.py": "c5d0c25f3e405f525ef59ca1a1bd3208664ffd9b787ca9c5bcce019d6b72f05b",
+    "src/intelligence/starship_replanning.py": "e7f85883473203479fb2c1cee1d080eba55b107c3c33d29b4fa5dccd3f83267b",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "2b3c017c74bf0bb104f0bea5838f45ef5a39dcf6af40e42f8c88ef97ecfdf156",
+    "scripts/summarize_starship_models.py": "4ece839b658063c8f5acbc6996e4f2a47ddd6678fb1ff1f5bbd83d6785096c1c",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110",
+    "examples/spaceflight/starship-comparison-operations.json": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68",
+    "src/runtime/starship_deployment_handoff.py": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a",
+    "src/runtime/starship_deployment_handoff_verifier.py": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73",
+    "src/runtime/starship_deployment_forecast.py": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847",
+    "src/runtime/starship_m2_runner.py": "fd552d1b4abb22075bcdcee37586b9c9fc725abfdcf7a25ea69401dd0ddb1502",
+    "src/runtime/starship_m2_verifier.py": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9",
+    "scripts/run_starship_m2.py": "92ecf37fe6d8ad4c3897d47ecb1bda3681802ad4aebb6a013fe0f29ad72a0ea0",
+    "src/runtime/starship_m2_control.py": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71",
+    "src/runtime/starship_m2_attempts.py": "f4d0bd264d8f6802ef0a0d0bd7c180db65d1da1cd633a6b725c75088622cbf74",
+    "src/runtime/starship_m2_decision_verifier.py": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a",
+    "src/intelligence/starship_m2_broker.py": "a6368dde81da11a49c06436bcaee5e460271cd06bbef828a457c95a896d22425",
+    "src/runtime/starship_ascent_supervisor.py": "65c8fb88ed946874355c1ebfbc7d50ae4fe374e1640f2800eb01f3a0207cd0a4",
+    "src/runtime/starship_m3_prefix.py": "efe31258dade9d627838e8297cff961dc11a159052f3ca3de29e789033421822",
+    "src/runtime/starship_m3_prefix_verifier.py": "a752e1111993f9e5766d441ff08eae138ebc25d167a135d71ed20cceb6617cf6",
+    "src/runtime/starship_m3_directors.py": "f4a483ea2d836ebb6fb062e076155a0143f8beb9425a31280e11fe1ab8cc7a43",
+    "src/runtime/starship_m3_fixture.py": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10",
+    "src/runtime/starship_m3_live.py": "6e1d6e7e5b76eac2a9e78bf8c730fb0f832922b11a68d8263d435ba200e76bf3",
+    "scripts/run_starship_m3.py": "364040427d49987b95979cbb0df8b44d8bf21f458be54cf59465b6ba2f74c342",
+    "src/intelligence/starship_m3_broker.py": "a28cedccec78ba6f190b273b116689d884283da175020089f2e69162a5866e20",
+    "src/runtime/starship_runtime_budget.py": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853"
+  },
+  "source_manifest_sha256": "f3f678aed2f05d93a7215dc449dd3216cf3a0b399c42adf008cf833c7df798a3",
+  "raw_evidence_sha256": {
+    "http/study.json": "63ebeb25056adad95e336b943f70a7aa95eacd9f4ac3597f94dde02dc421e17b",
+    "http/verification.json": "57f8dae8fdfaf6f6d877366884316feba23bbb69c86c54bc6a5961641d838041",
+    "trial-protocol.json": "856c6a5e8156e69e0306a36b4647563ebb2c4b58e744d7d960d543af0511440c",
+    "http/chat-receipt.json": "66102c0f05b4e88156bbd1f90be3fadad07192713c3da4daca9f1a6688dbb559"
+  },
+  "reference_auditor_source_sha256": {
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56"
+  },
+  "limitations": [
+    "Recorded verdicts extracted; full flight verification not reexecuted",
+    "Reference recheck establishes input consistency only",
+    "Adopted decisions are not proof of mission completion or physical execution",
+    "Only recorded executed samples are eligible for trajectory display"
+  ],
+  "approved_call_limits": {
+    "maximum_jev_calls": 27,
+    "maximum_llm_calls": null,
+    "maximum_model_calls": null,
+    "meaning": "null_means_no_call_count_cap"
+  }
+}

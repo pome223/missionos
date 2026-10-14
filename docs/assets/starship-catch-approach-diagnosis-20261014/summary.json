@@ -1,0 +1,1405 @@
+{
+  "schema": "missionos.starship_catch_warm_replan_diagnosis.v1",
+  "source_commit": "c01b34c7a78b9b1484311d7ce061c7afcf45a66a",
+  "source_run_sha256": "702c169376e277644577792024cb6a07467dcbef18f692c437fdf0bd0553744e",
+  "offline_only": true,
+  "launch_derived_catch_demonstrated": false,
+  "new_flight_calls": 0,
+  "missionos_model_calls": 0,
+  "source_files_changed": false,
+  "elastic_diagnostic": {
+    "origin_time_s": 529.8525733798211,
+    "maximum_steps": 8,
+    "wall_budget_s": 5.0,
+    "trust_radius": 0.001,
+    "initial_minimum_margin": -0.20097831975993152,
+    "steps": [
+      {
+        "iteration": 0,
+        "linear_margin": -0.15624169552569145,
+        "nonlinear_margin": -0.1602806124285605,
+        "wall_s": 0.1554542079102248
+      },
+      {
+        "iteration": 1,
+        "linear_margin": -0.14965057716548147,
+        "nonlinear_margin": -0.16010218314230595,
+        "wall_s": 0.2962987079517916
+      },
+      {
+        "iteration": 2,
+        "linear_margin": -0.14331812607417888,
+        "nonlinear_margin": -0.21248654789394217,
+        "wall_s": 0.43632658291608095
+      }
+    ],
+    "final_minimum_margin": -0.16010218314230595,
+    "elapsed_s": 0.4412654999177903,
+    "point_feasible": false
+  },
+  "warm_sqp_diagnostic": {
+    "maximum_calls": 2,
+    "each_wall_budget_s": 10.0,
+    "same_original_end_clock": true,
+    "state_or_constraints_changed": false,
+    "cases": [
+      {
+        "time_s": 529.8525733798211,
+        "accepted": false,
+        "reason": "wall_deadline",
+        "wall_s": 10.004241124959663,
+        "metrics": {
+          "predicted_final_cg_position_enu_m": [
+            26.6012526992066,
+            14.53500151787326,
+            180.7380896769014
+          ],
+          "predicted_final_cg_velocity_enu_mps": [
+            0.567651118906008,
+            -1.5841945484270152,
+            -8.133485227062419
+          ],
+          "predicted_initial_main_thrust_n": 15319444.542829406,
+          "ideal_main_fuel_used_kg": 36959.07476455236,
+          "ideal_remaining_fuel_kg": 23402.891867824692,
+          "minimum_constraint_margin": -5.422025177302348,
+          "constraint_groups": {
+            "force_cone": {
+              "minimum_margin": 0.3486829062983366,
+              "argmin_index": 0
+            },
+            "terminal_axis_cone": {
+              "minimum_margin": 1.0,
+              "argmin_index": 0
+            },
+            "angular_rate": {
+              "minimum_margin": -0.6354436631466782,
+              "argmin_index": 16
+            },
+            "angular_acceleration": {
+              "minimum_margin": -5.422025177302348,
+              "argmin_index": 17
+            },
+            "interpolation_acceleration": {
+              "minimum_margin": 0.8622675094809321,
+              "argmin_index": 16
+            },
+            "terminal_xy_position": {
+              "minimum_margin": -2.0313246515205603,
+              "argmin_index": 0
+            },
+            "terminal_xy_speed": {
+              "minimum_margin": 0.15858747334302226,
+              "argmin_index": 0
+            },
+            "terminal_z_position": {
+              "minimum_margin": -1.2703944245133698,
+              "argmin_index": 0
+            },
+            "terminal_vz_min": {
+              "minimum_margin": -0.02669704541248379,
+              "argmin_index": 0
+            },
+            "terminal_vz_max": {
+              "minimum_margin": 1.0266970454124837,
+              "argmin_index": 0
+            },
+            "material_pin_floor": {
+              "minimum_margin": 0.03700765848954575,
+              "argmin_index": 41
+            },
+            "main_propellant": {
+              "minimum_margin": 0.28780579198812223,
+              "argmin_index": 0
+            }
+          }
+        },
+        "solver_details": {
+          "slsqp_callback_iterations": 61,
+          "slsqp_status": null,
+          "initial_handoff_reason": null,
+          "restoration_status": null,
+          "restoration_nfev": null,
+          "restoration_njev": null,
+          "restoration_residual_calls": 0,
+          "initial_handoff_uses_best_callback_iterate": true,
+          "iteration_field_is_exact_optimizer_steps": false,
+          "elastic_step": null
+        }
+      },
+      {
+        "time_s": 530.8525733798214,
+        "accepted": false,
+        "reason": "wall_deadline",
+        "wall_s": 10.001342709059827,
+        "metrics": {
+          "predicted_final_cg_position_enu_m": [
+            0.3789488156390763,
+            12.046066999930803,
+            183.19021150000316
+          ],
+          "predicted_final_cg_velocity_enu_mps": [
+            -0.27214568591013066,
+            -2.3638527070415107,
+            -2.921711582674626
+          ],
+          "predicted_initial_main_thrust_n": 5443288.934772321,
+          "ideal_main_fuel_used_kg": 33962.9327046797,
+          "ideal_remaining_fuel_kg": 23139.141149098068,
+          "minimum_constraint_margin": -5.675768073597317,
+          "constraint_groups": {
+            "force_cone": {
+              "minimum_margin": 0.3957362186845198,
+              "argmin_index": 0
+            },
+            "terminal_axis_cone": {
+              "minimum_margin": 1.0,
+              "argmin_index": 0
+            },
+            "angular_rate": {
+              "minimum_margin": -1.8824067585433393,
+              "argmin_index": 15
+            },
+            "angular_acceleration": {
+              "minimum_margin": -5.675768073597317,
+              "argmin_index": 16
+            },
+            "interpolation_acceleration": {
+              "minimum_margin": 0.27737658127569165,
+              "argmin_index": 15
+            },
+            "terminal_xy_position": {
+              "minimum_margin": -0.20520260691593317,
+              "argmin_index": 0
+            },
+            "terminal_xy_speed": {
+              "minimum_margin": -0.1897334675198239,
+              "argmin_index": 0
+            },
+            "terminal_z_position": {
+              "minimum_margin": -3.7225162476151183,
+              "argmin_index": 0
+            },
+            "terminal_vz_min": {
+              "minimum_margin": 1.0156576834650748,
+              "argmin_index": 0
+            },
+            "terminal_vz_max": {
+              "minimum_margin": -0.01565768346507479,
+              "argmin_index": 0
+            },
+            "material_pin_floor": {
+              "minimum_margin": 0.00024103564385882236,
+              "argmin_index": 21
+            },
+            "main_propellant": {
+              "minimum_margin": 0.30294843030088514,
+              "argmin_index": 0
+            }
+          }
+        },
+        "solver_details": {
+          "slsqp_callback_iterations": 62,
+          "slsqp_status": null,
+          "initial_handoff_reason": null,
+          "restoration_status": null,
+          "restoration_nfev": null,
+          "restoration_njev": null,
+          "restoration_residual_calls": 0,
+          "initial_handoff_uses_best_callback_iterate": true,
+          "iteration_field_is_exact_optimizer_steps": false,
+          "elastic_step": null
+        }
+      }
+    ]
+  },
+  "raw_local_artifact_hashes": {
+    "elastic-result.json": "650e9948b34894c0d309b50739431a972ee22aa2546a85d4c56c56b1f6907c18",
+    "claude-incomplete.json": "26bf19e1fcca452d2b74bdb96ed9950ee0dd2485dd4d59c38ca5f38b12bf2f73",
+    "elastic-diagnostic.py": "082d4f6cc09982272718deca0af8ebcff18944f0840246bbf4aa08008e3a35ca",
+    "cold-reseed.json": "976cc2ff41646aa3edbf3dd02f42329f1c1989c1476be2bb01ae57c25544546e",
+    "sqp-diagnostic.py": "b6f8f93a13e005b00ab070b57508ed9a83965375a440b57df25de8f5f7c2da4f",
+    "sqp-result.json": "91d857e8005c6e39596e7f62299d17542a54cbab4b71cb8d9ff3954332a79f82",
+    "plan-replay.json": "4d91c37e7c7f0aae7fa6521fddcf63c183532dc2da285c9b6aee7ea87172da91",
+    "planner-source.py": "ff59dd375c3ee2bcb024a585118169c1fa915dc8dadfc3dcd0ac003b5f5dc891",
+    "claude-conclusion.json": "99d9e7502d87f776ecf826a72f2189afdc0c01e881b453ad975ff3784a7d3aab",
+    "manifest.json": "1858261115f004cd8fe0c260b5f66ab6b2ee077908b2e72a03cf8d190f9074f3",
+    "cold-reseed-diagnostic.py": "5d1ede521d2eabc8dc13087d1c6adf190e0a7d344918661e8d564483548590f2",
+    "governor-diagnosis.json": "5b8d3acedc2d41cb10fec101cf6bf84a0493d60388d0319204630c7de3c5aab7"
+  },
+  "diagnostic_is_closed_loop_feasibility": false,
+  "relaxed_entry_is_counted_as_catch_progress": false,
+  "repair_adopted": false,
+  "cold_reseed_diagnostic": {
+    "time_s": 530.8525733798214,
+    "duration_s": 22.999999999999545,
+    "fixed_end_time_s": 553.8525733798209,
+    "maximum_calls": 1,
+    "maximum_wall_s": 60.0,
+    "automatic_retry": false,
+    "input_sha256": "8e93b9aaf07bd8325e8c1ef3d544a1af8c2accb9ed4d6e44121693f7be5d79ed",
+    "metrics": {
+      "predicted_final_cg_position_enu_m": [
+        -0.18114182956634714,
+        10.472722795201046,
+        177.45768576943294
+      ],
+      "predicted_final_cg_velocity_enu_mps": [
+        0.04768779481774621,
+        -2.2184926281122825,
+        -2.963433368124515
+      ],
+      "predicted_initial_main_thrust_n": 5443288.934772321,
+      "ideal_main_fuel_used_kg": 33555.28836795839,
+      "ideal_remaining_fuel_kg": 23546.785485819375,
+      "minimum_constraint_margin": -0.30860824455506886,
+      "constraint_groups": {
+        "force_cone": {
+          "minimum_margin": 0.3957362186845198,
+          "argmin_index": 0
+        },
+        "terminal_axis_cone": {
+          "minimum_margin": 1.0,
+          "argmin_index": 0
+        },
+        "angular_rate": {
+          "minimum_margin": -0.1730657408201739,
+          "argmin_index": 4
+        },
+        "angular_acceleration": {
+          "minimum_margin": -0.30860824455506886,
+          "argmin_index": 1
+        },
+        "interpolation_acceleration": {
+          "minimum_margin": 0.951290543449485,
+          "argmin_index": 4
+        },
+        "terminal_xy_position": {
+          "minimum_margin": -0.0474289241162964,
+          "argmin_index": 0
+        },
+        "terminal_xy_speed": {
+          "minimum_margin": -0.1095025537107972,
+          "argmin_index": 0
+        },
+        "terminal_z_position": {
+          "minimum_margin": -0.010009482955098292,
+          "argmin_index": 0
+        },
+        "terminal_vz_min": {
+          "minimum_margin": 1.007313326375097,
+          "argmin_index": 0
+        },
+        "terminal_vz_max": {
+          "minimum_margin": -0.007313326375096985,
+          "argmin_index": 0
+        },
+        "material_pin_floor": {
+          "minimum_margin": -0.035697857140959854,
+          "argmin_index": 21
+        },
+        "main_propellant": {
+          "minimum_margin": 0.3113148787245629,
+          "argmin_index": 0
+        }
+      }
+    },
+    "result": {
+      "accepted": false,
+      "reason": "restoration_infeasible",
+      "wall_s": 54.09637316700537,
+      "solver_success": false,
+      "iterations": 400,
+      "solver_details": {
+        "slsqp_callback_iterations": 100,
+        "slsqp_status": null,
+        "initial_handoff_reason": "initial_phase_iteration_budget",
+        "restoration_status": 0,
+        "restoration_nfev": 299,
+        "restoration_njev": 238,
+        "restoration_residual_calls": 13627,
+        "initial_handoff_uses_best_callback_iterate": true,
+        "iteration_field_is_exact_optimizer_steps": false,
+        "elastic_step": {
+          "success": true,
+          "status": 0,
+          "linear_minimum_margin": -0.24062480655198165,
+          "nonlinear_minimum_margin": -9.551959861628603,
+          "linear_feasibility_is_acceptance": false,
+          "constraint_rollouts": 58
+        }
+      }
+    }
+  },
+  "plan_replay": {
+    "rows": [
+      {
+        "time_s": 529.8525733798211,
+        "actual_r_enu_m": [
+          725.0786319150092,
+          -192.77234078176727,
+          860.9416445838496
+        ],
+        "predicted_r_enu_m": [
+          725.0112406221865,
+          -192.95391475714348,
+          860.988437067178
+        ],
+        "actual_v_enu_mps": [
+          -141.89389520892192,
+          3.0940830191307924,
+          -122.77519125903174
+        ],
+        "predicted_v_enu_mps": [
+          -142.0321802488755,
+          2.7851672117334596,
+          -122.61593051016307
+        ],
+        "position_residual_enu_m": [
+          0.06739129282266276,
+          0.18157397537621023,
+          -0.046792483328431445
+        ],
+        "velocity_residual_enu_mps": [
+          0.13828503995358687,
+          0.3089158073973328,
+          -0.15926074886867525
+        ],
+        "position_residual_perpendicular_m": 0.18925239692277576,
+        "actual_body_axis_enu": [
+          0.6851112035780407,
+          0.27547457831262145,
+          0.6743414531491684
+        ],
+        "planned_axis_enu": [
+          0.6796690130458154,
+          0.26702197408057216,
+          0.6831905283765587
+        ],
+        "axis_error_deg": 0.7673630609432368,
+        "actual_main_body_offset_deg": 0.30458947976069983
+      },
+      {
+        "time_s": 530.8525733798214,
+        "actual_r_enu_m": [
+          598.1622349071407,
+          -185.1619888276319,
+          748.3513736486956
+        ],
+        "predicted_r_enu_m": [
+          597.7879228183865,
+          -185.81382651448246,
+          748.6354640764815
+        ],
+        "actual_v_enu_mps": [
+          -116.91485165059777,
+          10.131458472155558,
+          -107.0981084642207
+        ],
+        "predicted_v_enu_mps": [
+          -117.28138475875717,
+          9.659697985032258,
+          -106.77154887427828
+        ],
+        "position_residual_enu_m": [
+          0.37431208875420907,
+          0.6518376868505698,
+          -0.28409042778594085
+        ],
+        "velocity_residual_enu_mps": [
+          0.3665331081594019,
+          0.47176048712329965,
+          -0.32655958994241985
+        ],
+        "position_residual_perpendicular_m": 0.771175895822363,
+        "actual_body_axis_enu": [
+          0.6400658261502763,
+          0.3213967021573555,
+          0.6978681093422598
+        ],
+        "planned_axis_enu": [
+          0.6259244041649701,
+          0.3006388336727977,
+          0.7196074846460306
+        ],
+        "axis_error_deg": 1.903367902797379,
+        "actual_main_body_offset_deg": 0.3828181211576888
+      },
+      {
+        "time_s": 531.8525733798216,
+        "actual_r_enu_m": [
+          486.80925445341967,
+          -174.39006581224191,
+          642.5209768821377
+        ],
+        "predicted_r_enu_m": [
+          486.0513015226277,
+          -175.48065536055688,
+          643.1541521904835
+        ],
+        "actual_v_enu_mps": [
+          -106.86644042593416,
+          10.92378186998284,
+          -105.64431862281567
+        ],
+        "predicted_v_enu_mps": [
+          -107.30170791934808,
+          10.519744665625897,
+          -105.34885460589645
+        ],
+        "position_residual_enu_m": [
+          0.757952930791987,
+          1.0905895483149664,
+          -0.6331753083458125
+        ],
+        "velocity_residual_enu_mps": [
+          0.43526749341391735,
+          0.4040372043569427,
+          -0.29546401691922597
+        ],
+        "position_residual_perpendicular_m": 1.4416415567475154,
+        "actual_body_axis_enu": [
+          0.5915193550615172,
+          0.34728554110544635,
+          0.7276658611799125
+        ],
+        "planned_axis_enu": [
+          0.573115004462585,
+          0.3113881994964562,
+          0.75800829868426
+        ],
+        "axis_error_deg": 2.8924689038431346,
+        "actual_main_body_offset_deg": 1.2478443511039945
+      },
+      {
+        "time_s": 532.8525733798218,
+        "actual_r_enu_m": [
+          383.09935105389275,
+          -163.95271217417437,
+          535.6532534901053
+        ],
+        "predicted_r_enu_m": [
+          381.7899268119223,
+          -165.38162646311497,
+          536.3885431246223
+        ],
+        "actual_v_enu_mps": [
+          -100.75188528735669,
+          9.9074823903726,
+          -108.2598149511246
+        ],
+        "predicted_v_enu_mps": [
+          -101.4259017452423,
+          9.615945663977847,
+          -108.36173969502084
+        ],
+        "position_residual_enu_m": [
+          1.3094242419704187,
+          1.4289142889406037,
+          -0.7352896345170166
+        ],
+        "velocity_residual_enu_mps": [
+          0.6740164578856138,
+          0.29153672639475303,
+          0.10192474389624806
+        ],
+        "position_residual_perpendicular_m": 2.0054584580295622,
+        "actual_body_axis_enu": [
+          0.5377140410461033,
+          0.35006813331588066,
+          0.7670175435403055
+        ],
+        "planned_axis_enu": [
+          0.522231641635917,
+          0.2994439546599304,
+          0.7985032438831271
+        ],
+        "axis_error_deg": 3.5296532571476438,
+        "actual_main_body_offset_deg": 1.911670811578257
+      },
+      {
+        "time_s": 533.852573379822,
+        "actual_r_enu_m": [
+          285.1354299064921,
+          -154.502673703157,
+          425.91085205938697
+        ],
+        "predicted_r_enu_m": [
+          283.0168380715422,
+          -156.13413689579383,
+          426.30302959339565
+        ],
+        "actual_v_enu_mps": [
+          -95.21970180840943,
+          9.049019293796654,
+          -111.24109001750695
+        ],
+        "predicted_v_enu_mps": [
+          -96.17531782131908,
+          8.888537898217574,
+          -111.7970688512597
+        ],
+        "position_residual_enu_m": [
+          2.118591834949882,
+          1.6314631926368293,
+          -0.39217753400868105
+        ],
+        "velocity_residual_enu_mps": [
+          0.9556160129096583,
+          0.1604813955790796,
+          0.5559788337527465
+        ],
+        "position_residual_perpendicular_m": 2.4657672883319264,
+        "actual_body_axis_enu": [
+          0.48331292308139373,
+          0.323741933824473,
+          0.8133878402497234
+        ],
+        "planned_axis_enu": [
+          0.47384012412275844,
+          0.2646783137411115,
+          0.8398934021686864
+        ],
+        "axis_error_deg": 3.74940268015439,
+        "actual_main_body_offset_deg": 2.1735735723191434
+      },
+      {
+        "time_s": 534.8525733798223,
+        "actual_r_enu_m": [
+          196.76120310330776,
+          -142.95841502446874,
+          320.82343346784336
+        ],
+        "predicted_r_enu_m": [
+          193.7161914723326,
+          -145.14820878145693,
+          321.0174825122074
+        ],
+        "actual_v_enu_mps": [
+          -79.43038574431273,
+          15.404728581399322,
+          -94.58360603592713
+        ],
+        "predicted_v_enu_mps": [
+          -80.34740605203139,
+          14.040185439697021,
+          -94.29621913167078
+        ],
+        "position_residual_enu_m": [
+          3.0450116309751536,
+          2.1897937569881947,
+          -0.19404904436402148
+        ],
+        "velocity_residual_enu_mps": [
+          0.9170203077186585,
+          1.3645431417023008,
+          -0.28738690425635127
+        ],
+        "position_residual_perpendicular_m": 3.4039093027813943,
+        "actual_body_axis_enu": [
+          0.4353193635353907,
+          0.26555387077681303,
+          0.8602198518091724
+        ],
+        "planned_axis_enu": [
+          0.4330457617389372,
+          0.2003997069409707,
+          0.8788124519474657
+        ],
+        "axis_error_deg": 3.8850089315424636,
+        "actual_main_body_offset_deg": 0.38581905269153727
+      },
+      {
+        "time_s": 535.8525733798225,
+        "actual_r_enu_m": [
+          127.56294437211764,
+          -123.26014323064058,
+          240.9626758107941
+        ],
+        "predicted_r_enu_m": [
+          123.6149413615475,
+          -127.85241876903245,
+          241.8071918288812
+        ],
+        "actual_v_enu_mps": [
+          -58.31859137943755,
+          23.962414526971607,
+          -62.75764746043661
+        ],
+        "predicted_v_enu_mps": [
+          -59.0763658206496,
+          20.375806300112792,
+          -61.808675696867475
+        ],
+        "position_residual_enu_m": [
+          3.9480030105701474,
+          4.592275538391874,
+          -0.8445160180870914
+        ],
+        "velocity_residual_enu_mps": [
+          0.7577744412120495,
+          3.5866082268588144,
+          -0.9489717635691335
+        ],
+        "position_residual_perpendicular_m": 5.948580258821007,
+        "actual_body_axis_enu": [
+          0.40090710342051256,
+          0.1795857726408308,
+          0.8983442796010728
+        ],
+        "planned_axis_enu": [
+          0.4077265843011662,
+          0.12404826810092648,
+          0.9046386348345203
+        ],
+        "axis_error_deg": 3.2266105311858593,
+        "actual_main_body_offset_deg": 0.38139946119940626
+      },
+      {
+        "time_s": 536.8525733798227,
+        "actual_r_enu_m": [
+          80.03062519784436,
+          -96.19472336094015,
+          196.7584910334209
+        ],
+        "predicted_r_enu_m": [
+          75.5126752991599,
+          -105.410553998563,
+          198.60983468219183
+        ],
+        "actual_v_enu_mps": [
+          -37.96084581924212,
+          29.069316004055374,
+          -27.83293848485009
+        ],
+        "predicted_v_enu_mps": [
+          -38.308037725106956,
+          23.662046781484374,
+          -26.844534652857412
+        ],
+        "position_residual_enu_m": [
+          4.5179498986844635,
+          9.215830637622858,
+          -1.8513436487709214
+        ],
+        "velocity_residual_enu_mps": [
+          0.3471919058648396,
+          5.407269222570999,
+          -0.9884038319926773
+        ],
+        "position_residual_perpendicular_m": 10.41899411747712,
+        "actual_body_axis_enu": [
+          0.38715183572891776,
+          0.07654543038136108,
+          0.9188330932108734
+        ],
+        "planned_axis_enu": [
+          0.39477228602782255,
+          0.0412179257808939,
+          0.9178539779173416
+        ],
+        "axis_error_deg": 2.0715454514478084,
+        "actual_main_body_offset_deg": 0.5893157940259215
+      },
+      {
+        "time_s": 537.852573379823,
+        "actual_r_enu_m": [
+          49.703382979557745,
+          -66.92893245249226,
+          181.03585363419563
+        ],
+        "predicted_r_enu_m": [
+          44.85654092120351,
+          -81.84959522028409,
+          183.7853585394737
+        ],
+        "actual_v_enu_mps": [
+          -23.437003614647672,
+          28.84310452358313,
+          -5.404903071070665
+        ],
+        "predicted_v_enu_mps": [
+          -23.856334293604704,
+          22.99539584983014,
+          -4.6287200773368316
+        ],
+        "position_residual_enu_m": [
+          4.846842058354234,
+          14.920662767791825,
+          -2.7495049052780587
+        ],
+        "velocity_residual_enu_mps": [
+          0.41933067895703147,
+          5.84770867375299,
+          -0.7761829937338334
+        ],
+        "position_residual_perpendicular_m": 15.873598002577902,
+        "actual_body_axis_enu": [
+          0.3864592523626555,
+          -0.03139495602394604,
+          0.9217719907870665
+        ],
+        "planned_axis_enu": [
+          0.38800959119867445,
+          -0.04395403193433982,
+          0.9206066479308915
+        ],
+        "axis_error_deg": 0.728116730808869,
+        "actual_main_body_offset_deg": 0.08317984215744391
+      },
+      {
+        "time_s": 538.8525733798232,
+        "actual_r_enu_m": [
+          29.85350722688171,
+          -39.15846638456355,
+          178.25236521892398
+        ],
+        "predicted_r_enu_m": [
+          24.554601147828876,
+          -59.73694608105337,
+          182.08283637050866
+        ],
+        "actual_v_enu_mps": [
+          -16.999589396655367,
+          26.559896936993454,
+          -1.8507020607334237
+        ],
+        "predicted_v_enu_mps": [
+          -17.42192806043896,
+          21.14707865460065,
+          -0.291770634391488
+        ],
+        "position_residual_enu_m": [
+          5.298906079052834,
+          20.578479696489815,
+          -3.8304711515846748
+        ],
+        "velocity_residual_enu_mps": [
+          0.4223386637835951,
+          5.412818282392802,
+          -1.5589314263419358
+        ],
+        "position_residual_perpendicular_m": 21.18813861458474,
+        "actual_body_axis_enu": [
+          0.3715748767313743,
+          -0.13129584813963224,
+          0.9190720925168813
+        ],
+        "planned_axis_enu": [
+          0.37823235122675264,
+          -0.12880590874133432,
+          0.9167056923346781
+        ],
+        "axis_error_deg": 0.4292286741439002,
+        "actual_main_body_offset_deg": 2.2529482023154883
+      },
+      {
+        "time_s": 539.8525733798234,
+        "actual_r_enu_m": [
+          15.34441687281627,
+          -14.095206888029649,
+          176.99647037651326
+        ],
+        "predicted_r_enu_m": [
+          9.670021113474148,
+          -39.834674314241234,
+          182.80428966716775
+        ],
+        "actual_v_enu_mps": [
+          -12.06772974054222,
+          23.40690016877744,
+          -0.4604866844560469
+        ],
+        "predicted_v_enu_mps": [
+          -12.376493317891184,
+          18.47100954438075,
+          1.9047744513413027
+        ],
+        "position_residual_enu_m": [
+          5.674395759342122,
+          25.739467426211583,
+          -5.807819290654493
+        ],
+        "velocity_residual_enu_mps": [
+          0.3087635773489641,
+          4.935890624396691,
+          -2.3652611357973496
+        ],
+        "position_residual_perpendicular_m": 25.55075570711018,
+        "actual_body_axis_enu": [
+          0.3337917842910096,
+          -0.2066439428389735,
+          0.9197180685556783
+        ],
+        "planned_axis_enu": [
+          0.34276809549712545,
+          -0.20660588920321057,
+          0.9164191395075859
+        ],
+        "axis_error_deg": 0.5479443189928599,
+        "actual_main_body_offset_deg": 1.7107989197410616
+      },
+      {
+        "time_s": 540.8525733798236,
+        "actual_r_enu_m": [
+          5.745132291965837,
+          7.217985355878193,
+          178.25591937762053
+        ],
+        "predicted_r_enu_m": [
+          -0.11477287483730503,
+          -23.306295839452684,
+          186.8037051591782
+        ],
+        "actual_v_enu_mps": [
+          -6.922855849827014,
+          18.826395461934062,
+          4.141837821876675
+        ],
+        "predicted_v_enu_mps": [
+          -6.931180857300292,
+          14.124209808067018,
+          7.299711178223071
+        ],
+        "position_residual_enu_m": [
+          5.859905166803142,
+          30.52428119533088,
+          -8.547785781557678
+        ],
+        "velocity_residual_enu_mps": [
+          0.008325007473278134,
+          4.702185653867044,
+          -3.1578733563463963
+        ],
+        "position_residual_perpendicular_m": 28.89826094487165,
+        "actual_body_axis_enu": [
+          0.27952097282455435,
+          -0.2561000366824274,
+          0.9253544169465417
+        ],
+        "planned_axis_enu": [
+          0.29197481847601664,
+          -0.2668005056533469,
+          0.9184596864092706
+        ],
+        "axis_error_deg": 1.020354022936878,
+        "actual_main_body_offset_deg": 1.1232152959925688
+      },
+      {
+        "time_s": 541.8525733798239,
+        "actual_r_enu_m": [
+          1.3112996110835562,
+          23.275594991704175,
+          186.3295080874122
+        ],
+        "predicted_r_enu_m": [
+          -4.40384720966419,
+          -11.974684377991267,
+          197.87267849604564
+        ],
+        "actual_v_enu_mps": [
+          -2.583602324180911,
+          13.760968473644342,
+          10.747207360874508
+        ],
+        "predicted_v_enu_mps": [
+          -2.3290757130874065,
+          9.024175897150101,
+          13.007648429677932
+        ],
+        "position_residual_enu_m": [
+          5.715146820747746,
+          35.25027936969544,
+          -11.543170408633443
+        ],
+        "velocity_residual_enu_mps": [
+          -0.2545266110935045,
+          4.73679257649424,
+          -2.2604410688034235
+        ],
+        "position_residual_perpendicular_m": 31.706635213780054,
+        "actual_body_axis_enu": [
+          0.21986996686070104,
+          -0.28954919604582363,
+          0.9315677435065535
+        ],
+        "planned_axis_enu": [
+          0.23574325451650904,
+          -0.30577174011869623,
+          0.9224579995288398
+        ],
+        "axis_error_deg": 1.4012882656479535,
+        "actual_main_body_offset_deg": 2.174234267033609
+      },
+      {
+        "time_s": 542.8525733798241,
+        "actual_r_enu_m": [
+          -0.5009184508339182,
+          35.546951829444346,
+          196.2601532323755
+        ],
+        "predicted_r_enu_m": [
+          -5.863337995104506,
+          -4.246183163736162,
+          209.56987945641032
+        ],
+        "actual_v_enu_mps": [
+          -1.0699171667860523,
+          10.77330859277724,
+          8.563937726102864
+        ],
+        "predicted_v_enu_mps": [
+          -0.7613256995459668,
+          6.5651481266676,
+          9.960625367971579
+        ],
+        "position_residual_enu_m": [
+          5.362419544270588,
+          39.79313499318051,
+          -13.309726224034819
+        ],
+        "velocity_residual_enu_mps": [
+          -0.30859146724008546,
+          4.208160466109641,
+          -1.3966876418687146
+        ],
+        "position_residual_perpendicular_m": 34.67888702903285,
+        "actual_body_axis_enu": [
+          0.17962584215337843,
+          -0.3299164538462631,
+          0.9267630173416485
+        ],
+        "planned_axis_enu": [
+          0.18014216596804705,
+          -0.32215250769036197,
+          0.9293904248641428
+        ],
+        "axis_error_deg": 0.47055534473381977,
+        "actual_main_body_offset_deg": 3.7178724851312404
+      },
+      {
+        "time_s": 543.8525733798243,
+        "actual_r_enu_m": [
+          -0.91388146964526,
+          44.82164657510276,
+          203.15118683599763
+        ],
+        "predicted_r_enu_m": [
+          -6.103541219444065,
+          1.2703025347914019,
+          217.57060124769666
+        ],
+        "actual_v_enu_mps": [
+          0.17166320099497906,
+          7.803078847227507,
+          5.202009057721445
+        ],
+        "predicted_v_enu_mps": [
+          0.2205414187782708,
+          4.487356311000424,
+          6.028659343148328
+        ],
+        "position_residual_enu_m": [
+          5.189659749798805,
+          43.551344040311356,
+          -14.419414411699023
+        ],
+        "velocity_residual_enu_mps": [
+          -0.04887821778329174,
+          3.3157225362270832,
+          -0.8266502854268829
+        ],
+        "position_residual_perpendicular_m": 37.68503855263574,
+        "actual_body_axis_enu": [
+          0.1333488881781698,
+          -0.34280747813266826,
+          0.9298930621087386
+        ],
+        "planned_axis_enu": [
+          0.12699642356834645,
+          -0.31630141588949184,
+          0.9401198448640214
+        ],
+        "axis_error_deg": 1.6680572658938042,
+        "actual_main_body_offset_deg": 3.164379183996963
+      },
+      {
+        "time_s": 544.8525733798245,
+        "actual_r_enu_m": [
+          -0.32087787834039583,
+          51.202261598567915,
+          206.66386744055933
+        ],
+        "predicted_r_enu_m": [
+          -5.533294228322093,
+          4.794927489695691,
+          221.6484481763357
+        ],
+        "actual_v_enu_mps": [
+          0.9424815210215146,
+          4.995418189188445,
+          1.828671326440547
+        ],
+        "predicted_v_enu_mps": [
+          0.8667880932552215,
+          2.602943255938808,
+          2.1442671268766236
+        ],
+        "position_residual_enu_m": [
+          5.212416349981698,
+          46.40733410887223,
+          -14.984580735776376
+        ],
+        "velocity_residual_enu_mps": [
+          0.07569342776629306,
+          2.392474933249637,
+          -0.3155958004360766
+        ],
+        "position_residual_perpendicular_m": 40.95681088414863,
+        "actual_body_axis_enu": [
+          0.08014970951031382,
+          -0.3259088260655539,
+          0.9419975908451066
+        ],
+        "planned_axis_enu": [
+          0.07567411526574971,
+          -0.2809363747040722,
+          0.9567383036373527
+        ],
+        "axis_error_deg": 2.7239709397432827,
+        "actual_main_body_offset_deg": 3.1461349893591333
+      },
+      {
+        "time_s": 545.8525733798248,
+        "actual_r_enu_m": [
+          0.8188739654287398,
+          54.91203755928206,
+          206.83161695875683
+        ],
+        "predicted_r_enu_m": [
+          -4.475371376137114,
+          6.572959683593848,
+          221.89515260438375
+        ],
+        "actual_v_enu_mps": [
+          1.250229701810572,
+          2.4869822365882994,
+          -1.471317141061463
+        ],
+        "predicted_v_enu_mps": [
+          1.1968334133324352,
+          1.017464817544472,
+          -1.6313107480918227
+        ],
+        "position_residual_enu_m": [
+          5.294245341565854,
+          48.33907787568821,
+          -15.063535645626928
+        ],
+        "velocity_residual_enu_mps": [
+          0.05339628847813671,
+          1.4695174190438274,
+          0.1599936070303598
+        ],
+        "position_residual_perpendicular_m": 44.1725428691947,
+        "actual_body_axis_enu": [
+          0.026844441147073933,
+          -0.2791141482459667,
+          0.9598826325277641
+        ],
+        "planned_axis_enu": [
+          0.0254762309033707,
+          -0.2225998413145153,
+          0.974576970949812
+        ],
+        "axis_error_deg": 3.34709020424235,
+        "actual_main_body_offset_deg": 3.2974934730016936
+      },
+      {
+        "time_s": 546.852573379825,
+        "actual_r_enu_m": [
+          2.0434006559859963,
+          56.33398802007109,
+          203.77578681524264
+        ],
+        "predicted_r_enu_m": [
+          -3.2402135420500926,
+          6.971755111566264,
+          218.4212331675004
+        ],
+        "actual_v_enu_mps": [
+          1.0915583247587657,
+          0.47269213647562625,
+          -4.606160486466527
+        ],
+        "predicted_v_enu_mps": [
+          1.2353122101865837,
+          -0.14288006657345456,
+          -5.301493449875101
+        ],
+        "position_residual_enu_m": [
+          5.283614198036089,
+          49.36223290850482,
+          -14.64544635225775
+        ],
+        "velocity_residual_enu_mps": [
+          -0.14375388542781797,
+          0.6155722030490808,
+          0.6953329634085748
+        ],
+        "position_residual_perpendicular_m": 46.90723778218641,
+        "actual_body_axis_enu": [
+          -0.018558025709150175,
+          -0.20284495703649022,
+          0.9790349958436843
+        ],
+        "planned_axis_enu": [
+          -0.011132895080815578,
+          -0.14869132379368544,
+          0.9888209892976589
+        ],
+        "axis_error_deg": 3.182009152267584,
+        "actual_main_body_offset_deg": 3.337958965664858
+      },
+      {
+        "time_s": 547.8525733798252,
+        "actual_r_enu_m": [
+          2.8698784743594,
+          56.097062175851974,
+          197.67860109102946
+        ],
+        "predicted_r_enu_m": [
+          -2.0562496119179654,
+          6.455291021649357,
+          211.31788276873266
+        ],
+        "actual_v_enu_mps": [
+          0.5215502139243845,
+          -0.8032027583954435,
+          -7.562340330315257
+        ],
+        "predicted_v_enu_mps": [
+          1.1118889991225345,
+          -0.8079716929632814,
+          -8.896216336075652
+        ],
+        "position_residual_enu_m": [
+          4.926128086277366,
+          49.641771154202615,
+          -13.639281677703195
+        ],
+        "velocity_residual_enu_mps": [
+          -0.59033878519815,
+          0.00476893456783789,
+          1.333876005760395
+        ],
+        "position_residual_perpendicular_m": 48.73081363405764,
+        "actual_body_axis_enu": [
+          -0.04177525460730344,
+          -0.10465592107574495,
+          0.9936306991464597
+        ],
+        "planned_axis_enu": [
+          -0.029238080908990723,
+          -0.07203360280360402,
+          0.9969735676997119
+        ],
+        "axis_error_deg": 2.0116431240327564,
+        "actual_main_body_offset_deg": 3.1114855570305657
+      },
+      {
+        "time_s": 548.8525733798255,
+        "actual_r_enu_m": [
+          3.0750563649933786,
+          55.13852403313841,
+          188.6990544199386
+        ],
+        "predicted_r_enu_m": [
+          -1.0302815346621548,
+          5.493153611587073,
+          200.64060785959995
+        ],
+        "actual_v_enu_mps": [
+          -0.032966982770883835,
+          -0.9103378288645843,
+          -10.382720776449368
+        ],
+        "predicted_v_enu_mps": [
+          0.9375769354107589,
+          -1.0521986898986193,
+          -12.455241029032289
+        ],
+        "position_residual_enu_m": [
+          4.105337899655534,
+          49.645370421551334,
+          -11.941553439661362
+        ],
+        "velocity_residual_enu_mps": [
+          -0.9705439181816428,
+          0.14186086103403506,
+          2.0725202525829207
+        ],
+        "position_residual_perpendicular_m": 49.656071842880856,
+        "actual_body_axis_enu": [
+          -0.037617094206058604,
+          -0.005751075360981461,
+          0.9992756773561965
+        ],
+        "planned_axis_enu": [
+          -0.03170175751579106,
+          -0.010481142340004313,
+          0.9994424166632406
+        ],
+        "axis_error_deg": 0.43406164110567647,
+        "actual_main_body_offset_deg": 3.489809010260503
+      },
+      {
+        "time_s": 549.8525733798257,
+        "actual_r_enu_m": [
+          2.8921310097060546,
+          54.54745429248416,
+          178.15372450927293
+        ],
+        "predicted_r_enu_m": [
+          -0.22991363172961585,
+          4.455429084406323,
+          188.13865003705843
+        ],
+        "actual_v_enu_mps": [
+          -0.3277604406458587,
+          -0.13651698972011594,
+          -9.826632512881641
+        ],
+        "predicted_v_enu_mps": [
+          0.6442074129664273,
+          -0.9633518976126834,
+          -11.64295422382248
+        ],
+        "position_residual_enu_m": [
+          3.1220446414356706,
+          50.092025208077835,
+          -9.984925527785492
+        ],
+        "velocity_residual_enu_mps": [
+          -0.971967853612286,
+          0.8268349078925674,
+          1.816321710940839
+        ],
+        "position_residual_perpendicular_m": 50.38186943034509,
+        "actual_body_axis_enu": [
+          -0.026156752166043823,
+          0.06334583775686381,
+          0.9976488005079769
+        ],
+        "planned_axis_enu": [
+          -0.02714500496063799,
+          0.021983689110360315,
+          0.9993897468549425
+        ],
+        "axis_error_deg": 2.372820153287112,
+        "actual_main_body_offset_deg": 1.8477641444299098
+      }
+    ],
+    "uses_future_observations_for_diagnosis_only": true,
+    "new_predictive_control_input": false
+  },
+  "raw_conditioned_actual_axis_comparison": {
+    "kind": "saved_raw_conditioned_actual_axis_comparison",
+    "rows": [
+      {
+        "time_s": 529.8525733798211,
+        "actual_to_raw_axis_deg": 0.8307748762590415,
+        "actual_to_conditioned_axis_deg": 2.29681567038365,
+        "conditioned_to_raw_axis_deg": 2.147045599487207,
+        "reference_rate_clipped": false,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 530.8525733798214,
+        "actual_to_raw_axis_deg": 1.9985889393350813,
+        "actual_to_conditioned_axis_deg": 1.345773704762844,
+        "conditioned_to_raw_axis_deg": 2.2129433319354606,
+        "reference_rate_clipped": false,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 532.8525733798218,
+        "actual_to_raw_axis_deg": 3.7088562898401847,
+        "actual_to_conditioned_axis_deg": 0.38308906153663647,
+        "conditioned_to_raw_axis_deg": 3.6680003425290217,
+        "reference_rate_clipped": true,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 534.8525733798223,
+        "actual_to_raw_axis_deg": 4.0987190718935445,
+        "actual_to_conditioned_axis_deg": 0.1250560493456157,
+        "conditioned_to_raw_axis_deg": 3.9737218656553033,
+        "reference_rate_clipped": true,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 535.8525733798225,
+        "actual_to_raw_axis_deg": 3.455061202584118,
+        "actual_to_conditioned_axis_deg": 0.16166952313104616,
+        "conditioned_to_raw_axis_deg": 3.3386143805748887,
+        "reference_rate_clipped": true,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 536.8525733798227,
+        "actual_to_raw_axis_deg": 2.3064507621498938,
+        "actual_to_conditioned_axis_deg": 0.20090775554771814,
+        "conditioned_to_raw_axis_deg": 2.21356808098839,
+        "reference_rate_clipped": true,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 538.8525733798232,
+        "actual_to_raw_axis_deg": 13.208831185131954,
+        "actual_to_conditioned_axis_deg": 0.18671244395232875,
+        "conditioned_to_raw_axis_deg": 13.04741234970253,
+        "reference_rate_clipped": true,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 543.8525733798243,
+        "actual_to_raw_axis_deg": 1.8130622726572487,
+        "actual_to_conditioned_axis_deg": 0.43126768033673335,
+        "conditioned_to_raw_axis_deg": 1.4772538496270249,
+        "reference_rate_clipped": false,
+        "reference_acceleration_clipped": true
+      },
+      {
+        "time_s": 548.8525733798255,
+        "actual_to_raw_axis_deg": 0.3934128666979511,
+        "actual_to_conditioned_axis_deg": 0.16795854638243238,
+        "conditioned_to_raw_axis_deg": 0.2293310236980963,
+        "reference_rate_clipped": false,
+        "reference_acceleration_clipped": true
+      }
+    ],
+    "diagnosis_only": true,
+    "sixdof_execution": false,
+    "causal_effect_not_proven": true
+  },
+  "approach_cone_switch": {
+    "time_s": 538.8525733798232,
+    "minimum_pin_clearance_m": 101.26689894853996,
+    "effective_height_below_threshold": true,
+    "requested_cone_deg": 10.0,
+    "lateral_scale": 0.4049511458739552,
+    "floor_violation_is_observed_not_predicted": true
+  },
+  "external_consultation": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "read_only": true,
+    "first_attempt_max_turns": 12,
+    "first_attempt_completed": false,
+    "conclusion_completed": true,
+    "cold_reseed_recommended_as_experiment": true,
+    "failed_cold_solve_does_not_prove_infeasibility": true,
+    "repair_adopted": false
+  }
+}

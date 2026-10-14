@@ -1,0 +1,696 @@
+{
+  "schema": "missionos.orbital_planning_live_evidence.v1",
+  "execution_source_commit": "3c5f5749",
+  "case": "comparison_orbital_update",
+  "scope": "development_live_models_and_numerical_6dof_not_physical_flight",
+  "record_passed": true,
+  "case_accepted": true,
+  "outcome": "contact_and_recovery_area_met",
+  "issues": [],
+  "case_issues": [],
+  "source_manifest_sha256": "83eb30cfa58da4a467e46b69685499f87789283f38802389cfee101c2c51848d",
+  "source_files": {
+    "src/runtime/starship_sixdof_catalog.py": "a31d9e2d630e0304d932d0c27fefdf45c6ceb64a2076e3bbbc0dba311b343641",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_sixdof.py": "720271c8216c9be7b5fadf303875b92185406f0406b59f128550f86b8d919345",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_mission.py": "f01dcaf2378605b65863651b697edda5c67efaeb5f5f9faefab128da145ec7cd",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_booster.py": "71481d531a12569f6fedd590e3be43f0391c0afe6335ca660526ece4fbd26b52",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/assets/starship_sixdof_replay.js": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_return_feasibility.py": "8d61e243c38ebd7ccd095792fba1722625d7c8f26e51ca0bfc0daf5a618ae292",
+    "src/runtime/starship_return_feasibility_verifier.py": "8041cc485f902621e72e09162d3d3a0fa2bbd973d93a039e52740712b43435b4",
+    "docs/assets/starship-state-return-qualification/qualification.json": "15082a7d0d4cdd503548a40ee1303844fe742fb28b0bfdf51bb22b9ac708647d",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "examples/spaceflight/starship-catch-profile.json": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2",
+    "src/runtime/assets/starship_cg_models.js": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b",
+    "src/runtime/assets/starship_cg_renderer.js": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/intelligence/starship_flight_supervisor.py": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/runtime/starship_mission_control.py": "1fd67bf00a3152179ce0530f981006edd252d8bb5a7c28a66869adf32c7a88be",
+    "scripts/run_starship_mission_worker.py": "ae4dbbd82e8d5a2573226bfa420944d01d4d7af9e4590ad66de5f4ff22f1baf2",
+    "scripts/run_starship_managed_mission.py": "88a226b4705fe2bc8991425d63900f50302389d6e5e71c0001e748c9f7e68f1d",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "799f6af522dc32eaaf7014db611e8ea8f2ccb24be13d32dec75dc26ed45496c7",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/gateway/server.py": "0258e10316d9c3573d2e76ace239f2a7a9a205818d6b8392036f8aefdc42065c",
+    "src/gateway/starship_chat.py": "67dc3e6f72aee5b29edb1f08c5b9497a22dbe4b6b13160a0c0674c9db786c29b",
+    "src/runtime/assets/starship_operator.html": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "src/runtime/starship_orbital_window.py": "6a72c9e64abf9ce2c45835c96fd3de91a0974f3a19fcaab61a10ae7dba600d07",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/intelligence/starship_reference_protocol.py": "eb7261ccd7c3228f54f375e840fde5048d7c81a1e7bfc2cfc346ea17b64d4d3b",
+    "src/runtime/starship_replanning.py": "e60880aa96b788757dc15b9e3a09455c77d84f3dfcc25cf7818537db2529fb7f",
+    "src/runtime/starship_replanning_executor.py": "50222e296301be225bb6419a504b15a33ebe546bbe6f913bfb0fc4e003f295dd",
+    "src/runtime/starship_replanning_events.py": "7daf7998675ee15928d4acff868352b2ab1c637f8310a1ed5f0d73683f20ab19",
+    "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+    "src/runtime/starship_replanning_verifier.py": "28c3e24047ac70c3258c3b42dd08262d29cf723319a0b80698f6c23f322ac2f2",
+    "src/intelligence/starship_replanning.py": "3144802ec5daa3c02395907964497572ce4480eff768b07477bdbe0cebd62e40",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_artifacts.py": "8023fa1479d5e01f4828f0c06db3c6ed7a4f178c337ec9e9d9273b95890198ca",
+    "scripts/run_starship_m1.py": "2b3c017c74bf0bb104f0bea5838f45ef5a39dcf6af40e42f8c88ef97ecfdf156",
+    "scripts/summarize_starship_models.py": "4ece839b658063c8f5acbc6996e4f2a47ddd6678fb1ff1f5bbd83d6785096c1c",
+    "examples/spaceflight/starship-m1-operations.json": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110",
+    "examples/spaceflight/starship-comparison-operations.json": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68"
+  },
+  "artifact_sha256": {
+    "manifest.json": "6946008cb27a5414d62b68d7fbfd9936c7b5f80bc186d3f70856f32524c96610",
+    "report.html": "824ea8afdd6c5b356ce391fa24f90c784faba750fc2217307aebb6e279cd5424",
+    "study.json": "8eea15f1e5bf1ecbd1ecd381006f30116392a63f8b60b2241002d965caeae684",
+    "verification.json": "3678c0ca74cbf009a75adefb618f83307fc301a98b84a321591e7022d1a7c558"
+  },
+  "payload_released_count": 26,
+  "decisions": [
+    {
+      "time_s": 1173.9500000000407,
+      "later_time_s": 1174.2000000000407,
+      "stage": "normal_monitoring",
+      "action": "select_nominal",
+      "fallback": false,
+      "request_sha256": "99aa1dbc6488f7177051a8a500e760c398c61aeb22e340ff4c42b835cb7b042c",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 210.434,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 1627.4500000000407,
+      "later_time_s": 1666.4500000000407,
+      "stage": "orbital_event",
+      "action": "select_next_orbit",
+      "fallback": false,
+      "request_sha256": "50c0d6489ba6e01df90618650bb0cac142b139167fe55b6dd964153bf191c864",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 150.0,
+        "provider_timeout_s": 120.0,
+        "admitted": true,
+        "reason": "long_comparison_admitted",
+        "protected_until_s": 2280.7000000000407
+      },
+      "jev": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 38862.77,
+        "provider_usage": {
+          "prompt_tokens": 4526,
+          "completion_tokens": 8702,
+          "total_tokens": 13228
+        },
+        "reasoning_tokens": 8277,
+        "reference_protocol": "ids_orbital_low_16384"
+      },
+      "decision_basis": {
+        "compared_candidate_ids": [
+          "nominal",
+          "next_orbit"
+        ],
+        "summary": "Compared nominal east against next_orbit west. Nominal has no waiting but its east service completion estimate is later and wider with the increased post-contact delay. Next_orbit requires bounded waiting with lower energy and some propellant loss, but passes checks and gives an earlier, narrower west completion interval. Select next_orbit.",
+        "reference_ids": [
+          "r_50c0d6489ba6_0b013dc45dbb57ceb773",
+          "r_50c0d6489ba6_83b07279f8151c22c8b3",
+          "r_50c0d6489ba6_ff8775cfc89057d13623",
+          "r_50c0d6489ba6_e648cd117c844e62028d",
+          "r_50c0d6489ba6_6489acd1e0a79e325fab",
+          "r_50c0d6489ba6_5955ae8ea3817fa9b019",
+          "r_50c0d6489ba6_13e284661535fc47eccf",
+          "r_50c0d6489ba6_78f241d7c1e5b84531c0",
+          "r_50c0d6489ba6_a40a2dfaffa362ab05f8",
+          "r_50c0d6489ba6_cc56bacd540d90cb4a9b",
+          "r_50c0d6489ba6_6bd61a7f5f63fb39c9e0",
+          "r_50c0d6489ba6_8027a465c6f3f65a075a",
+          "r_50c0d6489ba6_17165ec0f6e5a54bf392",
+          "r_50c0d6489ba6_87079de9ea55328cc643"
+        ]
+      }
+    },
+    {
+      "time_s": 2866.4500000000407,
+      "later_time_s": 2866.9500000000407,
+      "stage": "selected_plan_monitoring",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "b9214d982db0b012c5a814290bdc2eba4277ede35dba77fe78f06ac2f03e5de6",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 414.268,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 4066.9500000000407,
+      "later_time_s": 4067.2000000000407,
+      "stage": "selected_plan_monitoring",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "ccf72586614400a3d774ce34061f85942827faed01382292255ea09135278d1c",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 210.551,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 5267.200000000041,
+      "later_time_s": 5267.450000000041,
+      "stage": "selected_plan_monitoring",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "824dd824dc6b056d7fd8424593398b918db76eb425a888c33936949d4b176b00",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 228.713,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 6467.450000000041,
+      "later_time_s": 6467.950000000041,
+      "stage": "selected_plan_monitoring",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "351a058cb3be58475af8fc60dfff43be006ff78c1bfc87a184762f41a0380413",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 202.904,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 6921.450000000041,
+      "later_time_s": 6921.950000000041,
+      "stage": "orbital_event",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "8dc03d441e45f07d28aadbfbffcf36ee40b89940ee7ae4b8a1b293c35a254c49",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 414.354,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    },
+    {
+      "time_s": 7671.450000000041,
+      "later_time_s": 7671.700000000041,
+      "stage": "selected_plan_monitoring",
+      "action": "keep_plan",
+      "fallback": false,
+      "request_sha256": "ab469fdcad24f690bc6efb9a60d7f6f83f0bb751b0ec47a5c3f23d83205a941f",
+      "planning_window": {
+        "schema": "missionos.orbital_planning_window_decision.v1",
+        "duration_s": 35.0,
+        "provider_timeout_s": 30.0,
+        "admitted": false,
+        "reason": "insufficient_admissible_candidates",
+        "protected_until_s": null
+      },
+      "jev": {
+        "status": "succeeded",
+        "call_attempted": true,
+        "call_succeeded": true,
+        "latency_ms": 200.832,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      },
+      "deepseek": {
+        "status": "not_invoked",
+        "call_attempted": false,
+        "call_succeeded": false,
+        "latency_ms": 0.0,
+        "provider_usage": null,
+        "reasoning_tokens": null,
+        "reference_protocol": null
+      }
+    }
+  ],
+  "contact": {
+    "time_s": 10378.626705202787,
+    "speed_mps": 4.613326129759819,
+    "tilt_deg": 2.396269455067431,
+    "body_rate_rad_s": 0.00302824699790695,
+    "reserve_kg": 62433.93195734164,
+    "latitude_deg": 5.340555349536351,
+    "longitude_deg": 143.00317594363955,
+    "west_center_distance_m": 37912.08320798266
+  },
+  "dispatch": {
+    "candidate_id": "next_orbit",
+    "revision": 2,
+    "time_s": 7731.450000000041
+  },
+  "plan_revisions": [
+    {
+      "revision": 1,
+      "time_s": 1174.2000000000407,
+      "candidate_id": "nominal"
+    },
+    {
+      "revision": 2,
+      "time_s": 1666.4500000000407,
+      "candidate_id": "next_orbit"
+    }
+  ],
+  "reference_comparison_audit": {
+    "chosen_candidate_id": "next_orbit",
+    "status": "not_demonstrably_dominated",
+    "dominating_candidate_ids": [],
+    "available_candidate_ids": [
+      "next_orbit",
+      "nominal"
+    ],
+    "comparison_explanation_present": true,
+    "reported_compared_candidate_ids": [
+      "nominal",
+      "next_orbit"
+    ],
+    "numeric_evidence": {
+      "schema": "missionos.m1_decision_numeric_audit.v1",
+      "status": "not_present",
+      "request_sha256": null,
+      "errors": [],
+      "reference_errors": [],
+      "verified_references": [],
+      "referenced_candidate_ids": [],
+      "free_prose_verified": false,
+      "internal_reasoning_verified": false,
+      "forecast_truth_verified": false,
+      "affects_action_admission": false
+    },
+    "internal_reasoning_verified": false,
+    "reference_id_evidence": {
+      "schema": "missionos.m1_reference_id_audit.v1",
+      "status": "valid",
+      "request_sha256": "50c0d6489ba6e01df90618650bb0cac142b139167fe55b6dd964153bf191c864",
+      "errors": [],
+      "reference_errors": [],
+      "resolved_references": [
+        {
+          "reference_id": "r_50c0d6489ba6_0b013dc45dbb57ceb773",
+          "candidate_id": "nominal",
+          "field_path": "/return_time_s",
+          "value": 2280.7000000000407,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_83b07279f8151c22c8b3",
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 22.0,
+          "unit": "kWh"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_ff8775cfc89057d13623",
+          "candidate_id": "nominal",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 0.0,
+          "unit": "kg"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_e648cd117c844e62028d",
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/0",
+          "value": 11529.830537721551,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_6489acd1e0a79e325fab",
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/estimated_completion_time_s/1",
+          "value": 14840.346042684065,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_5955ae8ea3817fa9b019",
+          "candidate_id": "nominal",
+          "field_path": "/area_service_estimates/east/service_delay_after_contact_s/1",
+          "value": 9900.0,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_13e284661535fc47eccf",
+          "candidate_id": "next_orbit",
+          "field_path": "/return_time_s",
+          "value": 7731.351388986685,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_78f241d7c1e5b84531c0",
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/energy_remaining_kwh",
+          "value": 12.915581018355592,
+          "unit": "kWh"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_a40a2dfaffa362ab05f8",
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/propellant_loss_upper_kg",
+          "value": 109.0130277797329,
+          "unit": "kg"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_cc56bacd540d90cb4a9b",
+          "candidate_id": "next_orbit",
+          "field_path": "/waiting_at_burn/temperature_upper_k",
+          "value": 300.45065138898667,
+          "unit": "K"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_6bd61a7f5f63fb39c9e0",
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/0",
+          "value": 11278.617826041906,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_8027a465c6f3f65a075a",
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/estimated_completion_time_s/1",
+          "value": 12489.110245250573,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_17165ec0f6e5a54bf392",
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/service_delay_after_contact_s/0",
+          "value": 900.0,
+          "unit": "s"
+        },
+        {
+          "reference_id": "r_50c0d6489ba6_87079de9ea55328cc643",
+          "candidate_id": "next_orbit",
+          "field_path": "/area_service_estimates/west/service_delay_after_contact_s/1",
+          "value": 2100.0,
+          "unit": "s"
+        }
+      ],
+      "referenced_candidate_ids": [
+        "next_orbit",
+        "nominal"
+      ],
+      "host_resolved_values": true,
+      "model_numeric_values_verified": false,
+      "free_prose_verified": false,
+      "internal_reasoning_verified": false,
+      "forecast_truth_verified": false,
+      "affects_action_admission": false
+    }
+  },
+  "model_diagnostics": {
+    "schema": "missionos.starship_model_diagnostics.v1",
+    "input_studies": 1,
+    "unique_studies": 1,
+    "duplicate_studies_ignored": 0,
+    "decision_records": 8,
+    "missing_decision_responses": 0,
+    "malformed_records_or_receipts": 0,
+    "evidence": [
+      {
+        "canonical_study_sha256": "6925b0f6eba52357a20c0bb03ba9881fb527298f2ef3f12f0dced06ae58410cd",
+        "source_manifest_sha256": "83eb30cfa58da4a467e46b69685499f87789283f38802389cfee101c2c51848d"
+      }
+    ],
+    "providers": {
+      "jev": {
+        "receipts": 8,
+        "attempts": 7,
+        "valid_responses": 7,
+        "failed_attempts": 0,
+        "status_counts": {
+          "not_invoked": 1,
+          "succeeded": 7
+        },
+        "failure_reason_counts": {},
+        "blocked_before_attempt_counts": {}
+      },
+      "deepseek": {
+        "receipts": 8,
+        "attempts": 1,
+        "valid_responses": 1,
+        "failed_attempts": 0,
+        "status_counts": {
+          "not_invoked": 7,
+          "succeeded": 1
+        },
+        "failure_reason_counts": {},
+        "blocked_before_attempt_counts": {}
+      }
+    },
+    "scope": "saved_receipt_accounting_only",
+    "historical_unknown_causes_inferred": false,
+    "raw_response_or_reasoning_retained": false,
+    "regression_or_fallback_superiority_score": false
+  },
+  "cumulative_model_diagnostics": {
+    "schema": "missionos.starship_model_diagnostics.v1",
+    "input_studies": 6,
+    "unique_studies": 6,
+    "duplicate_studies_ignored": 0,
+    "decision_records": 25,
+    "missing_decision_responses": 2,
+    "malformed_records_or_receipts": 0,
+    "evidence": [
+      {
+        "canonical_study_sha256": "4f83c45f9bddb5f559fa089fcd6aeec7657e2b2a64a04c13b8af33fb2a9f6578",
+        "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+      },
+      {
+        "canonical_study_sha256": "61170f4e02fcd1839c685393020fa0f12f3e69d87defaae72470dab7a826133b",
+        "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+      },
+      {
+        "canonical_study_sha256": "6925b0f6eba52357a20c0bb03ba9881fb527298f2ef3f12f0dced06ae58410cd",
+        "source_manifest_sha256": "83eb30cfa58da4a467e46b69685499f87789283f38802389cfee101c2c51848d"
+      },
+      {
+        "canonical_study_sha256": "abf939eb7b845382ccaeabba73422e4099e374917c458e600bcc5ae7334e75b9",
+        "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+      },
+      {
+        "canonical_study_sha256": "dc8208bd19725656388c54d783697123e521ae60af567370d0f513bbaae8f77e",
+        "source_manifest_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a"
+      },
+      {
+        "canonical_study_sha256": "e2b4b66f0ad59275a8b5db43068ca587078fac95fc81c237aa12b61186d677e0",
+        "source_manifest_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a"
+      }
+    ],
+    "providers": {
+      "jev": {
+        "receipts": 18,
+        "attempts": 15,
+        "valid_responses": 14,
+        "failed_attempts": 1,
+        "status_counts": {
+          "invalid_response": 1,
+          "not_invoked": 3,
+          "succeeded": 14
+        },
+        "failure_reason_counts": {
+          "unknown": 1
+        },
+        "blocked_before_attempt_counts": {}
+      },
+      "deepseek": {
+        "receipts": 18,
+        "attempts": 3,
+        "valid_responses": 2,
+        "failed_attempts": 1,
+        "status_counts": {
+          "invalid_response": 1,
+          "not_invoked": 15,
+          "succeeded": 2
+        },
+        "failure_reason_counts": {
+          "output_limit": 1
+        },
+        "blocked_before_attempt_counts": {}
+      }
+    },
+    "scope": "saved_receipt_accounting_only",
+    "historical_unknown_causes_inferred": false,
+    "raw_response_or_reasoning_retained": false,
+    "regression_or_fallback_superiority_score": false
+  },
+  "cumulative_scope": "Two earlier comparison flights, two fixture failure flights, the earlier citation flight, and this orbital planning flight; no protocol replay calls.",
+  "human_inflight_commands": 0,
+  "worker_receipt_verified": true,
+  "simulator_provider_credentials_present": false,
+  "physical_execution": false,
+  "mission_completed": false,
+  "held_out": false,
+  "free_prose_verified": false,
+  "limitations": [
+    "Synthetic recovery areas and waiting-resource assumptions.",
+    "Contact criteria do not establish real landing, post-contact survival or servicing.",
+    "Reference IDs verify decision-time source values, not prose truth.",
+    "Single live development flight; not a reliability estimate.",
+    "Jev request cancellation follow-up was validated after this source with local HTTP, not another flight."
+  ]
+}

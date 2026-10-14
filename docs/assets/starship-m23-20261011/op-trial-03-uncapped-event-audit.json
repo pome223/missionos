@@ -1,0 +1,317 @@
+{
+  "approved_authority_sha256": "d06b5f5a97d54160da8ce7e84b4776f632a7b1eda5df516d818765d408350fa2",
+  "counts": {
+    "decisions": 4,
+    "fallback": 0,
+    "interrupted": 0,
+    "request_notice_not_latest_delivered": 0,
+    "stale_context_actions_adopted": 0
+  },
+  "decisions": [
+    {
+      "accepted_action": "select_nominal",
+      "context_generation": 0,
+      "deadline_s": 1197.2000000000407,
+      "decision_elapsed_sim_s": 0.5,
+      "decision_index": 0,
+      "fallback": false,
+      "interrupted_by_events": false,
+      "later_generation": 0,
+      "later_observation_time_s": 1162.7000000000407,
+      "notice_age_since_delivery_s": 248.30200000004072,
+      "notice_age_since_issue_s": 262.20000000004075,
+      "notice_is_latest_delivered_at_request": true,
+      "notice_sequence": 1,
+      "notice_sha256": "ab8fc945e539dafbd139645eb7147c7a63d8f5805d3e2988c680cd0287f17ac8",
+      "notice_still_current_at_later_observation": true,
+      "notice_valid_at_later_observation": true,
+      "notice_valid_at_request": true,
+      "provider_reservation": "jev",
+      "request_disposition": "submitted",
+      "request_time_s": 1162.2000000000407,
+      "response_bound_to_request": true,
+      "returned_action": "select_nominal",
+      "stale_context_action_adopted": false,
+      "trigger_event_ids": []
+    },
+    {
+      "accepted_action": "keep_plan",
+      "context_generation": 2,
+      "deadline_s": 1803.2000000000407,
+      "decision_elapsed_sim_s": 28.75,
+      "decision_index": 1,
+      "fallback": false,
+      "interrupted_by_events": false,
+      "later_generation": 2,
+      "later_observation_time_s": 1681.9500000000407,
+      "notice_age_since_delivery_s": 265.2450000000408,
+      "notice_age_since_issue_s": 299.9220000000407,
+      "notice_is_latest_delivered_at_request": true,
+      "notice_sequence": 2,
+      "notice_sha256": "21df3fcd79e9f0e20cfd9e5cefdd696c514903fc56fb22304c6a9959e098d600",
+      "notice_still_current_at_later_observation": true,
+      "notice_valid_at_later_observation": true,
+      "notice_valid_at_request": true,
+      "provider_reservation": "deepseek",
+      "request_disposition": "submitted",
+      "request_time_s": 1653.2000000000407,
+      "response_bound_to_request": true,
+      "returned_action": "keep_plan",
+      "stale_context_action_adopted": false,
+      "trigger_event_ids": [
+        "event-1",
+        "event-2"
+      ]
+    },
+    {
+      "accepted_action": "keep_plan",
+      "context_generation": 3,
+      "deadline_s": 2045.4500000000407,
+      "decision_elapsed_sim_s": 24.0,
+      "decision_index": 2,
+      "fallback": false,
+      "interrupted_by_events": false,
+      "later_generation": 3,
+      "later_observation_time_s": 1919.4500000000407,
+      "notice_age_since_delivery_s": 0.14000000004079993,
+      "notice_age_since_issue_s": 10.147000000040634,
+      "notice_is_latest_delivered_at_request": true,
+      "notice_sequence": 3,
+      "notice_sha256": "164a678f5e51b92f084d5fc1e016f30e75b12e97b3fb58498fc2085661cec334",
+      "notice_still_current_at_later_observation": true,
+      "notice_valid_at_later_observation": true,
+      "notice_valid_at_request": true,
+      "provider_reservation": "deepseek",
+      "request_disposition": "submitted",
+      "request_time_s": 1895.4500000000407,
+      "response_bound_to_request": true,
+      "returned_action": "keep_plan",
+      "stale_context_action_adopted": false,
+      "trigger_event_ids": [
+        "event-3"
+      ]
+    },
+    {
+      "accepted_action": "keep_plan",
+      "context_generation": 3,
+      "deadline_s": 2255.7000000000407,
+      "decision_elapsed_sim_s": 0.75,
+      "decision_index": 3,
+      "fallback": false,
+      "interrupted_by_events": false,
+      "later_generation": 3,
+      "later_observation_time_s": 2221.4500000000407,
+      "notice_age_since_delivery_s": 325.3900000000408,
+      "notice_age_since_issue_s": 335.39700000004063,
+      "notice_is_latest_delivered_at_request": true,
+      "notice_sequence": 3,
+      "notice_sha256": "164a678f5e51b92f084d5fc1e016f30e75b12e97b3fb58498fc2085661cec334",
+      "notice_still_current_at_later_observation": true,
+      "notice_valid_at_later_observation": true,
+      "notice_valid_at_request": true,
+      "provider_reservation": "jev",
+      "request_disposition": "submitted",
+      "request_time_s": 2220.7000000000407,
+      "response_bound_to_request": true,
+      "returned_action": "keep_plan",
+      "stale_context_action_adopted": false,
+      "trigger_event_ids": []
+    }
+  ],
+  "event_schedule": {
+    "all_observed_notice_hashes_match_frozen_delivery_schedule": true,
+    "events": [
+      {
+        "decision_count_bound_to_event": 1,
+        "detected_at_s": 1388.2000000000407,
+        "detection_to_decision_request_s": 265.0,
+        "event_id": "event-1",
+        "first_decision_requested_at_s": 1653.2000000000407,
+        "generation": 1,
+        "kind": "notice_updated",
+        "urgent": false
+      },
+      {
+        "decision_count_bound_to_event": 1,
+        "detected_at_s": 1470.7000000000407,
+        "detection_to_decision_request_s": 182.5,
+        "event_id": "event-2",
+        "first_decision_requested_at_s": 1653.2000000000407,
+        "generation": 2,
+        "kind": "candidate_deadline",
+        "urgent": false
+      },
+      {
+        "decision_count_bound_to_event": 1,
+        "detected_at_s": 1895.4500000000407,
+        "detection_to_decision_request_s": 0.0,
+        "event_id": "event-3",
+        "first_decision_requested_at_s": 1895.4500000000407,
+        "generation": 3,
+        "kind": "notice_updated",
+        "urgent": false
+      }
+    ],
+    "monitoring_end_s": 2280.7000000000407,
+    "monitoring_start_s": 1000.7000000000407,
+    "observation_count": 5121,
+    "observed_notice_schedule_mismatch_indices": [],
+    "publications": [
+      {
+        "delivery_at_s": 913.898,
+        "delivery_to_observation_s": 86.80200000004072,
+        "disposition": "available_before_orbital_monitoring",
+        "expires_at_s": 12000.0,
+        "expiry_detected_at_s": null,
+        "expiry_detection_latency_s": null,
+        "first_observed_at_s": 1000.7000000000407,
+        "injected_delivery_delay_s": 13.898000000000025,
+        "issued_at_s": 900.0,
+        "notice_sha256": "ab8fc945e539dafbd139645eb7147c7a63d8f5805d3e2988c680cd0287f17ac8",
+        "publication_index": 0,
+        "sequence": 1,
+        "update_detected_at_s": null,
+        "update_detection_latency_s": null,
+        "update_event_id": null
+      },
+      {
+        "delivery_at_s": 1387.955,
+        "delivery_to_observation_s": 0.24500000004081812,
+        "disposition": "notice_update_detected",
+        "expires_at_s": 12000.0,
+        "expiry_detected_at_s": null,
+        "expiry_detection_latency_s": null,
+        "first_observed_at_s": 1388.2000000000407,
+        "injected_delivery_delay_s": 34.67699999999991,
+        "issued_at_s": 1353.278,
+        "notice_sha256": "21df3fcd79e9f0e20cfd9e5cefdd696c514903fc56fb22304c6a9959e098d600",
+        "publication_index": 1,
+        "sequence": 2,
+        "update_detected_at_s": 1388.2000000000407,
+        "update_detection_latency_s": 0.24500000004081812,
+        "update_event_id": "event-1"
+      },
+      {
+        "delivery_at_s": 1895.31,
+        "delivery_to_observation_s": 0.14000000004079993,
+        "disposition": "notice_update_detected",
+        "expires_at_s": 12000.0,
+        "expiry_detected_at_s": null,
+        "expiry_detection_latency_s": null,
+        "first_observed_at_s": 1895.4500000000407,
+        "injected_delivery_delay_s": 10.006999999999834,
+        "issued_at_s": 1885.303,
+        "notice_sha256": "164a678f5e51b92f084d5fc1e016f30e75b12e97b3fb58498fc2085661cec334",
+        "publication_index": 2,
+        "sequence": 3,
+        "update_detected_at_s": 1895.4500000000407,
+        "update_detection_latency_s": 0.14000000004079993,
+        "update_event_id": "event-3"
+      }
+    ]
+  },
+  "flight_verifier_reexecuted_by_this_helper": false,
+  "frozen_manifest_sha256": "b0da99e40a13191f919108c0087d3a562b3ead2eb701c85195521150487cb130",
+  "gateway_both_model_control_demonstrated": true,
+  "gateway_case_accepted": true,
+  "gateway_record_verification_passed": true,
+  "gateway_worker_receipt_verified": true,
+  "input_file_sha256": {
+    "frozen_manifest": "f32bd1d26c114fe67a478c645d7778e392c12adaf7456322f0c59ae60e303a3e",
+    "receipt": "66102c0f05b4e88156bbd1f90be3fadad07192713c3da4daca9f1a6688dbb559",
+    "study": "63ebeb25056adad95e336b943f70a7aa95eacd9f4ac3597f94dde02dc421e17b",
+    "verification": "57f8dae8fdfaf6f6d877366884316feba23bbb69c86c54bc6a5961641d838041"
+  },
+  "landing_claimed_by_this_helper": false,
+  "limitations": [
+    "synthetic_operational_publications_not_real_weather_dynamics",
+    "event_evidence_only_not_flight_or_model_reasoning_verification",
+    "initial_notice_age_includes_time_before_orbital_monitoring",
+    "detection_to_decision_can_include_bounded_comparison_preparation"
+  ],
+  "model_calls_by_this_helper": 0,
+  "physical_execution": false,
+  "providers": {
+    "adoption_not_inferred_from_validity": true,
+    "basis": "recorded_host_provider_attempt_ledgers_not_requested_slots",
+    "phases": {
+      "ascent": {
+        "providers": {
+          "deepseek": {
+            "attempted": 0,
+            "published": 0,
+            "valid": 0
+          },
+          "jev": {
+            "attempted": 2,
+            "published": 2,
+            "valid": 2
+          }
+        },
+        "statuses": {
+          "succeeded": 2
+        }
+      },
+      "booster": {
+        "providers": {
+          "deepseek": {
+            "attempted": 0,
+            "published": 0,
+            "valid": 0
+          },
+          "jev": {
+            "attempted": 1,
+            "published": 1,
+            "valid": 1
+          }
+        },
+        "statuses": {
+          "succeeded": 1
+        }
+      },
+      "deployment": {
+        "providers": {
+          "deepseek": {
+            "attempted": 0,
+            "published": 0,
+            "valid": 0
+          },
+          "jev": {
+            "attempted": 2,
+            "published": 2,
+            "valid": 2
+          }
+        },
+        "statuses": {
+          "succeeded": 2
+        }
+      },
+      "return": {
+        "providers": {
+          "deepseek": {
+            "attempted": 2,
+            "published": 2,
+            "valid": 2
+          },
+          "jev": {
+            "attempted": 2,
+            "published": 2,
+            "valid": 2
+          }
+        },
+        "statuses": {
+          "succeeded": 4
+        }
+      }
+    },
+    "totals": {
+      "deepseek": 2,
+      "jev": 7
+    }
+  },
+  "retry_performed": false,
+  "schema": "missionos.starship_operational_event_audit.v1",
+  "simulation_runs_by_this_helper": 0,
+  "study_sha256": "411eebf1544d04530bdd1c3132a5ad40c2a559e29fe26cfc6fe3f676edfaee43",
+  "trial_id": "op_trial_03"
+}

@@ -1,0 +1,116 @@
+{
+  "schema": "missionos.booster_recovery_mission_feature_report.v1",
+  "target_feature_completed": true,
+  "all_m3_orbital_comparison_conditions_passed": false,
+  "source_commit": "75b335f3f6579dd5f00c25f5f27298c3914d537b",
+  "frozen_source_files": 110,
+  "source_commit_matched_all_frozen_files": true,
+  "protected_ship_qualification_sources_unchanged": 19,
+  "historical_report_sha256": "cebf9a5aa0e0fd8723f4d4ce12a5eec10bf001c95a0e9d4123fe09df6eb06d67",
+  "model_request_input_sha256": "7520b78a1cc433d4a0c66c6c121068d0fb6e86286971223164bc96a80dbc8a03",
+  "live_booster": {
+    "model": "deepseek-flash",
+    "model_action": "splashdown",
+    "external_summary": "Capture is not executable now: no capture controller connection, no certified corridor, no collected mechanism status, and zero demonstrated launch-derived catches. Splashdown is the only allowed action and has nominal modeled water-entry evidence, though it is not perturbation-qualified; choose splashdown.",
+    "model_response_status": "succeeded",
+    "decoder": "missionos.booster_answer.v2",
+    "provider_type_metadata_observed": true,
+    "request_time_s": 135.59999999999658,
+    "dispatch_time_s": 136.9999999999965,
+    "later_observation_time_s": 137.0999999999965,
+    "rules_accepted": true,
+    "fallback_used": false,
+    "cg_contact_speed_mps": 1.846707382555844,
+    "fuel_at_contact_kg": 11419.53848391343,
+    "modeled_water_entry_met": true,
+    "catch_executed": false,
+    "capture_controller_connected": false,
+    "only_executable_action": "splashdown",
+    "free_text_summary_verified": false,
+    "perturbation_robustness_qualified": false
+  },
+  "flight": {
+    "record_verification_passed": true,
+    "orbital_comparison_case_accepted": false,
+    "case_issues": [
+      "orbital_comparison_case_incomplete"
+    ],
+    "released_payloads": 26,
+    "ship_contact_point_speed_mps": 4.608259493361677,
+    "ship_cg_ground_speed_mps": 4.556049353025628,
+    "provider_attempts": {
+      "Jev": 6,
+      "DeepSeek": 2
+    },
+    "human_inflight_commands": 0,
+    "initial_planner": "deterministic_fixture_scenario_selector",
+    "approval_operator": "unauthenticated_scripted_test_operator",
+    "physical_execution": false
+  },
+  "failed_prototype_retained": {
+    "protocol_sha256": "c4a3cd04f16bb60b458018a361d8a576ce26afe3ba7fad9822b13f0813a0e7b4",
+    "source_base_commit": "3e97cd6ba7ec03fa1acda54429572db1506cdd10",
+    "source_patch_sha256": "1e18e64b47b658230d0ec915d02f1f8aef5f5b8ad28428d6a01f8d4386a87067",
+    "study_sha256": "3e9940d198c9df0393de905b2a5442a47632713073938179dd5aa8a8f5dd02af",
+    "original_record_verification_passed": true,
+    "booster_response_status": "invalid_response",
+    "booster_model_action_accepted": false,
+    "executed_fallback": "splashdown",
+    "not_relabeled_after_decoder_repair": true
+  },
+  "one_call_api_diagnosis": {
+    "summary_sha256": "c92f2b1f98e54241f10b3e88f3b3cc6fc2ef72ed91e2e8ef1fc73f732f1a1653",
+    "attempts": 1,
+    "new_flight": false,
+    "status": "invalid_response",
+    "provider_answer_fields": [
+      "action",
+      "summary",
+      "type"
+    ],
+    "diagnostic_action": "splashdown",
+    "diagnosed_mismatch": "additional_type_field"
+  },
+  "current_validator_recheck": {
+    "passed": true,
+    "booster_judgment_observed": true,
+    "orbital_comparison_case_accepted": false,
+    "verification_sha256": "60d484239a54d348fe498f9bb6d47e64516be851d1ab16b5a54c969eb7ba214d"
+  },
+  "latest_plan_http_smoke": {
+    "schema": "missionos.booster_report_http_plan_smoke.v1",
+    "passed": true,
+    "production_http_route": true,
+    "latest_preflight_report_sources_checked": true,
+    "correct_report_bound_to_plan": true,
+    "wrong_hash_approval_refused": true,
+    "correct_approval_separate_from_execution": true,
+    "worker_spawned": false,
+    "model_requests": 0,
+    "simulation_runs": 0,
+    "physical_execution": false
+  },
+  "verification_artifacts": {
+    "study_sha256": "013f49b909a7fa46e8aa3e7eac4d1e37118d676a83a500f1e3d5c6d4e4101071",
+    "verification_sha256": "b253892aa97c6d1cf51e622a7cd0262f390f9df09ca054c6db719e5072498102",
+    "protocol_sha256": "db8624ae46b2b2a1d48521bd353225981dab6b5be68a01a4a4ca55851a1d4ec3"
+  },
+  "review": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "rounds": 2,
+    "read_only": true,
+    "core_blockers_remaining_in_second_review": 0,
+    "two_should_fix_items_fixed_after_flight": true,
+    "final_external_signoff_claimed": false,
+    "video_reviewed_by_claude": false
+  },
+  "limits": [
+    "The corrected flight is a development confirmation, not held-out model reliability.",
+    "The booster decision and water-entry record met the target feature; the distinct Ship comparison gate stayed incomplete after a summary-validation rejection.",
+    "A tower preference can be expressed but cannot execute an unconnected controller.",
+    "The final source adds preflight provenance refusal and false early-failure fields; its real HTTP plan boundary was tested without another model or flight.",
+    "No launch-derived catch, recovered hardware, water survival, arbitrary-state qualification or AI-versus-script advantage is claimed."
+  ],
+  "private_raw_logs_exported": false
+}

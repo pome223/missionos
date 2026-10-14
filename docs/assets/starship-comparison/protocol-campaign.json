@@ -1,0 +1,140 @@
+{
+  "schema": "missionos.starship_protocol_campaign_public_summary.v1",
+  "execution_commit": "ee79ec2b",
+  "created_at": "2026-10-09T14:41:17.520520+00:00",
+  "model_requested": "deepseek-flash",
+  "approved_probe_sha256": "d4931c4c975c83cd83e4ecd1ed51ec62810fcb24e54936178833151fa292b452",
+  "campaign_summary_sha256": "cceadb53caf295d72509415cc32531dce5acdc481edf4fc458cde6409a53f25b",
+  "reservation_sha256": "ef3b12ece0d9d5f9580527dfe90403198c89af5de2f3a439d331c339f2e132f7",
+  "source_sha256": {
+    "scripts/run_starship_protocol_probe.py": "73948725eacfebfcd310040e8065229a4b49a5f400362b8685ad5735b4305f53",
+    "scripts/start_starship_gateway.py": "57bd50992a9ec9ea251f8e239d9a798dc01db85f58a12d871602601458d0cab4",
+    "src/intelligence/space_ops_investigator.py": "14a4da02afdba76fb7962e0d8bede0e8bf1ba1da44f0f4ff73812a43024655a9",
+    "src/intelligence/starship_protocol_campaign.py": "92c6c5dd5d26031f1301b61f5c9f1dd7c7c9f76a4ba6109a45abeef10801028b",
+    "src/intelligence/starship_protocol_probe.py": "856c37f95ca552dc9111a8da446d08886b4c648d4b34cf071ea46025727558b3",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/runtime/starship_replanning.py": "5d7e3cce2042073961d561bf3eb1238065865ff448c0f700fc897b8597acf18f"
+  },
+  "attempted_calls": 4,
+  "worstcase_reserved_tokens": 24576,
+  "observed_completion_tokens": 8192,
+  "usage_missing_attempts": 2,
+  "unspent_reserved_slots": 0,
+  "settings": [
+    {
+      "attempts": 2,
+      "ready_for_one_flight": false,
+      "setting_id": "ids_low_4096",
+      "valid_responses": 0
+    },
+    {
+      "attempts": 2,
+      "ready_for_one_flight": false,
+      "setting_id": "ids_high_8192",
+      "valid_responses": 0
+    }
+  ],
+  "selected_setting_id": null,
+  "decision": "stop_short_deadline_tuning",
+  "flight_runs": 0,
+  "dispatch": false,
+  "held_out": false,
+  "reliability_estimate": false,
+  "raw_response_retained": false,
+  "raw_reasoning_retained": false,
+  "attempts": [
+    {
+      "slot": 1,
+      "setting_id": "ids_low_4096",
+      "provider_request_sha256": "ab13367de372cd4d5159dc2b791001587319b697bf584ac04ea7f12459da8e61",
+      "maximum_output_tokens": 4096,
+      "transport_status": "response",
+      "call_attempted": true,
+      "latency_s": 20.102819,
+      "answer_status": "invalid",
+      "errors": [
+        "output_limit"
+      ],
+      "finish_reason": "length",
+      "provider_usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 4377,
+        "total_tokens": 8473
+      },
+      "reasoning_tokens": 4096,
+      "accepted_decision": false
+    },
+    {
+      "slot": 2,
+      "setting_id": "ids_low_4096",
+      "provider_request_sha256": "ab13367de372cd4d5159dc2b791001587319b697bf584ac04ea7f12459da8e61",
+      "maximum_output_tokens": 4096,
+      "transport_status": "response",
+      "call_attempted": true,
+      "latency_s": 20.292782,
+      "answer_status": "invalid",
+      "errors": [
+        "output_limit"
+      ],
+      "finish_reason": "length",
+      "provider_usage": {
+        "completion_tokens": 4096,
+        "prompt_tokens": 4377,
+        "total_tokens": 8473
+      },
+      "reasoning_tokens": 4096,
+      "accepted_decision": false
+    },
+    {
+      "slot": 3,
+      "setting_id": "ids_high_8192",
+      "provider_request_sha256": "fd4c3284b7b7f42ec00064eee57e7a240c50ad1e3efd6f3c4f42bc963791d534",
+      "maximum_output_tokens": 8192,
+      "transport_status": "transport_timeout",
+      "call_attempted": true,
+      "latency_s": 30.010245,
+      "answer_status": "invalid",
+      "errors": [
+        "transport_timeout"
+      ],
+      "finish_reason": null,
+      "provider_usage": {},
+      "reasoning_tokens": null,
+      "accepted_decision": false
+    },
+    {
+      "slot": 4,
+      "setting_id": "ids_high_8192",
+      "provider_request_sha256": "fd4c3284b7b7f42ec00064eee57e7a240c50ad1e3efd6f3c4f42bc963791d534",
+      "maximum_output_tokens": 8192,
+      "transport_status": "transport_timeout",
+      "call_attempted": true,
+      "latency_s": 30.006676,
+      "answer_status": "invalid",
+      "errors": [
+        "transport_timeout"
+      ],
+      "finish_reason": null,
+      "provider_usage": {},
+      "reasoning_tokens": null,
+      "accepted_decision": false
+    }
+  ],
+  "limits": {
+    "transport_timeout_s": 30,
+    "decision_deadline_s": 35,
+    "maximum_request_bytes": 16384,
+    "maximum_response_bytes": 65536,
+    "retries_per_attempt": 0
+  },
+  "claims": {
+    "protocol_ready": false,
+    "new_live_flight_run": false,
+    "previous_m1_control_evidence_superseded": false,
+    "timeout_token_use_known": false,
+    "id_format_caused_failure": false,
+    "future_longer_deadline_success_proven": false
+  },
+  "next_scope": "stop_short_deadline_tuning; future DeepSeek planning needs a separately bounded longer decision window"
+}

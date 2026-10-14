@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MissionOS — 飛行中の承認</title>
+<style>
+body{font:16px/1.6 system-ui,sans-serif;background:#101923;color:#e7eef6;max-width:900px;margin:32px auto;padding:0 20px}h1{font-size:25px}label{display:block;margin:10px 0}input{display:block;width:100%;max-width:540px;padding:8px;background:#1b2a39;color:inherit;border:1px solid #506478;border-radius:5px}button{padding:10px 18px;margin:8px 12px 8px 0;border:0;border-radius:5px;cursor:pointer}button:disabled{opacity:.4;cursor:default}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1b2a39;padding:14px}small{color:#a9bdd0}#notice{border-left:4px solid #68c4ff;padding:10px 15px}dl{display:grid;grid-template-columns:180px 1fr;gap:8px}dd{margin:0;overflow-wrap:anywhere}
+</style>
+<h1>飛行中の承認</h1>
+<p>MissionOS が求める権限の変更を確認します。承認後も、機体の最新状態を検算してから操作します。</p>
+<small>ローカルシミュレーション用。トークンで設定済みの操作者を確認します。SSO による本人確認ではありません。</small>
+<section id="connection">
+<label>実行 ID <input id="run" autocomplete="off"></label>
+<label>ミッション ID <input id="mission" autocomplete="off"></label>
+<label>機体 ID <input id="vehicle" value="ship" autocomplete="off"></label>
+<label>操作者トークン <input id="token" type="password" autocomplete="off"></label>
+<label>Gateway API key（設定されている場合）<input id="gateway" type="password" autocomplete="off"></label>
+<button id="connect">通知を確認する</button><button id="disconnect" disabled>接続を終了</button>
+</section>
+<p id="notice" role="status" aria-live="polite">接続待ち</p>
+<section id="pending" hidden>
+<dl><dt>承認リクエスト</dt><dd id="requestId"></dd><dt>計画の版</dt><dd id="revision"></dd>
+<dt>承認の対象</dt><dd id="binding"></dd><dt>帰還候補のハッシュ</dt><dd id="candidate"></dd>
+<dt>観測状態のハッシュ</dt><dd id="state"></dd><dt>元の期限</dt><dd id="deadline"></dd>
+<dt>残り時間</dt><dd id="remaining"></dd><dt>返事がない場合</dt><dd id="fallback"></dd></dl>
+<h2>現在の権限</h2><pre id="scope"></pre>
+<h2>求められている変更</h2><pre id="delta"></pre>
+<p><small>資源の数値は、その項目で定義した単位の新しい上限です。</small></p>
+<button id="approve" disabled>この変更を承認する</button><button id="reject" disabled>却下する</button>
+<pre id="result" hidden></pre>
+</section>
+<script>
+'use strict';
+const el=id=>document.getElementById(id);
+let connection=null, shown=null, timer=null, generation=0, submitting=false;
+const valid=value=>/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/.test(value);
+function disable(){el('approve').disabled=true;el('reject').disabled=true;}
+function headers(){const h={'Authorization':'Bearer '+connection.token,'X-MissionOS-Operator':'starship-inflight-v1'};if(connection.gateway)h['X-API-Key']=connection.gateway;return h;}
+function endpoint(){return '/missionos/starship/inflight/runs/'+encodeURIComponent(connection.run)+'/missions/'+encodeURIComponent(connection.mission)+'/vehicles/'+encodeURIComponent(connection.vehicle);}
+async function call(url,options){const response=await fetch(url,{credentials:'same-origin',cache:'no-store',...options});const body=await response.json();if(!response.ok)throw Error(body.detail||'HTTP '+response.status);return body;}
+function render(value){
+  shown=value;disable();el('pending').hidden=!value.request;
+  el('notice').textContent=value.reason==='awaiting_operator'?'承認を待っています。変更内容と期限を確認してください。':value.reason;
+  if(!value.request)return;
+  const r=value.request;
+  if(r.mission_id!==connection.mission||r.vehicle_id!==connection.vehicle){throw Error('表示対象が一致しません');}
+  for(const [id,text] of Object.entries({requestId:r.request_id,revision:r.current_revision,state:r.observed_state_sha256,
+    binding:r.candidate_sha256?'権限の追加と今回使う候補':'権限範囲のみの変更（特定候補の承認ではありません）',candidate:r.candidate_sha256||'指定なし',
+    deadline:'ミッション T+'+r.simulation_deadline_s+' s / ホスト単調時計 '+r.wall_deadline_s+' s',
+    remaining:'飛行時間 '+Math.max(0,r.simulation_deadline_s-value.current_simulation_time_s).toFixed(1)+' s / 実時間 '+Math.max(0,r.wall_deadline_s-value.current_wall_time_s).toFixed(1)+' s',fallback:r.fallback,
+    scope:JSON.stringify(r.current_scope,null,2),delta:JSON.stringify(r.requested_scope_delta,null,2)})){el(id).textContent=String(text);}
+  el('result').hidden=!value.receipt;el('result').textContent=value.receipt?JSON.stringify(value.receipt,null,2):'';
+  if(value.resolvable&&!submitting){el('approve').disabled=false;el('reject').disabled=false;}
+}
+async function refresh(){
+  if(!connection)return;const own=generation;
+  try{const value=await call(endpoint()+'/pending',{headers:headers()});if(own!==generation)return;render(value);}
+  catch(error){if(own!==generation)return;disable();shown=null;el('notice').textContent='確認できません：'+error.message;}
+  if(own===generation&&connection){timer=setTimeout(refresh,1000);}
+}
+function disconnect(){generation++;clearTimeout(timer);connection=null;shown=null;submitting=false;disable();el('token').value='';el('gateway').value='';el('pending').hidden=true;el('disconnect').disabled=true;el('connect').disabled=false;el('notice').textContent='接続を終了しました';}
+el('connect').onclick=()=>{
+  if(connection)return;
+  const run=el('run').value.trim(),mission=el('mission').value.trim(),vehicle=el('vehicle').value.trim();
+  if(![run,mission,vehicle].every(valid)||!el('token').value){el('notice').textContent='実行・ミッション・機体 ID と操作者トークンを入力してください';return;}
+  connection={run,mission,vehicle,token:el('token').value,gateway:el('gateway').value};generation++;
+  el('token').value='';el('gateway').value='';el('connect').disabled=true;el('disconnect').disabled=false;refresh();
+};
+async function decide(choice){
+  if(!connection||!shown?.resolvable||submitting)return;
+  const own=generation,r=shown.request;submitting=true;disable();clearTimeout(timer);
+  try{
+    const result=await call(endpoint()+'/requests/'+encodeURIComponent(r.request_id)+'/'+choice,{method:'POST',
+      headers:{...headers(),'Content-Type':'application/json'},body:JSON.stringify({request_sha256:r.sha256,observed_state_sha256:r.observed_state_sha256,
+        ...(r.candidate_sha256?{candidate_sha256:r.candidate_sha256}:{})})});
+    if(own!==generation)return;el('notice').textContent='応答を記録しました。実操作は最新状態の検算後に行われます。';el('result').hidden=false;el('result').textContent=JSON.stringify(result,null,2);
+  }catch(error){if(own!==generation)return;el('notice').textContent='応答の受理を確認できません。再送せず、状態を再確認します：'+error.message;}
+  finally{if(own===generation){submitting=false;shown=null;timer=setTimeout(refresh,1000);}}
+}
+el('approve').onclick=()=>decide('approve');el('reject').onclick=()=>decide('reject');
+el('disconnect').onclick=disconnect;window.addEventListener('pagehide',disconnect);
+</script></html>

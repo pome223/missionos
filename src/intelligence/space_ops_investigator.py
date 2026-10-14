@@ -232,14 +232,35 @@ def _provider_opener():
     return build_opener(ProxyHandler({}), _NoRedirect())
 
 
-def _send_once(endpoint: str, wire: bytes, key: str) -> tuple[str, bytes | None]:
-    """One send, bounded read and absolute response-acceptance deadline.
+def _send_once(endpoint: str, wire: bytes, key: str, *, timeout_s=None, active=None) -> tuple[str, bytes | None]:
+    """One send with an explicit bounded response deadline and optional lifecycle.
 
-    A daemon may finish an already in-flight read after timeout; it cannot retry
-    or publish a late answer. No raw exception or HTTP error body is returned.
+    Omitted timeout retains the legacy 30-second policy. A longer request needs
+    an explicit caller-approved timeout (at most 120 seconds); no shared global
+    deadline is changed. Cancellation returns promptly without retrying. An
+    already in-flight daemon read may finish, but its answer is discarded.
     """
+    timeout_s = TIMEOUT_SECONDS if timeout_s is None else timeout_s
+    try:
+        valid_timeout = (type(timeout_s) in (int, float) and math.isfinite(timeout_s)
+                         and 0 < timeout_s <= 120)
+    except OverflowError:
+        valid_timeout = False
+    if not valid_timeout or (active is not None and not callable(active)):
+        raise ValueError("invalid_provider_request_budget")
+
+    def is_active():
+        if active is None:
+            return True
+        try:
+            return active() is True
+        except Exception:
+            return False
+
+    if not is_active():
+        return "not_active", None
     completed = Queue(maxsize=1)
-    deadline = time.monotonic() + TIMEOUT_SECONDS
+    deadline = time.monotonic() + timeout_s
 
     def request_once():
         try:
@@ -253,22 +274,30 @@ def _send_once(endpoint: str, wire: bytes, key: str) -> tuple[str, bytes | None]
                 },
             )
             remaining = deadline - time.monotonic()
-            if remaining <= 0:
+            if remaining <= 0 or not is_active():
                 return
             with _provider_opener().open(request, timeout=remaining) as response:
                 body = response.read(MAX_RESPONSE_BYTES + 1)
-            if time.monotonic() < deadline:
+            if time.monotonic() < deadline and is_active():
                 completed.put_nowait(("response", body))
         except Exception:
-            if time.monotonic() < deadline:
+            if time.monotonic() < deadline and is_active():
                 completed.put_nowait(("transport_failed", None))
 
     Thread(target=request_once, daemon=True, name="space-ops-provider-request").start()
-    try:
-        result = completed.get(timeout=max(0, deadline - time.monotonic()))
-    except Empty:
-        return "transport_timeout", None
-    return result if time.monotonic() < deadline else ("transport_timeout", None)
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return "transport_timeout", None
+        if not is_active():
+            return "not_active", None
+        try:
+            result = completed.get(timeout=min(remaining, 0.1) if active is not None else remaining)
+        except Empty:
+            continue
+        if time.monotonic() >= deadline:
+            return "transport_timeout", None
+        return result if is_active() else ("not_active", None)
 
 
 def _unique_object(pairs):

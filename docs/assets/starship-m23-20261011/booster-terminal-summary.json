@@ -1,0 +1,179 @@
+{
+  "schema": "missionos.booster_terminal_three_analysis.v1",
+  "scope": "internal_development_separation_continuation_not_M3_complete",
+  "contract_sha256": "4afed4509246c2168062474294f5a23982f7ee57823ba45379ee220edbbf2ebe",
+  "source_map_sha256": "b63842b3abbfd2b88131063e6498b1dce507e4670a7b79e51b848716240f2bc3",
+  "frozen_sources_reread_match": true,
+  "attempted_runs": 3,
+  "model_calls": 0,
+  "retries": 0,
+  "total_wall_s": 23.305514207982924,
+  "accepted_splashdowns": 0,
+  "maximum_runs": 3,
+  "cases": [
+    {
+      "case": "nominal",
+      "result_sha256": "2f77db60cd7bbbdef3ae80eebbce001787da78af2e967791430b96f7fd8a7014",
+      "initial_state_sha256": "ad31d4feca85e5e45c9e8b1def1ff1388edc82e0c0e5f722e2708199a33bdea6",
+      "source_unchanged": true,
+      "record_verification_passed": true,
+      "controlled_water_entry_envelope_met": false,
+      "checks": {
+        "area": true,
+        "speed": false,
+        "vertical": false,
+        "horizontal": false,
+        "tilt": true,
+        "rate": true,
+        "reserve": false,
+        "no_overlap": true
+      },
+      "actual_terminal_ignition_sample_observed": true,
+      "terminal_request_time_s": 461.79999999999677,
+      "first_sample_with_actual_main_thrust": {
+        "time_s": 463.6999999999972,
+        "altitude_m": 83477.11848256085,
+        "ground_speed_mps": 1445.0909051661938,
+        "propellant_kg": 81871.77721538121
+      },
+      "last_positive_fuel_sample": {
+        "time_s": 499.7000000000054,
+        "altitude_m": 40981.18889837619,
+        "ground_speed_mps": 873.2881512974409,
+        "propellant_kg": 57.34711344728606
+      },
+      "first_zero_fuel_sample": {
+        "time_s": 501.70000000000584,
+        "altitude_m": 39218.44437971059,
+        "ground_speed_mps": 891.3463115562271,
+        "propellant_kg": 0.0
+      },
+      "fuel_depletion_interval_s": [
+        499.7000000000054,
+        501.70000000000584
+      ],
+      "contact_time_s": 544.2054863512672,
+      "contact_speed_mps": 587.9053707507508,
+      "contact_downward_mps": 587.6226087308147,
+      "contact_horizontal_mps": 18.23169399615938,
+      "site_distance_m": 8190.584182812614,
+      "contact_tilt_deg": 0.32498567005887113,
+      "contact_body_rate_rad_s": 0.00012404848477801453,
+      "final_propellant_kg": 0.0,
+      "termination": "surface_contact"
+    },
+    {
+      "case": "minus_1t",
+      "result_sha256": "247fb095bf086f1128e0fb5464f5c29bfd4a7e50168438391a4b322c477ccc96",
+      "initial_state_sha256": "304815a22452ddff9a0e80cab8964bd2629000b5686e7286f4cf301ac35bcec7",
+      "source_unchanged": true,
+      "record_verification_passed": true,
+      "controlled_water_entry_envelope_met": false,
+      "checks": {
+        "area": true,
+        "speed": false,
+        "vertical": false,
+        "horizontal": false,
+        "tilt": true,
+        "rate": true,
+        "reserve": false,
+        "no_overlap": true
+      },
+      "actual_terminal_ignition_sample_observed": true,
+      "terminal_request_time_s": 461.94999999999686,
+      "first_sample_with_actual_main_thrust": {
+        "time_s": 463.64999999999725,
+        "altitude_m": 83539.89300343674,
+        "ground_speed_mps": 1449.0175889320203,
+        "propellant_kg": 81619.21445887751
+      },
+      "last_positive_fuel_sample": {
+        "time_s": 497.650000000005,
+        "altitude_m": 42706.077598865144,
+        "ground_speed_mps": 915.8671064258466,
+        "propellant_kg": 4353.130772666457
+      },
+      "first_zero_fuel_sample": {
+        "time_s": 499.65000000000543,
+        "altitude_m": 40914.69782985188,
+        "ground_speed_mps": 878.9213444667209,
+        "propellant_kg": 0.0
+      },
+      "fuel_depletion_interval_s": [
+        497.650000000005,
+        499.65000000000543
+      ],
+      "contact_time_s": 543.8908184945739,
+      "contact_speed_mps": 589.3693513938015,
+      "contact_downward_mps": 589.0825602536754,
+      "contact_horizontal_mps": 18.383948632573,
+      "site_distance_m": 8056.629541987409,
+      "contact_tilt_deg": 0.32679042363723076,
+      "contact_body_rate_rad_s": 0.00012463712667705912,
+      "final_propellant_kg": 0.0,
+      "termination": "surface_contact"
+    },
+    {
+      "case": "plus_1t",
+      "result_sha256": "983897c7d46cbfd8c6ba5c4e0954cb4f488892d6c6b1416684ae114e057792b4",
+      "initial_state_sha256": "9e514d09a69c72c5c9c5b9980d2f27bb43c8ded8f66a2e1d66c3b504e1eda997",
+      "source_unchanged": true,
+      "record_verification_passed": true,
+      "controlled_water_entry_envelope_met": false,
+      "checks": {
+        "area": true,
+        "speed": false,
+        "vertical": false,
+        "horizontal": false,
+        "tilt": true,
+        "rate": true,
+        "reserve": false,
+        "no_overlap": true
+      },
+      "actual_terminal_ignition_sample_observed": true,
+      "terminal_request_time_s": 461.7499999999967,
+      "first_sample_with_actual_main_thrust": {
+        "time_s": 463.64999999999714,
+        "altitude_m": 83655.90389393363,
+        "ground_speed_mps": 1444.277673090086,
+        "propellant_kg": 82498.23829994137
+      },
+      "last_positive_fuel_sample": {
+        "time_s": 499.6500000000053,
+        "altitude_m": 41157.343922434375,
+        "ground_speed_mps": 874.4975537766934,
+        "propellant_kg": 683.8081833904871
+      },
+      "first_zero_fuel_sample": {
+        "time_s": 501.6500000000058,
+        "altitude_m": 39407.064124180935,
+        "ground_speed_mps": 884.4815661017964,
+        "propellant_kg": 0.0
+      },
+      "fuel_depletion_interval_s": [
+        499.6500000000053,
+        501.6500000000058
+      ],
+      "contact_time_s": 544.5253802597678,
+      "contact_speed_mps": 586.6239103443718,
+      "contact_downward_mps": 586.3362590971337,
+      "contact_horizontal_mps": 18.368545279917406,
+      "site_distance_m": 8044.489830331233,
+      "contact_tilt_deg": 0.32912889881150814,
+      "contact_body_rate_rad_s": 0.00012319902804843548,
+      "final_propellant_kg": 0.0,
+      "termination": "surface_contact"
+    }
+  ],
+  "findings": [
+    "The candidate removes terminal non-ignition in these three saved separation continuations, but all three fail contact speed, downward speed, horizontal speed and reserve limits.",
+    "All three first sampled terminal main thrust events occur around 83.5 km altitude; all exhaust propellant before about 39-41 km altitude. The unchanged terminal command therefore does not provide a feasible complete return when attitude allows early ignition.",
+    "These continuations are not a full shared-clock M3 mission, not flight qualification, and not physical splashdowns."
+  ],
+  "limitations": [
+    "Fuel-depletion and ignition timing use the saved two-second samples; intervals are recorded, not claimed as exact event times.",
+    "The three saved initial states are preserved exactly; no additional disturbances or retries were run.",
+    "Water response, structural survival and operational recovery remain unmodeled."
+  ],
+  "disposition": "retain_failure_do_not_promote_coast_candidate_to_operational_return"
+}
