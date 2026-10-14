@@ -257,6 +257,52 @@ def test_cli_approval_spawn_and_no_reuse(tmp_path, monkeypatch):
     assert "fixture-key-must-not-reach-child" not in (output/"worker.log").read_text()
 
 
+
+@pytest.mark.parametrize("expired", (False, True))
+def test_cli_separates_child_exit_from_wall_deadline(profile, tmp_path, monkeypatch, expired):
+    """A worker finishing between polls must not be reported as a timeout."""
+    import runpy
+    from types import SimpleNamespace
+    import src.intelligence.starship_trouble_agent as agent
+
+    execute = runpy.run_path(str(ROOT/"scripts/run_starship_trouble_control.py"))["execute"]
+    namespace = execute.__globals__
+    manifest = make_manifest(1, nominal_probability=1.)
+    grant = authority(profile, manifest, {}, 1., "fixture")
+    plan = {"authority": grant}
+    child = SimpleNamespace(done=False, returncode=0)
+    child.poll = lambda: 0 if child.done else None
+    child.terminate = lambda: setattr(child, "done", True)
+    child.wait = lambda **kwargs: 0
+    clock = {"now": 0.}
+
+    def resource_check(*args):
+        if expired:
+            clock["now"] = grant["maximum_wall_time_s"]
+        else:
+            child.done = True
+
+    monkeypatch.setitem(namespace, "load_plan", lambda *args, **kwargs: (plan, manifest))
+    monkeypatch.setitem(namespace, "sources", lambda: {})
+    monkeypatch.setitem(namespace, "resources", resource_check)
+    monkeypatch.setitem(namespace, "time", SimpleNamespace(monotonic=lambda: clock["now"], sleep=lambda _: None))
+    monkeypatch.setitem(namespace, "subprocess", SimpleNamespace(Popen=lambda *args, **kwargs: child,
+                                                               STDOUT=subprocess.STDOUT, TimeoutExpired=subprocess.TimeoutExpired))
+    monkeypatch.setattr(agent, "serve", lambda *args: [])
+    args = SimpleNamespace(output_dir=tmp_path, approve_plan_sha256=digest(plan))
+    if expired:
+        with pytest.raises(ValueError, match="trouble_control_wall_deadline"):
+            execute(args)
+        failure = json.loads((tmp_path/"host-failure.json").read_text())
+        assert failure["detail"] == "trouble_control_wall_deadline"
+        assert child.done
+    else:
+        assert execute(args) == 0
+        evidence = json.loads((tmp_path/"host-execution.json").read_text())
+        assert evidence["child_exit_code"] == 0 and evidence["source_unchanged"]
+        assert not (tmp_path/"host-failure.json").exists()
+    assert (tmp_path/"execution.claimed").exists()
+
 def confirmed_response(request, grant):
     """Synthetic receipt fixture used ONLY to test record validators."""
     from src.intelligence.starship_flight_supervisor import _receipt

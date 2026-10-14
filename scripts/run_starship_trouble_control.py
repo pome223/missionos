@@ -188,7 +188,10 @@ def execute(args):
                     if sources() != grant["source_sha256"]:
                         raise ValueError("trouble_control_sources_changed")
                     next_source_check = time.monotonic()+1.
-                if not active():
+                # active() also reports normal child completion to brokers.
+                # The child can finish during the source/resource checks; that
+                # is not a wall deadline violation. Check elapsed time alone.
+                if time.monotonic()-started >= grant["maximum_wall_time_s"]:
                     raise ValueError("trouble_control_wall_deadline")
                 time.sleep(.1)
             for thread in threads:

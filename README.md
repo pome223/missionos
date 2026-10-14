@@ -138,15 +138,20 @@ contact-point speed was 4.608 m/s. A separate Ship comparison response was
 rejected, so that flight's overall comparison gate remains incomplete. It is
 recovery-judgment evidence, not a new completed M3 campaign or demonstrated catch.
 
-**Random faults are connected to MissionOS supervision.** The opt-in
-[trouble engine and live response](docs/examples/starship-trouble-engine.md)
-inject seeded engine, RCS, payload-mechanism and tower failures into the actual
-6DOF plant. Jev receives current observations, can request another diagnostic
-or stop pending releases, and can route time-rich decisions to DeepSeek.
-The AI never receives the seed, fault schedule or future failures. Each action
-passes independent scope checks and is followed by another plant observation.
-Probabilities are engineering test settings, not historical accident rates.
-Faulted-return qualification and completed recovery remain separate work.
+**Seeded fault notifications trigger real MissionOS monitoring and inhibition decisions.**
+The opt-in [fault-notification experiment](docs/examples/starship-trouble-engine.md)
+injects engine, RCS, payload-mechanism and tower failures into the actual 6DOF
+plant. Jev receives idealized current component-health flags, can sample the
+same diagnostic again or inhibit pending releases, and can route time-rich
+requests to DeepSeek. The seed and future fault schedule stay private. Checked
+actions and later observations are recorded.
+
+This trial demonstrates response to supplied fault notifications, **not independent
+fault diagnosis or corrective recovery planning**. The automatic interlock also
+prevents release after missing separation; an AI-caused mission-outcome change
+has not been measured. The fault-control grant cannot change Booster trajectories,
+and this separate CLI is not the existing M3 Gateway replanning path. Probabilities
+are engineering test settings, not historical accident rates.
 
 <details>
 <summary>Earlier completed M3 flight: scoped inflight approval and next-orbit return</summary>

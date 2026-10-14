@@ -272,3 +272,29 @@ and rejected DeepSeek response are not overwritten or pooled into this trial.
 The README recovery-choice movie is a separate saved execution without random
 faults. This connection uses MissionOS's CLI approval/host/worker boundary, not
 a registered existing M3 Gateway fault scenario.
+
+## Notification-response boundary and next recovery gate
+
+The 20261014 live trial exercises response to supplied idealized fault flags,
+not independent symptom detection, independent diagnosis or corrective recovery
+planning. `collect_status` rereads the same channel. Payload blockage also triggers
+an automatic no-separation interlock without AI withholding. The record confirms
+the commanded latch, not a measured causal change in mission outcome. The fault
+CLI deliberately excludes the existing M3 replanning/qualified-return path and
+has no Booster recovery-policy authority. Do not call this complete fault handling.
+
+A subsequent fault-handling delivery must retain independent low-level interlocks
+while adding: observable symptoms and numerical consistency tools; genuinely
+separate diagnostic evidence with a stated time/resource cost; physically supported
+mission-changing actions; and propagation of the actual inventory and delay into
+return-candidate rollout and independent checks. Real-model actions must remain
+free choices within delegated bounds, rather than scripted expected answers.
+Compare the same starting state, frozen fault series, sensor draws and physical
+controllers with and without mission-level intervention to measure causal effects,
+not a score against scenario-encoded Rules. Report no change or failure honestly.
+This is an acceptance contract for subsequent work, not an implemented capability.
+
+The host wall-time guard checks elapsed time independently from process liveness.
+A normal worker exit between the loop condition and a broker-active check is not
+an expired deadline. Deterministic tests exercise that race and actual expiry;
+the 2400-second deadline, one-use claim and model response windows are unchanged.
