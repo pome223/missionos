@@ -72,3 +72,19 @@ throws before its first physics step. The five affected test modules then passed
 **163 tests**. No production gate, physical threshold or historical record changed.
 New fixed-response smoke scripts have explicit opt-in dispositions in the smoke
 inventory; this does not schedule or authorize their execution.
+
+### Final broad-run findings retained
+
+The first complete public-port contract runs finished with 10,945 passing / one
+failing / five skipped on Python 3.11, and 10,944 passing / two failing / five
+skipped on 3.13. One test still hard-coded the previous 121-smoke count; the new
+eight explicitly classified scripts require 129. The other 3.13 finding was a
+finished diagnostic child's process group returning PermissionError during
+cleanup, masking the already-correct duplicate-frame rejection. The host now
+checks for an exited child before signaling and ignores that permission race
+only after poll confirms exit. A live child's permission error still raises.
+The affected inventory/shadow tests passed **16 each** on both Python variants,
+including actual scripted child frames plus deterministic exit-race/live-denial
+checks. No flight/control/qualification threshold or old record was changed.
+Full logs are retained locally and are not relabelled as successful runs; final
+head results are recorded in the PR's verification section.

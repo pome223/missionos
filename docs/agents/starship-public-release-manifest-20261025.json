@@ -1014,7 +1014,9 @@
     },
     {
       "path": "src/runtime/starship_jev_shadow.py",
-      "sha256": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b"
+      "public_adaptation": "preserve protocol rejection across already-exited diagnostic worker cleanup; live permission failures still raise",
+      "selected_original_sha256": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b",
+      "sha256": "affd064167f4f9b46df984c6bf534546503c473c76a39555d0d8dae229961109"
     },
     {
       "path": "src/runtime/starship_jev_shadow_report.py",
@@ -1857,6 +1859,26 @@
       "path": "tests/contract/test_starship_m3_fixture.py",
       "reason": "scoped synthetic prerequisite to reach directory setup; test stops before first physics step",
       "sha256": "c52f260a9c79f11e36db718e3426f9e8cc4b89258f73b8664012d7356001cc57"
+    },
+    {
+      "path": "src/runtime/starship_jev_shadow.py",
+      "reason": "finished worker signal race only; no control, qualification or threshold change",
+      "sha256": "affd064167f4f9b46df984c6bf534546503c473c76a39555d0d8dae229961109"
+    },
+    {
+      "path": "tests/contract/test_starship_jev_shadow_control.py",
+      "reason": "force exit-during-signal, live-denial and already-exited cases",
+      "sha256": "8a461ba3a40c01a3bf8722055a04fcae1354e6f09c510de6de167c8b0ff5dfb3"
+    },
+    {
+      "path": "tests/contract/test_smoke_inventory.py",
+      "reason": "expect explicitly classified 129 scripts after eight additions",
+      "sha256": "10fe10a35c9ce6e2638350a4569ab0dcaad4c813efb4cb3fa1f31d446aed028e"
+    },
+    {
+      "path": "scripts/smoke_inventory.toml",
+      "reason": "classify eight new Starship opt-in boundary scripts",
+      "sha256": "d50b04c6fe0ba9ba9365f9a6522589c9d710efafa3648d9faae69518d1edaa40"
     }
   ],
   "public_baseline": "bdf95820dce250f460b4bc2148b77ab962bcf341",

@@ -133,7 +133,7 @@ history, selected splashdown and passed the independent execution check. A later
 observation confirmed the selection. Only ocean return is currently executable;
 the same flight's separate Ship sequence released 26 payloads.
 
-**Play the new 120-second mission — tower, ocean, AI judgment and metrics.**
+**Play the recorded 2026-10-14 mission — 120 seconds, tower, ocean, AI judgment and metrics.**
 
 https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72
 
