@@ -1,0 +1,269 @@
+{
+  "schema": "missionos.starship_ship_fidelity_registration.v1",
+  "experiment_id": "starship-ship-fidelity-v1-20261018",
+  "registered_on": "2026-10-18",
+  "status": "preregistered_before_any_stage2d_plant_step",
+  "source_freeze_commit": null,
+  "authority": {
+    "basis": "Existing direct user finite closeout request, after final ascent and booster negatives. Implement and freeze a separate finite Stage2d before any plant step.",
+    "local_scope": "At most9rollouts, one explicit CLI claim bound to clean committed source/environment.",
+    "hosted_models_authorized": false,
+    "physical_execution_authorized": false,
+    "normal_certificate_revalidated": false,
+    "public_push_or_merge_authorized": false
+  },
+  "scope": "Experimental continuation of actual1537s post-insertion screen, all26payloads retained and oneRVac unavailable. Not post-deployment snapshot, flight dispatch, live AI, qualifiedreturn, orrealvehiclevalidation.",
+  "seed_record": {
+    "path": "docs/assets/starship-ascent-final-retry-v3-20261018/baseline-seed-record.json.gz",
+    "sha256": "a077b9f70be35f879c08dfa6a50da1a52417808fc0b386eccf76ac06bd396427"
+  },
+  "seed_plan": {
+    "path": "docs/assets/starship-ascent-final-retry-v3-20261018/execution-plan.json",
+    "sha256": "a49c4b391bacb89666a524e6011ba616b4a383f592bf1a75b34b12581736a884"
+  },
+  "seed_origin_sha256": "5349e9725bf8b83c4c4f12d14e805245a2f322bbdbe662b1773d5256318d2434",
+  "seed_final_state_sha256": "569443a2fa51e425f75a7a7d2e0d8a496613ec9d8469f92a99a3c3ba3b167ccb",
+  "seed_final_vehicle_sha256": "a3ea2e29b9e132eb2a44789602075f0a0abc13bbac8c8d2ea54287fdcbeda39d",
+  "seed_ascent_fit_passed": false,
+  "seed_choice": "Previously locked v3B0; never replacebybest2c/contact/entryresult.",
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "docs/agents/starship-flight14-research.json": "db18f14d2248e29e76e60f6952db8f33cadb3c6db13a56e585cde1fb876a20bb",
+    "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv": "7daff51380372f20ee2a38dc79f9c7609430e1771e20c1267924e6effb3fcfd8",
+    "docs/assets/starship-reference-v2-20261018/reference.json": "eefdd1b147a13d371e87c2b861fc69d57b0ea6c497e679e9f67d2f15b26229c7",
+    "docs/assets/starship-ascent-final-retry-v3-20261018/selection.json": "3648c0a31ce516b776a6400a0b4ff14ad9d73cfb6c6c41d5e53edc1e1ceef204",
+    "docs/assets/starship-ascent-final-retry-v3-20261018/execution-receipt.json": "3854a375f1ab045bc980a19ded2bfd66013d4d686b863ad482a72485da746a9d",
+    "docs/assets/starship-booster-fidelity-v1-20261018/results.json": "682d4fc54d96bf2c2c56314e04c09648a1544c17d22b7759c4d8d623400facd1",
+    "docs/assets/starship-booster-fidelity-v1-20261018/execution-receipt.json": "26289ff3db747585ad75ba8d2f8519b6140851547332b6924efa5cad1c8c002a",
+    "docs/assets/starship-propulsion-step2a-20261018/summary-v2.json": "503b0cbd4bdb4c2608ded488b9b742c8095f36c9dcae67171e2c537c7bda27e0",
+    "examples/spaceflight/starship-ship-fault-step1-registration.json": "16744e51b7bbe41ba426900d9d897b0c08227426caab8f4a788f2873acbfe69a"
+  },
+  "controls": {
+    "return_time_relative_s": 60.0,
+    "duration_s": 6000.0
+  },
+  "baseline": {
+    "id": "B0",
+    "settings": null,
+    "return_policy": "trimmed_state_terminal_v4",
+    "meaning": "ordinary shared TRIMMED ReturnController from actualneworigin, not previous normalflight evidence"
+  },
+  "candidate_grid": [
+    {
+      "id": "C01",
+      "entry_alpha_deg": 65.0,
+      "flip_altitude_m": 500.0
+    },
+    {
+      "id": "C02",
+      "entry_alpha_deg": 65.0,
+      "flip_altitude_m": 800.0
+    },
+    {
+      "id": "C03",
+      "entry_alpha_deg": 70.0,
+      "flip_altitude_m": 500.0
+    },
+    {
+      "id": "C04",
+      "entry_alpha_deg": 70.0,
+      "flip_altitude_m": 800.0
+    },
+    {
+      "id": "C05",
+      "entry_alpha_deg": 75.0,
+      "flip_altitude_m": 500.0
+    },
+    {
+      "id": "C06",
+      "entry_alpha_deg": 75.0,
+      "flip_altitude_m": 800.0
+    }
+  ],
+  "adjustable_parameters": {
+    "independent_experimental_scalars": 2,
+    "maximum_accepted_independent_scalars_per_stage": 6,
+    "fitted_factor": "entry_alpha_deg",
+    "non_fitted_experimental_factor": "flip_altitude_m",
+    "identifiability_limit": "flip500/800 occurs below training10km. Trainingcannot identifythisfactor; registeredID resolvesidenticalcurve ties, notcontactresult.",
+    "no_additional_search": true
+  },
+  "fixed_policy": {
+    "fresh_return_controller_history": "Legitimate freshReturnController beforeanyreturn; actualphysicsstate+finalvehicle unmodified, released_count0, allocation_enabledtrue, registeredfalse.",
+    "actual_inventory": 26,
+    "actual_unsupported_engine": "ship_main_3 RVac remainsunavailable; return stillusesactual3healthySL.",
+    "entry_aerodynamics": "Existing finitepanel/hull/aero assumptions frozen; no aerodynamic coefficient identification or mass/thrust/Isp changes.",
+    "flip_policy": "Candidates actuallyuse descending500/800m trigger, ordinarymass/state terminal_budget stillcomputedandreported butnottrigger inexplicitmode. OrdinaryNonepathunchanged.",
+    "bounded_physical_control": "No attitude/rate/actuator/fuel/velocityreset. Sameactuators, allocator, contact and5rad/sstop.",
+    "deorbit": "Existingmeasuredperigee/reserveguard and3SLburn; no11sforcedburn. Actualcommand/durationandpositive-load witnessesseparate.",
+    "no_payload_release": true,
+    "no_capture_director_sensor_approval_or_qualification_scope": true
+  },
+  "reference_alignment": {
+    "reference_time_origin_s": 9841.0,
+    "simulation_anchor": "FIRSTdescending97700m crossingafterdeorbit fromfiniteadjacentsamples; <=2.1s bracket; no choosinglaterbounce",
+    "simulation_anchor_altitude_m": 97700.0,
+    "maximum_anchor_bracket_s": 2.1,
+    "type": "conditionalrelativeclockcomparisonnotabsoluterealflighttime",
+    "not_fitted_offset": true,
+    "anchor_point_counts_in_frozen_mask": true,
+    "unknowns": [
+      "real3Dentryepoch/heading/wind",
+      "broadcastaltitudedatum",
+      "postlaunchspeedframeindependentlyunconfirmed",
+      "displaylatency/OCRrollingmedian effects"
+    ]
+  },
+  "fit_data": {
+    "file": "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv",
+    "elapsed_s_inclusive": [
+      9841.0,
+      11217.0
+    ],
+    "expected_altitude_points": 1356,
+    "expected_speed_points": 1316,
+    "expected_altitude_bins": 276,
+    "expected_speed_bins": 275,
+    "bin_width_s": 5.0,
+    "maximum_interpolation_gap_s": 2.1,
+    "bin_time_origin_s": 9841.0,
+    "series_are_masked_separately": true,
+    "no_filling_quarantine_or_timeoffset_search": true
+  },
+  "non_fitted_curve": {
+    "file": "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv",
+    "elapsed_s_inclusive": [
+      11218.0,
+      11298.0
+    ],
+    "expected_altitude_points": 70,
+    "expected_speed_points": 70,
+    "expected_altitude_bins": 16,
+    "expected_speed_bins": 17,
+    "bin_width_s": 5.0,
+    "maximum_interpolation_gap_s": 2.1,
+    "bin_time_origin_s": 9841.0,
+    "series_are_masked_separately": true,
+    "no_filling_quarantine_or_timeoffset_search": true
+  },
+  "low_altitude_diagnostic": {
+    "file": "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv",
+    "altitude_km_inclusive": [
+      0.5,
+      1.0
+    ],
+    "elapsed_s_inclusive": [
+      11292.0,
+      11298.0
+    ],
+    "expected_points": 7,
+    "observed_speed_kmh": [
+      361.0,
+      360.0,
+      362.0,
+      362.0,
+      354.0,
+      334.0,
+      301.0
+    ],
+    "label": "low_altitude_display_speed_diagnostic_not_certified_preflip",
+    "used_for_ranking": false
+  },
+  "metrics": {
+    "calibration_gate": {
+      "maximum_altitude_rmse_m": 3000.0,
+      "maximum_speed_rmse_mps": 150.0,
+      "maximum_altitude_rmse_fraction_of_baseline": 0.8,
+      "maximum_speed_rmse_fraction_of_baseline": 0.8,
+      "all_four_required": true
+    },
+    "aggregation": "equalweight5sbinMSEthenRMSE, timesrelative9841 forreference andfirst97700crossingforsim",
+    "gate_class": "explicitengineeringtargetsadaptedfromacceptedreferencecriterion, notinstrumentprecisionorvehiclequalification",
+    "incomplete_coverage": "A validphysicalendbeforefull1376s trainwindow is fitinadmissibleVALIDnegative; no padding/extrapolation/shortwindowwinner. Unexplainedgaps/numericalerrorsinvalidstop.",
+    "selection": "All4fitgates usingcompletefixedmasks; registeredIDties; nevercontact/fuel/nonfit/convergence. Ifbaselineincomplete no relativefitgatecanbe established.",
+    "none_eligible": "selected_idnull;preserveknownnegative, noadditionalcalibration"
+  },
+  "planned_deorbit_diagnostic": {
+    "start_s": 31957.0,
+    "end_s": 31968.0,
+    "duration_s": 11.0,
+    "source_class": "publishedapproximateplan;realF14earlyreturnnotthisclock",
+    "used_for_control_or_ranking": false
+  },
+  "physical_acceptance": {
+    "source": "unchanged common contact and retained-returnverifiers/profile; no relaxedspeed/tilt/rate/fuel thresholds",
+    "envelope_and_fit_separate": true,
+    "qualified_return_inferred": false,
+    "catch_inferred": false,
+    "limits_source": "examples/spaceflight/starship-ship-fault-step1-registration.json"
+  },
+  "convergence": {
+    "dt_scale": 0.5,
+    "baseline_half_id": "B0-half",
+    "selected_half_id_suffix": "-half",
+    "only_after_fit_selection_receipt_is_frozen": true,
+    "maximum_additional_cases": 2,
+    "if_no_fit_candidate": "Only B0-half; neverpickunselectedcandidate byphysicalresult.",
+    "comparisons": "Actualorigin, contacttimedifference, contactpositiondistance, velocity/attitude/fuel differences; source/state/samefullsettingsbound.",
+    "not_an_acceptance_margin_expansion": true,
+    "not_independent_physics_model": true,
+    "no_repeat_until_converged": true,
+    "step_semantics": "Multiply only local effective powered/coast integration/control-allocation dt by0.5, using the same actual interval consistently; allphysical coefficients/gains/state/vehicle remainunchanged. Record effective dt. Notindependentmodeloracceptancemargin."
+  },
+  "budgets": {
+    "maximum_rollouts": 9,
+    "per_case_wall_s": 300.0,
+    "cohort_wall_s": 3000.0,
+    "workers": 1,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "maximum_models": 0
+  },
+  "execution_order": [
+    "B0",
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06",
+    "freeze_fit_selection",
+    "B0-half",
+    "selected-half-if-any"
+  ],
+  "execution_binding": [
+    "clean committedsource andexactenvironment before oneclaim",
+    "allstarshipruntime/newrunner/newtests/commonhelpers/input/seedhashes",
+    "strict raworiginconstructor source+vehicle+actuatorhistory",
+    "sanitizedworkerwithoutAPI/HMACsecrets",
+    "watchdogon everyyield/checkpoint, gziprestoreJSONthenindependentsavedrecordcheck",
+    "fullrecordhashesfrozenbeforehalfcases"
+  ],
+  "stop_rules": [
+    "Noautomaticresume/retry;invalid/numerical/source/environment/time/resourceerror stopscohort",
+    "Validphysicalnegativecontinuesonlyfixedregisteredgrid",
+    "No after-resultmass/thrust/Isp/aero/gain/time/budget/thresholdtuning",
+    "At most9 actualrollouts; trialswhichadvanceplantcount includingfixtures",
+    "Close Stage2dwithknownlimitsafterthiscohort, do notbuildreturnguidanceindefinitely"
+  ],
+  "retention": {
+    "output_directory": "output/starship-ship-fidelity-v1-20261018/cohort",
+    "reviewed_small_artifacts": "docs/assets/starship-ship-fidelity-v1-20261018",
+    "raw_private_archive": "output/starship-ascent-closure-20261018",
+    "full_member_hash_mode_and_sample_restore_required": true,
+    "delete_originals": false
+  },
+  "outcome_rules": {
+    "all_physics_stages_closed": "Report allknownsource/modeldifferences andonlyactuallysuccessfulrecoveries.",
+    "no_ready_new_physics": "Do notclaimStage3complete orinventsuccessfullaunch/deploy/returnstates. Prepare explicitnativecomposition/registrationonlyifactualcompatibleprefix+returnexists.",
+    "additional_authority": "NativeAIcohort, finaldevelopport/qualification/publicscope remainseparategates."
+  },
+  "new_sixdof_runs": 0,
+  "new_mission_provider_calls": 0,
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  }
+}

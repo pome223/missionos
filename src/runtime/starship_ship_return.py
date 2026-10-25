@@ -7,7 +7,7 @@ copies state and runs the same controller; it cannot dispatch a command.
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass, field, fields, replace
+from dataclasses import asdict, dataclass, field, fields, replace
 import json
 import math
 
@@ -77,8 +77,18 @@ class ReturnController:
         self.phase = "deorbit_slew"
         event("return_requested", "configured mission timing; no fitted observed return time")
 
-    def update(self, s, v, p, samples, event):
+    def update(self, s, v, p, samples, event, *, fidelity_settings=None):
         from .starship_sixdof_mission import point_state, _attitude, _sample
+        if fidelity_settings is not None or "fidelity_experiment" in self.record:
+            from .starship_ship_fidelity import ShipFidelitySettings, POLICY_ID as FIDELITY_POLICY_ID
+            if (type(fidelity_settings) is not ShipFidelitySettings or self.registered
+                    or self.terminal_engine_out or self.policy != TRIMMED_POLICY_ID):
+                raise ValueError("ship_fidelity_cannot_borrow_registered_return")
+            binding = {"policy_id": FIDELITY_POLICY_ID, "settings": fidelity_settings.record()}
+            prior = self.record.get("fidelity_experiment")
+            if prior is not None and prior != binding:
+                raise ValueError("ship_fidelity_settings_changed_during_return")
+            self.record["fidelity_experiment"] = binding
         g = p["guidance"]
         ps, o = point_state(s), dyn.observe(s, v)
         altitude = o["altitude_m"]
@@ -110,7 +120,8 @@ class ReturnController:
             flow = env.unit(env.air_relative_velocity(ps))
             lift_up = env.add(up, env.scale(flow, -env.dot(up, flow)))
             lift_up = env.unit(lift_up) if env.norm(lift_up) > 1e-8 else north
-            entry_axis = env.add(env.scale(flow, math.cos(math.radians(g["entry_alpha_deg"]))), env.scale(lift_up, math.sin(math.radians(g["entry_alpha_deg"]))))
+            entry_alpha_deg = g["entry_alpha_deg"] if fidelity_settings is None else fidelity_settings.entry_alpha_deg
+            entry_axis = env.add(env.scale(flow, math.cos(math.radians(entry_alpha_deg))), env.scale(lift_up, math.sin(math.radians(entry_alpha_deg))))
             target = _attitude(entry_axis, env.scale(north, -1))
             if self.policy == TRIMMED_POLICY_ID and self.record["status"] == "active":
                 from .starship_entry_trim import prepare_entry_trim, entry_preferred, MAXIMUM_ROLL_RATE_RAD_S
@@ -120,6 +131,23 @@ class ReturnController:
                         prepared = prepare_entry_trim(s, v, entry_axis, flow, target)
                         self.trim_attempts += 1
                         self.next_trim_attempt_s = s.time_s+30.
+                        # Preserve failed static preparations as well as roots.
+                        # A missing root is evidence about this solver/pose,
+                        # not proof that no controllable trajectory exists.
+                        self.record.setdefault("entry_trim_attempts", []).append({
+                            "attempt_number": self.trim_attempts,
+                            "time_s": s.time_s, "state": asdict(s),
+                            "requested_axis_eci": list(entry_axis),
+                            "flow_direction_eci": list(flow),
+                            "requested_q_body_to_eci": list(target),
+                            "preparation": deepcopy(prepared),
+                            "static_prediction_only": True,
+                            "actual_state_assigned": False})
+                        if prepared["status"] != "prepared":
+                            event("entry_trim_unavailable",
+                                  "static preparation failed; no feasible-root impossibility or actual trim execution is inferred",
+                                  attempt_number=self.trim_attempts,
+                                  reason=prepared.get("reason", "unspecified"))
                         if prepared["status"] == "prepared":
                             self.entry_prepared = prepared
                             witness = _sample(s, v, self.phase)
@@ -153,6 +181,13 @@ class ReturnController:
                 budget = terminal_budget(observed, p)
                 self.record["evaluation_count"] += 1
                 flip_due = budget["trigger"]
+                if fidelity_settings is not None:
+                    diagnostics = self.record.setdefault("fidelity_trigger_diagnostics", {"first_budget_trigger": None})
+                    if budget["trigger"] and diagnostics["first_budget_trigger"] is None:
+                        diagnostics["first_budget_trigger"] = {"state": deepcopy(observed), "budget": deepcopy(budget)}
+                    diagnostics["latest_budget"] = deepcopy(budget)
+                    diagnostics["explicit_flip_altitude_m"] = fidelity_settings.flip_altitude_m
+                    flip_due = altitude < fidelity_settings.flip_altitude_m and radial < 0
                 if flip_due:
                     if self.terminal_engine_out and not self.failed_engine:
                         states = list(s.engine_states)
@@ -177,13 +212,21 @@ class ReturnController:
                     samples.append(observed)
                     self.record.update(status="triggered", trigger={"time_s": s.time_s,
                         "state": observed, "budget": budget, "previous": self.previous_budget})
-                    event("retained_return_terminal_trigger", "mass/state preparation estimate crossed; actual 6DOF outcome remains unverified",
+                    detail = ("mass/state preparation estimate crossed; actual 6DOF outcome remains unverified"
+                        if fidelity_settings is None else
+                        "Explicit experimental altitude trigger; preparation budget is diagnostic, actual 6DOF outcome unverified")
+                    event("retained_return_terminal_trigger", detail,
                           policy_id=self.policy, required_altitude_m=budget["required_altitude_m"])
                 else:
                     self.previous_budget = {"state": observed, "budget": budget}
             if flip_due:
                 self.phase = "landing_burn"
-                event("flip_and_landing_command", "generic PD + bounded engine/RCS actuation")
+                if fidelity_settings is None:
+                    event("flip_and_landing_command", "generic PD + bounded engine/RCS actuation")
+                else:
+                    event("flip_and_landing_command", "Explicit experimental altitude trigger; actual finite flip and braking remain unverified",
+                        state=asdict(s), settings=fidelity_settings.record(), actual_altitude_m=altitude,
+                        descending=radial < 0, budget_trigger_override=True)
                 return GuidanceStep(s, target, throttle, count, True, reference_diagnostics)
         elif self.phase == "landing_burn":
             vertical = env.dot(env.air_relative_velocity(ps), up)
@@ -294,7 +337,26 @@ def record_sample(s, v, phase, command, diagnostics, samples, next_sample, profi
     return next_sample
 
 
-def advance_plant(s, v, command, dt, length, radius, altitude, air_speed):
+def advance_plant(s, v, command, dt, length, radius, altitude, air_speed, *, integration_substeps=1):
+    """Hold one controller command while refining only physical integration.
+
+    The default branch preserves the historical integration/contact path. The
+    opt-in branch does not poll guidance or reallocate actuators between its
+    contact-aware substeps; actuator states continue from each prior endpoint.
+    This is a resolution study, not an error bound or an execution permit.
+    """
+    if type(integration_substeps) is not int or integration_substeps not in (1, 2, 4):
+        raise ValueError("invalid_plant_integration_substeps")
+    if integration_substeps != 1:
+        if type(dt) not in (int, float) or not math.isfinite(dt) or not 0 < dt <= 10:
+            raise ValueError("invalid_plant_control_hold_interval")
+        endpoint = s.time_s+dt
+        for index in range(integration_substeps):
+            interval = dt/integration_substeps if index < integration_substeps-1 else endpoint-s.time_s
+            s, receipt = find_contact(s, v, command, interval, length, radius)
+            if receipt["contact"]:
+                return s, receipt
+        return s, None
     if altitude < max(2000., length+2*air_speed*dt):
         return find_contact(s, v, command, dt, length, radius)
     return dyn.step(s, v, command, dt), None

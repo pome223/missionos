@@ -115,13 +115,110 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
-**M1: AI-directed return replanning now has an executed simulation record.**
-After a recovery-area update, Jev requested forecasts, waited for fresh status
-and selected a later orbital return inside a once-approved scope. The Ship then
-met the fixed study area's time and contact limits. Normal operation preserved
-the original result, and a persistent decision-service outage used a checked
-fallback. [Three flights, decisions and limits](docs/examples/starship-m1-operations.md).
+**2026-10-25 status:** the selected public port includes the integrated mission,
+image/deployment accounting, seeded symptom diagnosis and exact-point return
+qualification tools. The historical integrated flight used Jev 10/10 and DeepSeek
+1/1 valid responses and reached Ship model contact at 3.459 m/s. **This public
+checkout has not flown or been qualified by those historical records.** The
+normal permission adapter's four-record verification stopped before execution
+on its storage gate; ordinary launch readiness remains fail-closed. See
+[the integrated result, failures and current limits](docs/examples/starship-final-mission.md).
 
+The players below retain their original earlier mission dates and evidence.
+
+
+**Live AI judgments, approved bounds, 6DOF execution and later observations run together in MissionOS.**
+For booster recovery, DeepSeek received the current observation and catch-development
+history, selected splashdown and passed the independent execution check. A later
+observation confirmed the selection. Only ocean return is currently executable;
+the same flight's separate Ship sequence released 26 payloads.
+
+**Play the recorded 2026-10-14 mission — 120 seconds, tower, ocean, AI judgment and metrics.**
+
+https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72
+
+*Generic rigid-body payloads: unfolding, communications and orbit raising are
+not modeled. The tower cutaway illustrates an option; no catch was executed.*
+
+Follow the judgment in the video; these are simulation times from the same saved flight:
+
+| Mission time | What to watch |
+| --- | --- |
+| T+135.6 s | MissionOS gives DeepSeek the current Booster observation and reviewed catch history. |
+| T+137.0 s | DeepSeek selects splashdown; the independent execution check accepts it without fallback. |
+| T+137.1 s | A separate later observation confirms the selected recovery objective. |
+| T+619.655 s | The recorded Booster reaches nominal sea contact at 1.847 m/s CG speed, with 11.42 t propellant. |
+
+[Open video](https://github.com/user-attachments/assets/00a07f6d-93a3-407b-9f38-b6d017bd1c72) ·
+[Interactive replay](docs/assets/starship-booster-recovery-decision-20261014/index.html) ·
+[Decision, observed results and limits](docs/examples/starship-booster-recovery-decision.md)
+
+The video synchronizes actual observations, DeepSeek's returned explanation,
+checked action and later motion. Booster CG contact speed was 1.847 m/s; Ship
+contact-point speed was 4.608 m/s. A separate Ship comparison response was
+rejected, so that flight's overall comparison gate remains incomplete. It is
+recovery-judgment evidence, not a new completed M3 campaign or demonstrated catch.
+
+The engineering contribution is the traceable connection from model judgment to
+approved execution and observed outcome while simulation time continues during
+inference. It provides a reference implementation for mission supervision;
+application to hardware requires its own sensors, execution model and validation.
+[Engineering value, prior work and evidence boundaries](docs/examples/starship-booster-recovery-decision.md#engineering-value-and-prior-work).
+
+**Seeded fault notifications trigger real MissionOS monitoring and inhibition decisions.**
+The opt-in [fault-notification experiment](docs/examples/starship-trouble-engine.md)
+injects engine, RCS, payload-mechanism and tower failures into the actual 6DOF
+plant. Jev receives idealized current component-health flags, can sample the
+same diagnostic again or inhibit pending releases, and can route time-rich
+requests to DeepSeek. The seed and future fault schedule stay private. Checked
+actions and later observations are recorded.
+
+This trial demonstrates response to supplied fault notifications, **not independent
+fault diagnosis or corrective recovery planning**. The automatic interlock also
+prevents release after missing separation; an AI-caused mission-outcome change
+has not been measured. The fault-control grant cannot change Booster trajectories,
+and this separate CLI is not the existing M3 Gateway replanning path. Probabilities
+are engineering test settings, not historical accident rates.
+
+<details>
+<summary>Earlier completed M3 flight: scoped inflight approval and next-orbit return</summary>
+
+**Live AI supervision now runs from launch and payload deployment through return.**
+In the recorded M3 flight below, Jev monitors the mission and DeepSeek responds
+to a recovery-area closure by selecting a next-orbit return and requesting the
+needed approval extension. The approved plan is executed and checked through
+model surface contact, with 26 payloads released.
+
+**Play the complete mission — 1 min 52 sec, with AI decisions and metrics.**
+
+https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12
+
+*Generic rigid-body payloads: array deployment, communications and orbit raising
+are not modeled. Saved simulation replay with illustrative geometry and ocean.*
+
+[Open video](https://github.com/user-attachments/assets/bf786241-ec25-49ae-8a3e-8d6edfde1c12) ·
+[Animated preview](docs/assets/starship-ai-mission-m3-20261012/mission-preview.gif) ·
+[Interactive replay](docs/assets/starship-ai-mission-m3-20261012/index.html) ·
+[What ran and how it was verified](docs/examples/starship-ai-mission.md)
+
+The video shows the observations, returned decision summary, cited numbers,
+selected operation, approval/Rules result and later telemetry on one simulation
+clock. The inflight approval comes from a candidate-bound test-operator script;
+it is not a recorded human review. The same flight reaches Ship contact at
+4.613 m/s and nominal booster water entry at 1.884 m/s. Booster disturbance
+robustness remains unresolved, as documented in the
+[retained ±1 t diagnostic](docs/examples/starship-recovery-sensitivity.md).
+
+
+</details>
+
+<details>
+<summary>Earlier M1 and initialized return demonstrations</summary>
+
+The earlier [M1 record](docs/examples/starship-m1-operations.md) connected a
+recovery-area update, waiting for fresh status and a later orbital return within
+a once-approved scope. Normal operation preserved its original result and a
+persistent decision-service outage used a checked fallback.
 
 The [MissionOS flight-control contract](docs/agents/starship-mission-control-contract.md)
 sets the goal: the operator approves delegated bounds, and MissionOS owns
@@ -259,6 +356,8 @@ does not authenticate human identity.
 
 </details>
 
+</details>
+
 ## Yokohama: choose a delivery destination on the 3D map
 
 Select a safe destination before departure, inspect the route and constraints,
@@ -316,7 +415,7 @@ loops. All results below are simulator evidence.
 | **VLA-0 / LIBERO Panda** | The same 3 cm snapshot, instruction, action ceiling, and scripted control | Target engagement 3/3; terminal conjunction 2/3; both successful traces lost the repaired predicate on the fifth stationary hold step, so 20-step stable completion was 0/2 replays |
 | **SmolVLA / ExtraTrees / DeepSeek stacking** | ExtraTrees forecasts through Mission Assurance, bounded human preapproval, Rules, ticketed execution, and measured verification | Final two-case DeepSeek run banked 8 + 8 points; 18 LLM judgments, 208 SmolVLA inference chunks, and 5,112 motor steps |
 | **SmolVLA / neural ACWM / DeepSeek stacking** | Online future-video forecasts through Assurance, bounded preapproval, Rules, ticketed execution, and measured verification | Two known cases banked 9 + 4 points; 15 actual DeepSeek judgments, 169 SmolVLA inference chunks, and 4,260 motor steps. [Integration report](docs/assets/acwm-governed-stacking-20260921/REPORT.md) |
-| **Starship-inspired 6DOF simulator / MissionOS** | One approved mission envelope, provider-key-free flight worker environment, live Jev decisions, later observations and saved-state replay | In one release-fault run Jev selected a diagnostic and return guidance, changing contact speed from 238.74 to 3.22 m/s. A live normal run failed; the completion gate and launch-derived catch remain unmet. [Decision results](docs/examples/starship-mission-decisions.md) · [Earlier videos](docs/examples/starship-mission-showcase.md) |
+| **Starship-inspired 6DOF simulator / MissionOS** | Live Jev/DeepSeek supervision from ascent and deployment to orbital replanning, independently checked execution and later observations | Four M3 roles completed. The recorded approval-extension flight released 26 payloads, requested candidate-bound test-operator approval, and reached Ship contact at 4.613 m/s. Numeric citations were checked; booster disturbance robustness remains unresolved. [Whole-flight video and evidence](docs/examples/starship-ai-mission.md) |
 
 | PX4 drone · two separately approved obstacle recoveries | TurtleBot3 · house delivery to a named room |
 | -------------------------------------------------------- | --------------------------------------------- |

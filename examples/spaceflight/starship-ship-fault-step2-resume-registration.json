@@ -1,0 +1,32 @@
+{
+  "schema": "missionos.ship_fault_step2_resume_registration.v1",
+  "experiment_id": "ship-fault-capability-observation-step2-20261014",
+  "original_registration_sha256": "3ec1a89f27f4ffeb754de208fc8c22d1c39bb28199fe2824a11ad8f5c717a1b1",
+  "original_registration_commit": "c4ea719a92c0b0ca6a0dfa0d79f751e6a211ad8e",
+  "original_plan_sha256": "9971b659944fcbd40a66e79e5b0e42e30f6976898aa8d01b965fb21b84a4893e",
+  "original_stop": "ValueError: snapshot_continuation_not_exact",
+  "stop_cause": "verification defect: the R5 check required equal integration_steps, but a snapshot branch excludes the prefix steps by construction (identified by Codex review before the stop)",
+  "repair": "verification only: compare final state, termination, contact receipt, events, ordered shared samples and audited routing after the snapshot; reconcile integration steps as branch + prefix = full. No physics, controller, estimator, request, limit or cell change.",
+  "completed_rollouts_rerun": false,
+  "cells": [
+    {"assumed_factor": 0.8, "delay_s": 0.0},
+    {"assumed_factor": 0.76, "delay_s": 0.0},
+    {"assumed_factor": 0.78, "delay_s": 0.0},
+    {"assumed_factor": 0.82, "delay_s": 0.0},
+    {"assumed_factor": 0.84, "delay_s": 0.0},
+    {"assumed_factor": 0.8, "delay_s": 600.0}
+  ],
+  "budgets": {
+    "maximum_rollouts": 6,
+    "maximum_rollout_wall_s": 180,
+    "maximum_cohort_wall_s": 1362,
+    "maximum_output_bytes": 268435456,
+    "minimum_free_space_bytes": 5368709120,
+    "maximum_model_calls": 0,
+    "retries": 0,
+    "basis": "original 1800 s cohort minus 437.7 s already consumed, rounded down"
+  },
+  "interpretation": "unchanged original result_actions_ordered over the combined original and continuation rows",
+  "requires_user_approval_before_execution": true,
+  "stop": "always report and stop before step 3"
+}

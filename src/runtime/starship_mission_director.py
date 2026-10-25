@@ -46,6 +46,7 @@ def source_hashes(root):
         "scripts/run_starship_managed_mission.py", "src/runtime/starship_mission_director.py",
         "src/runtime/starship_mission_director_verifier.py", "src/intelligence/starship_mission_director.py",
         "src/intelligence/starship_mission_planner.py", "src/runtime/starship_return_sites.py",
+        "src/runtime/starship_visual_contract.py",
         "src/gateway/server.py", "src/gateway/starship_chat.py", "src/runtime/assets/starship_operator.html",
         "scripts/start_starship_gateway.py",
         "src/runtime/starship_splashdown.py", "src/runtime/starship_splashdown_verifier.py",

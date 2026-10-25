@@ -1,0 +1,136 @@
+{
+  "schema": "missionos.ship_sensor_diagnosis_registration.v1",
+  "experiment_id": "ship-sensor-diagnosis-20261015",
+  "status": "registered_before_new_physics_and_hosted_requests",
+  "base_commit": "8c26e1ef7193b7e9e8e3fd09c2024010ef8433dd",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "cases": [
+    {
+      "case_id": "trial-1",
+      "physical_factor": 0.8,
+      "accelerometer_gain": 1.0
+    },
+    {
+      "case_id": "trial-2",
+      "physical_factor": 1.0,
+      "accelerometer_gain": 0.8
+    }
+  ],
+  "blind_payload": "Case labels, actual capability, sensor gain and fault identity are excluded from all AI requests. Two counterfactual hypothesis tables are shown identically, as discrete experimental evidence not live true-state forecasts.",
+  "sensing": {
+    "accelerometer": "Existing step2 noise/bias/gauge/latency, seed0, with registered gain on specific-force signal; no plant maximum enters estimator.",
+    "tracking": {
+      "velocity_frame": "ECI",
+      "velocity_noise_sigma_mps": 0.01,
+      "position_noise_sigma_m": 10.0,
+      "explicit_request_latency_s": 30.0,
+      "model_allowance": 0.01,
+      "basis": "Synthetic engineering trial assumptions, not actual Starship specifications. Velocity differences and modeled gravity, independent of accelerometer stream; nominal telemetry only."
+    },
+    "offline_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ]
+  },
+  "switch": {
+    "time": "complete deorbit-burn request +600s, first scheduled control step",
+    "factor": "only numeric accelerometer point estimate; model never supplies a number",
+    "physical_plant_repaired": false,
+    "minimum_work_reserve_s": 47.0,
+    "measured_wall_plus_acquisition_latency_limit_s": 598.0
+  },
+  "physics_screen": {
+    "runs": 4,
+    "choices": [
+      "continue_nominal_assumption",
+      "adopt_accelerometer_estimate"
+    ],
+    "source": "Both cases from same saved origin, nominal assumption through burn, switch only at registered point. New healthy late-switch outcome is measured, not imported from initial-assumption3x3.",
+    "gate": "All records valid; trial1 continue fails and adopt passes, trial2 continue passes and adopt fails. If this directional separation is absent, stop before real-model tests; do not tune severity or contact thresholds."
+  },
+  "calibration_gate": "From saved screen telemetry, 20 seeds for each actual case plus healthy gain1 control: independent tracking band contains physical value, detects thrust deficit, and disagrees with biased accelerometer only in sensor-fault case. This is offline verification, no new propagation.",
+  "counterfactual_evidence": "Exact source/record hashes and discrete point assumptions frozen after screens, before AI. Not nominal39-case fault qualification, continuous guarantee or independent physical model.",
+  "decision_policy": {
+    "first": "Jev chooses continue, adopt, request_independent_tracking, or explicit request_deep_reasoning. No forced tracking and no confidence-based replacement.",
+    "after_tracking": "Jev or explicitly delegated DeepSeek chooses continue or adopt using genuinely newly delivered tracking observation. Valid choices are respected; no success-directed replacement.",
+    "missing": "Preapproved safety net requests independent tracking if absent, then guard checks numeric compatibility before a physical choice. Fallback is never AI completion; reject conflicting accelerometer-only adoption. No universal safe-return claim."
+  },
+  "independent_check": "Separate credential-free process recomputes accelerometer and tracking estimates, causal acquisition/arrival, observation/authority/source/backend hashes, evidence and single-use application. Adoption needs independent corroboration; valid continuation remains respected.",
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "model_configuration": {
+    "jev_model": "jev-1.13.0",
+    "jev_transport_s": 30.0,
+    "jev_decision_s": 35.0,
+    "deepseek_model": "deepseek-flash",
+    "deepseek_transport_s": 120.0,
+    "deepseek_decision_s": 150.0,
+    "thinking_enabled": true,
+    "reasoning_effort": "low",
+    "maximum_output_tokens": 16384,
+    "maximum_model_calls": null,
+    "retries": 0,
+    "raw_reasoning_recorded": false
+  },
+  "preflight": {
+    "flights": 2,
+    "hosted_requests": 0,
+    "policy": "Fixed replies request tracking then adopt for corroborated deficit, continue for sensor conflict; actual Gateway HTTP/separate guard/full6DOF."
+  },
+  "live": {
+    "flights": 2,
+    "retries": 0,
+    "completion": "Each is one registered live attempt. Actual AI tracking acquisition and a subsequent valid physical choice, passed guard, one-use/no unintended switch, unchanged actual plant and contact limits. Any fallback, skipped tracking, invalid result or unsuccessful contact is preserved as unmet, not rerun."
+  },
+  "budgets": {
+    "maximum_new_physics_runs": 8,
+    "maximum_screen_wall_s": 180.0,
+    "maximum_preflight_case_wall_s": 300.0,
+    "maximum_live_case_wall_s": 600.0,
+    "maximum_active_execution_wall_s": 3000.0,
+    "maximum_output_bytes": 536870912,
+    "minimum_free_bytes": 5368709120,
+    "new_online_forecasts": 0
+  },
+  "authorization": {
+    "user_request": "では行ってください４まで",
+    "scope": "Implement, register and execute steps1-4 including two cases once each with actual Jev and optional explicit DeepSeek; no extra success retries, no hardware/public release/merge."
+  },
+  "interpretation": [
+    "Invalid record, budgets exhausted, source/input mutation during a cohort: stop and preserve.",
+    "If physics directional gate fails: report bounded negative result, no AI flight.",
+    "If independent channel calibration fails: stop; do not tune on same registered cases.",
+    "If preflight boundary fails: stop before hosted calls, diagnose from saved artifacts.",
+    "If live AI skips acquisition, makes valid continuation/adoption, times out or fails: keep actual choice and outcome; never rerun to obtain pass.",
+    "Passing both live cases completes scoped diagnostic acquisition loop only, not fault robustness or hardware certification."
+  ],
+  "retention": {
+    "durable_output": "output/ship-sensor-diagnosis-20261015",
+    "raw_private": true,
+    "portable_summary_in_git": true,
+    "compress_and_restore_hash_verify": true,
+    "delete_originals": false
+  }
+}

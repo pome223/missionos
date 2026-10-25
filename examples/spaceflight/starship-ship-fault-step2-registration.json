@@ -1,0 +1,108 @@
+{
+  "schema": "missionos.ship_fault_step2_registration.v1",
+  "experiment_id": "ship-fault-capability-observation-step2-20261014",
+  "stage": 2,
+  "status": "registered_before_any_step2_physics",
+  "author": "Claude Code (Opus 5.5) at the user's request; Codex steps 1 and 1.5 are unchanged inputs",
+  "base_commit": "72f787dd91f3d65bf371e192cc5736f506ae8b0e",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "origin_file_sha256": "a5b95b17ce46c27689c4db45a80dd7fb5f41cae6efc765fbab0e600610cff621",
+  "prior_registrations": [
+    {"path": "examples/spaceflight/starship-ship-fault-step1-registration.json", "sha256": "16744e51b7bbe41ba426900d9d897b0c08227426caab8f4a788f2873acbfe69a"},
+    {"path": "examples/spaceflight/starship-ship-fault-step1-5-registration.json", "sha256": "65012043ae1fe6920038b70a060b9d9fd6c1ef2c87092dbf57a84aa1a8cdb512"},
+    {"path": "docs/assets/starship-ship-fault-screen-20261014/frozen-stage2-condition.json", "sha256": "315de707605f0f5309f72fb1e1dce3fe8a4b2385d98d6ffaa75a0e20110d7000"}
+  ],
+  "frozen_fault": {"kind": "landing_engine_derate", "engine_index": null, "thrust_factor": 0.8},
+  "no_switch_reference": {
+    "path": "docs/assets/starship-ship-capability-matrix-20261014/assumed_100pct_actual_80pct-sixdof.json.gz",
+    "gzip_sha256": "a08bdad0a36363feaef70ae476f4419771d9837c8462a2550acbb29e274d32fa",
+    "requirement": "R0 must reproduce events, samples, final_state and outcome exactly; otherwise stop"
+  },
+  "question": "Can a numeric estimator, from observations available before the terminal phase, give MissionOS a capability estimate with a bounded uncertainty, latency and consequence previews, such that adopting the estimate after deorbit cutoff is a valid return procedure under the frozen 20% thrust loss?",
+  "pre_decision_controller": "available_capacity_return_v1 with a nominal (factor 1.0) model vehicle, identical to the step-1.5 assumed-100% cells",
+  "capability_switch": {
+    "allowed_phase": "ballistic_return with retained-return status active (after deorbit cutoff, before the terminal trigger)",
+    "earliest_time": "first control step at or after deorbit cutoff + burn_data_window_after_cutoff_s",
+    "effect": "replace only the controller's model-vehicle landing-engine limits once; plant, guidance source, thresholds and contact limits unchanged",
+    "value_source": "numeric estimator point estimate named by estimate_id; never a number written by a model"
+  },
+  "sensor_model": {
+    "schema": "missionos.ship_capability_sensor_model.v1",
+    "accelerometer_frame": "body",
+    "sample_basis": "each powered control step",
+    "noise_sigma_mps2": 0.02,
+    "bias_sigma_mps2": 0.005,
+    "telemetry_latency_s": 1.0,
+    "engine_telemetry": "per-engine availability and throttle state; no thrust or chamber pressure",
+    "mass_source": "nominal vehicle model with existing fuel gauge",
+    "gauge_error_bound_kg": 100.0,
+    "basis": "engineering test settings, not Starship sensor specifications"
+  },
+  "estimator": {
+    "schema": "missionos.ship_capability_estimator.v1",
+    "minimum_main_throttle_sum": 0.9,
+    "minimum_samples": 10,
+    "statistical_multiple": 3.0,
+    "bias_multiple": 3.0,
+    "model_allowance": 0.01,
+    "segment_gap_s": 0.15,
+    "burn_data_window_after_cutoff_s": 2.0
+  },
+  "estimator_definition": "Per accepted sample: (measured body-z specific force minus nominal force of non-landing engines from their throttle states) / (nominal landing-engine force from throttle states / gauge-model mass). Estimate = mean. Half-width = 3*std/sqrt(n) + 3*bias_sigma/mean expected acceleration + estimate*gauge_bound/mass + model_allowance. Anomaly when n >= minimum_samples and |estimate - 1| > half-width.",
+  "calibration": {
+    "actual_factors": [1.0, 0.8, 0.6],
+    "seeds": 20,
+    "rng": "numpy default_rng([20261014, factor_index, seed]); bias drawn once per seed, then per-sample noise",
+    "stop_after_window_s": 1.0,
+    "actual_80_source": "R0 prefix (identical pre-switch controller and plant)",
+    "pass_rule": "for 0.8 and 0.6: every seed detects before the burn-complete request and both detection and complete bands contain the true factor; for 1.0: no seed ever flags an anomaly and the complete band contains 1.0"
+  },
+  "request": {
+    "parameters": {"schema": "missionos.ship_capability_request.v1", "deadline_after_issue_s": 900.0, "deep_reasoning_minimum_window_s": 150.0},
+    "actions": ["continue_nominal_assumption", "collect_status", "adopt_estimated_capability"],
+    "seed": 0,
+    "request_1": "issued at the first control step where the anomaly rule holds; burn data incomplete; allowed: continue, collect_status, adopt; no previews",
+    "request_2": "issued at the burn-complete time; allowed: continue, adopt; previews for adopt and continue at band low, point estimate and band high, using estimated (not known) plant capability from a deep-copied state/controller snapshot",
+    "executable": false,
+    "model_calls": 0,
+    "fixture_decision": "deterministic transport fixture only; not AI evidence"
+  },
+  "runs": [
+    {"id": "R0", "kind": "full rollout from origin", "plant_factor": 0.8, "switch": null, "purpose": "faithfulness to step 1.5 and actual-80% telemetry"},
+    {"id": "C1", "kind": "prefix to burn-complete + 1 s", "plant_factor": 1.0, "purpose": "calibration"},
+    {"id": "C2", "kind": "prefix to burn-complete + 1 s", "plant_factor": 0.6, "purpose": "calibration"},
+    {"id": "P", "kind": "6 prediction branches from the R0 snapshot", "plant_factor": "estimate band points", "purpose": "request-2 previews"},
+    {"id": "R5", "kind": "branch from the R0 snapshot", "plant_factor": 0.8, "switch": null, "purpose": "snapshot continuation must equal R0 final state and outcome exactly"},
+    {"id": "R4", "kind": "6 full rollouts from origin", "plant_factor": 0.8, "purpose": "late-switch validity, tolerance and timing invariance"}
+  ],
+  "tolerance": {
+    "cells": [
+      {"assumed_factor": 0.8, "delay_s": 0.0},
+      {"assumed_factor": 0.76, "delay_s": 0.0},
+      {"assumed_factor": 0.78, "delay_s": 0.0},
+      {"assumed_factor": 0.82, "delay_s": 0.0},
+      {"assumed_factor": 0.84, "delay_s": 0.0},
+      {"assumed_factor": 0.8, "delay_s": 600.0}
+    ],
+    "meaning": "known-capability evaluation only; never shown in a request"
+  },
+  "contact_limits": {"body_rate_rad_s": 0.02, "reserve_kg": 28000.0, "speed_mps": 5.0, "tilt_deg": 5.0},
+  "budgets": {
+    "maximum_rollouts": 16,
+    "maximum_rollout_wall_s": 180,
+    "maximum_cohort_wall_s": 1800,
+    "maximum_output_bytes": 268435456,
+    "minimum_free_space_bytes": 5368709120,
+    "maximum_model_calls": 0,
+    "retries": 0
+  },
+  "result_actions_ordered": [
+    {"label": "incomplete_stop", "when": "budget, input/source change, numerical error, invalid record, failure to reproduce R0 reference or inexact snapshot continuation", "next": "retain records, report incomplete and stop; no physical conclusion"},
+    {"label": "estimator_not_ready", "when": "calibration pass rule fails", "next": "report coverage or false-alarm failure; do not widen bands or retune after results; step 3 cannot use this estimator"},
+    {"label": "post_cutoff_switch_not_valid", "when": "R4 assumed 0.80 at delay 0 misses any contact limit", "next": "report; step 3 cannot use post-cutoff capability adoption; any earlier switch needs a new registration"},
+    {"label": "estimate_band_exceeds_adopt_tolerance", "when": "an adopt preview at a band point misses a limit", "next": "report genuine uncertainty that the request must show; step 3 registration must decide how MissionOS handles it"},
+    {"label": "ready_for_step3_registration", "when": "all preceding checks pass", "next": "report and stop; step 3 (live MissionOS decision, independent check, execution) needs a separate registration and user approval"}
+  ],
+  "comparison_rule": "no comparison with scenario-encoded Rules scores; the step-4 comparator remains the original plan under the identical fault",
+  "stop": "always report and stop before step 3"
+}

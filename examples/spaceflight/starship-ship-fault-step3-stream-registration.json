@@ -1,0 +1,135 @@
+{
+  "schema": "missionos.ship_capability_stream_registration.v1",
+  "experiment_id": "ship-capability-step3-stream-20261015",
+  "status": "preregistered_diagnostic_awaiting_exact_plan_approval",
+  "base_commit": "b1c89760a9fcf7e8723dfa4e1bf3dbd522a19620",
+  "purpose": "Measure client-observed transport and output arrival for the reviewed live request without a simulator, action execution or retrospective attribution to the earlier flight.",
+  "registration_file": "examples/spaceflight/starship-ship-fault-step3-stream-registration.json",
+  "original_request_file": "output/ship-capability-step3-reviewed-live-20261015/reconstructed-deepseek-request.json",
+  "original_request_sha256": "ffe76082e0bdfca772b46bf1ada2b3df08a42f8078f249ee2722de62fb447444",
+  "original_request_bytes": 6438,
+  "stream_request_sha256": "d5c4f7a4740bcc1ab8f4d5f547e7acbf87d5ac5b42bbf43400962bcc1ac5da7c",
+  "stream_request_bytes": 6437,
+  "inputs": [
+    {
+      "path": "output/ship-capability-step3-reviewed-live-20261015/reconstructed-deepseek-request.json",
+      "sha256": "ffe76082e0bdfca772b46bf1ada2b3df08a42f8078f249ee2722de62fb447444"
+    },
+    {
+      "path": "output/ship-capability-step3-reviewed-live-20261015/request-reconstruction.json",
+      "sha256": "4ccfa3e2aaad1c8861c2195aec834201c3e3cf379a66bf7c1b2398f2a25b9af4"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/reviewed-live-summary.json",
+      "sha256": "f797613955a4611a38ff924712e58a7f0b4e4f4c96f4b7d334f5d00ba42606b0"
+    }
+  ],
+  "provider": {
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "model": "deepseek-flash",
+    "thinking": "enabled",
+    "reasoning_effort": "low",
+    "max_tokens": 16384,
+    "payload_change": "Only stream false becomes true. Canonical JSON is reserialized; the streaming wire bytes and SHA differ from the original. All messages, response format, model and token settings are unchanged.",
+    "retries": 0,
+    "redirects": false,
+    "proxy": false
+  },
+  "budgets": {
+    "replicates": 3,
+    "maximum_replicate_wall_s": 300.0,
+    "maximum_cohort_wall_s": 960.0,
+    "between_replicates_s": 2.0,
+    "maximum_output_bytes": 2097152,
+    "minimum_free_space_bytes": 5368709120,
+    "retries": 0
+  },
+  "receive_limits": {
+    "maximum_sse_bytes": 8388608,
+    "maximum_event_bytes": 65536,
+    "maximum_answer_characters": 8000,
+    "reasoning_text_persisted": false,
+    "raw_response_persisted": false,
+    "note": "SSE framing is additional transport overhead; this cap is not byte-equivalent to the prior non-streaming response cap. No reasoning/answer token budget is enlarged."
+  },
+  "timing": {
+    "origin": "monotonic time immediately before network connection",
+    "milestones": [
+      "connect_complete",
+      "request_sent",
+      "headers_received",
+      "first_body_byte",
+      "first_sse_event",
+      "first_nonempty_reasoning_delta",
+      "first_nonempty_answer_delta",
+      "finish_reason_received",
+      "done_received",
+      "eof_if_observed",
+      "client_close"
+    ],
+    "deadline": "One absolute deadline includes connection, headers and the entire receive interval. Role-only chunks, comments and heartbeat traffic never extend it.",
+    "completion": "After finish_reason stop and DONE, validate the assembled answer and close the client connection without waiting for HTTP EOF. Record actual EOF only if observed and client close separately; delayed server closure cannot invalidate an otherwise complete answer.",
+    "interpretation": "These are client-observed arrivals. They do not measure provider queue time, internal inference start or server compute duration. Missing fields remain null."
+  },
+  "valid_response": [
+    "HTTP 200 and correctly framed SSE from the fixed endpoint",
+    "Every returned model matches the requested canonical model",
+    "A complete final answer with finish_reason stop and DONE, not partial JSON or reasoning alone",
+    "Strict JSON, eligible action, summary length 1..600 and 1..16 unique reference IDs present in this exact request",
+    "No tool call or echoed credential in answer; saved evidence contains no raw reasoning, answer text or credential"
+  ],
+  "result_rule_application": "Apply the first two entries as per-replicate execution rules. After the cohort ends, independently apply the remaining ordered aggregate interpretations and always report every attempted and missing replicate, including failures alongside any slow valid response.",
+  "result_actions_ordered": [
+    {
+      "when": "source/input hash drift, credential failure, HTTP 4xx or resource/cohort budget failure",
+      "next": "Stop the cohort, preserve already attempted replicates and do not replace missing replicates."
+    },
+    {
+      "when": "a replicate times out, has malformed output, lacks an answer, or fails validation without a cohort stop condition",
+      "next": "Retain it as a failure and run only the remaining preregistered replicate numbers within the original cohort budget. This is fixed repeated measurement, never a success-until-retry."
+    },
+    {
+      "when": "all three valid responses complete within 120 seconds",
+      "next": "The earlier timeout was not reproduced in this three-sample streaming cohort. Do not infer reliability, causality or retrospectively count an AI flight decision. Prepare a separate next-flight plan before execution."
+    },
+    {
+      "when": "one or more valid responses complete after 120 seconds but within 300 seconds",
+      "next": "Observed completion exceeds the prior transport cap. Propose a separately registered flight budget only if prediction plus model plus guard plus IPC fits the 598-second planning limit, or separately register Jev-first routing. Do not change production settings here."
+    },
+    {
+      "when": "reasoning deltas arrive but no complete valid answer, or finish reason is length",
+      "next": "Record generation/output-budget symptoms without claiming a root cause; inspect the offline interface and prepare any parameter change as a new registration, not an extra run."
+    },
+    {
+      "when": "no headers or no useful deltas arrive before timeout",
+      "next": "Transport/service/generation cause remains unresolved. Do not spend another flight to diagnose this model path."
+    },
+    {
+      "when": "other mixed or malformed/model-mismatch results",
+      "next": "Report all three outcomes and validation findings; use offline interface review. Three samples do not establish a success rate or justify adaptive selection of a favorable setting."
+    }
+  ],
+  "future_flight_budget": {
+    "reserved_coast_s": 600.0,
+    "planning_wall_limit_s": 598.0,
+    "guard_wall_limit_s": 45.0,
+    "current_model_decision_s": 150.0,
+    "current_model_transport_s": 120.0,
+    "cold_prediction_upper_s": 540.0,
+    "rule": "Prediction + model + guard + IPC must fit within 598 seconds with a separately justified application margin. A 300-second offline observation limit is not authorization for a 300-second in-flight decision. Cold forecasts at their registered worst case already exceed the reservation with the existing model and guard budgets."
+  },
+  "external_payload_scope": "The already reconstructed synthetic flight observations, numerical estimates/bands, candidate previews, action effects and evidence IDs. No source, fault truth label, private task database, personal data or secret values are added. Authorization header exists only in host memory.",
+  "external_model_requests_allowed": true,
+  "extra_execution_requires_user_approval": true,
+  "authorization": "Preparation, contract tests and loopback HTTP/SSE smoke are allowed now. Three hosted diagnostic requests require the user's fresh explicit approval of the prepared plan hash. Earlier approval of the three-flight cohort does not authorize these requests.",
+  "maximum_new_6dof_rollouts": 0,
+  "maximum_new_flights": 0,
+  "production_routing_changed": false,
+  "mission_call_count_cap_added": false,
+  "step3_completed": false,
+  "end_preservation": "Retain the original failed cohort, reconstructed original input, both request hashes, frozen registration/source, fixed per-replicate receipts and all missing/invalid outcomes. Keep raw prompt copies local and private; publish scalar metadata only. No deletion, no flight retry, no fourth diagnostic request.",
+  "primary_sources": [
+    "https://api-docs.deepseek.com/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/guides/thinking_mode/"
+  ]
+}

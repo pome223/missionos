@@ -1,0 +1,366 @@
+{
+  "schema": "missionos.starship_assurance_followup_summary.v1",
+  "execution_source_commit": "afce045a6114fbe0ca08039f73792243b580e575",
+  "campaign_config_sha256": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68",
+  "evaluation_basis": "Control duties and checked contingency execution; not AI versus Rules scores.",
+  "cases": [
+    {
+      "case": "comparison_tool_failure",
+      "execution_source_commit": "afce045a6114fbe0ca08039f73792243b580e575",
+      "source_map_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038",
+      "source_files": 68,
+      "source_files_match_execution_commit": true,
+      "artifact_sha256": {
+        "study.json": "8c953e90a6f3724f4e4a774458a1dc474ebeb9cc2a1f020d843efc0529e9da40",
+        "verification.json": "8446b7e15b653c90f814eeb58883a35795f0186a0884a797abdf9993dac3ec9c",
+        "chat-receipt.json": "27a53c41cd598014f841ca8de1ca6a78d7f9db7c40d91e610e50992723ce580e",
+        "manifest.json": "00787edf38ef7a8503a816c8df3787f60022c7440713e5830cdfa684444fdeb0"
+      },
+      "boundary": "real_http_gateway_separate_process_sixdof",
+      "decision_policy": "fixture",
+      "injection": "optional_forecast_cancellation",
+      "record_passed": true,
+      "case_accepted": true,
+      "record_issues": [],
+      "case_issues": [],
+      "outcome": "contact_and_recovery_area_met",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "payload_released_count": 26,
+      "forecast_submissions": 8,
+      "completed_candidate_trials": 4,
+      "preparations": [
+        {
+          "initial": true,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1151.4500000000407,
+          "requested_candidate_ids": [
+            "nominal"
+          ],
+          "remaining_candidate_ids": [],
+          "reused_candidate_ids": []
+        },
+        {
+          "initial": false,
+          "status": "failed",
+          "reason": "synthetic_tool_cancellation",
+          "start_time_s": 1350.2000000000407,
+          "end_time_s": 1350.4500000000407,
+          "requested_candidate_ids": [
+            "nominal",
+            "next_orbit"
+          ],
+          "remaining_candidate_ids": [
+            "next_orbit"
+          ],
+          "reused_candidate_ids": [
+            "nominal"
+          ]
+        }
+      ],
+      "decisions": [
+        {
+          "time_s": 1151.4500000000407,
+          "later_time_s": 1151.7000000000407,
+          "accepted_action": "select_nominal",
+          "fallback": false,
+          "synthetic_timeout_injected": false,
+          "response_present": true
+        },
+        {
+          "time_s": 1350.4500000000407,
+          "later_time_s": 1350.7000000000407,
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "synthetic_timeout_injected": false,
+          "response_present": true
+        },
+        {
+          "time_s": 1585.7000000000407,
+          "later_time_s": 1585.9500000000407,
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "synthetic_timeout_injected": false,
+          "response_present": true
+        },
+        {
+          "time_s": 2220.7000000000407,
+          "later_time_s": 2220.9500000000407,
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "synthetic_timeout_injected": false,
+          "response_present": true
+        }
+      ],
+      "dispatch": {
+        "candidate_id": "nominal",
+        "time_s": 2280.7000000000407,
+        "revision": 1
+      },
+      "model_diagnostics": {
+        "schema": "missionos.starship_model_diagnostics.v1",
+        "input_studies": 1,
+        "unique_studies": 1,
+        "duplicate_studies_ignored": 0,
+        "decision_records": 4,
+        "missing_decision_responses": 0,
+        "malformed_records_or_receipts": 0,
+        "evidence": [
+          {
+            "canonical_study_sha256": "61170f4e02fcd1839c685393020fa0f12f3e69d87defaae72470dab7a826133b",
+            "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+          }
+        ],
+        "providers": {
+          "jev": {
+            "receipts": 0,
+            "attempts": 0,
+            "valid_responses": 0,
+            "failed_attempts": 0,
+            "status_counts": {},
+            "failure_reason_counts": {},
+            "blocked_before_attempt_counts": {}
+          },
+          "deepseek": {
+            "receipts": 0,
+            "attempts": 0,
+            "valid_responses": 0,
+            "failed_attempts": 0,
+            "status_counts": {},
+            "failure_reason_counts": {},
+            "blocked_before_attempt_counts": {}
+          }
+        },
+        "scope": "saved_receipt_accounting_only",
+        "historical_unknown_causes_inferred": false,
+        "raw_response_or_reasoning_retained": false,
+        "regression_or_fallback_superiority_score": false
+      },
+      "human_inflight_commands": 0,
+      "worker_receipt_verified": true,
+      "simulator_provider_credentials_present": false,
+      "mission_completed": false,
+      "physical_execution": false
+    },
+    {
+      "case": "comparison_timeout",
+      "execution_source_commit": "afce045a6114fbe0ca08039f73792243b580e575",
+      "source_map_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038",
+      "source_files": 68,
+      "source_files_match_execution_commit": true,
+      "artifact_sha256": {
+        "study.json": "c952153d07c38ef5bead3e73665856a464d4c33000db4a99dc9cc801779f78e1",
+        "verification.json": "62df7b4b4dad71bd1b8cefb121c7146e3cf383b50cd2add0f830cc3045613a41",
+        "chat-receipt.json": "c39da9adf56041c6c23535c692dd4f02e061a309045ec6d83a467e8e4443571b",
+        "manifest.json": "154f3665ee756ae5eecee0332d5b67dd33e0cb23b5e85e87851cb6f704acf990"
+      },
+      "boundary": "real_http_gateway_separate_process_sixdof",
+      "decision_policy": "fixture",
+      "injection": "persistent_missing_decision_response_after_update",
+      "record_passed": true,
+      "case_accepted": true,
+      "record_issues": [],
+      "case_issues": [],
+      "outcome": "contact_and_recovery_area_met",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "payload_released_count": 26,
+      "forecast_submissions": 8,
+      "completed_candidate_trials": 8,
+      "preparations": [
+        {
+          "initial": true,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1150.9500000000407,
+          "requested_candidate_ids": [
+            "nominal"
+          ],
+          "remaining_candidate_ids": [],
+          "reused_candidate_ids": []
+        },
+        {
+          "initial": false,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1350.2000000000407,
+          "end_time_s": 1599.9500000000407,
+          "requested_candidate_ids": [
+            "nominal",
+            "next_orbit"
+          ],
+          "remaining_candidate_ids": [],
+          "reused_candidate_ids": [
+            "nominal"
+          ]
+        }
+      ],
+      "decisions": [
+        {
+          "time_s": 1150.9500000000407,
+          "later_time_s": 1151.2000000000407,
+          "accepted_action": "select_nominal",
+          "fallback": false,
+          "synthetic_timeout_injected": false,
+          "response_present": true
+        },
+        {
+          "time_s": 1599.9500000000407,
+          "later_time_s": 1635.2000000000407,
+          "accepted_action": null,
+          "fallback": true,
+          "synthetic_timeout_injected": true,
+          "response_present": false
+        },
+        {
+          "time_s": 2220.7000000000407,
+          "later_time_s": 2255.9500000000407,
+          "accepted_action": null,
+          "fallback": true,
+          "synthetic_timeout_injected": true,
+          "response_present": false
+        }
+      ],
+      "dispatch": {
+        "candidate_id": "nominal",
+        "time_s": 2280.7000000000407,
+        "revision": 1
+      },
+      "model_diagnostics": {
+        "schema": "missionos.starship_model_diagnostics.v1",
+        "input_studies": 1,
+        "unique_studies": 1,
+        "duplicate_studies_ignored": 0,
+        "decision_records": 3,
+        "missing_decision_responses": 2,
+        "malformed_records_or_receipts": 0,
+        "evidence": [
+          {
+            "canonical_study_sha256": "abf939eb7b845382ccaeabba73422e4099e374917c458e600bcc5ae7334e75b9",
+            "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+          }
+        ],
+        "providers": {
+          "jev": {
+            "receipts": 0,
+            "attempts": 0,
+            "valid_responses": 0,
+            "failed_attempts": 0,
+            "status_counts": {},
+            "failure_reason_counts": {},
+            "blocked_before_attempt_counts": {}
+          },
+          "deepseek": {
+            "receipts": 0,
+            "attempts": 0,
+            "valid_responses": 0,
+            "failed_attempts": 0,
+            "status_counts": {},
+            "failure_reason_counts": {},
+            "blocked_before_attempt_counts": {}
+          }
+        },
+        "scope": "saved_receipt_accounting_only",
+        "historical_unknown_causes_inferred": false,
+        "raw_response_or_reasoning_retained": false,
+        "regression_or_fallback_superiority_score": false
+      },
+      "human_inflight_commands": 0,
+      "worker_receipt_verified": true,
+      "simulator_provider_credentials_present": false,
+      "mission_completed": false,
+      "physical_execution": false
+    }
+  ],
+  "cumulative_model_diagnostics": {
+    "schema": "missionos.starship_model_diagnostics.v1",
+    "input_studies": 4,
+    "unique_studies": 4,
+    "duplicate_studies_ignored": 0,
+    "decision_records": 14,
+    "missing_decision_responses": 2,
+    "malformed_records_or_receipts": 0,
+    "evidence": [
+      {
+        "canonical_study_sha256": "61170f4e02fcd1839c685393020fa0f12f3e69d87defaae72470dab7a826133b",
+        "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+      },
+      {
+        "canonical_study_sha256": "abf939eb7b845382ccaeabba73422e4099e374917c458e600bcc5ae7334e75b9",
+        "source_manifest_sha256": "d935b794e02d177767b2bd2a8f194c6bde3d038321544ddb08358a4073efc038"
+      },
+      {
+        "canonical_study_sha256": "dc8208bd19725656388c54d783697123e521ae60af567370d0f513bbaae8f77e",
+        "source_manifest_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a"
+      },
+      {
+        "canonical_study_sha256": "e2b4b66f0ad59275a8b5db43068ca587078fac95fc81c237aa12b61186d677e0",
+        "source_manifest_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a"
+      }
+    ],
+    "providers": {
+      "jev": {
+        "receipts": 7,
+        "attempts": 6,
+        "valid_responses": 5,
+        "failed_attempts": 1,
+        "status_counts": {
+          "invalid_response": 1,
+          "not_invoked": 1,
+          "succeeded": 5
+        },
+        "failure_reason_counts": {
+          "unknown": 1
+        },
+        "blocked_before_attempt_counts": {}
+      },
+      "deepseek": {
+        "receipts": 7,
+        "attempts": 1,
+        "valid_responses": 1,
+        "failed_attempts": 0,
+        "status_counts": {
+          "not_invoked": 6,
+          "succeeded": 1
+        },
+        "failure_reason_counts": {},
+        "blocked_before_attempt_counts": {}
+      }
+    },
+    "scope": "saved_receipt_accounting_only",
+    "historical_unknown_causes_inferred": false,
+    "raw_response_or_reasoning_retained": false,
+    "regression_or_fallback_superiority_score": false
+  },
+  "cumulative_scope": "Only the two earlier live comparison studies and these two new fixture failure flights.",
+  "numerical_evidence_protocol": {
+    "validation_boundary": "real_loopback_http_provider_stub_and_production_decoder_plus_independent_audit",
+    "hosted_model_calls_on_new_protocol": 0,
+    "old_live_citations_retrofitted": false,
+    "old_live_citation_status": "not_present",
+    "free_prose_or_internal_reasoning_verified": false
+  },
+  "limitations": [
+    "Synthetic cancellation and response suppression, not an actual provider outage.",
+    "Eight submitted forecasts in cancellation case include canceled work, not eight completed predictions.",
+    "Numerical contact in predeclared synthetic areas, not physical recovery or authenticated operator identity.",
+    "No rerun of older live model flights under the new source or citation protocol."
+  ]
+}

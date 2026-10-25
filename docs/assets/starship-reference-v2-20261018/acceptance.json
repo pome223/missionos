@@ -1,0 +1,41 @@
+{
+  "schema": "missionos.starship_reference_acceptance.v1",
+  "accepted_on": "2026-10-18",
+  "actor": "chat_user",
+  "user_reply": "はい",
+  "context": "Direct reply accepting the explicitly presented Stage1 targets, quarantine, non-fitted booster gates and six-scalar cap; relayed reviewer advice was not used as human approval.",
+  "identity_assurance": "chat approval only; no operator identity proof or signed flight approval implied",
+  "accepted_reference": {
+    "path": "docs/assets/starship-reference-v1-20261018/reference.json",
+    "sha256": "162c8deafb8e850f85e97e67d244f6e0d06e2504342ffc3961eca2555387aaca"
+  },
+  "accepted_supplement": {
+    "path": "examples/spaceflight/starship-fidelity-acceptance-registration.json",
+    "sha256": "8109b95cf3b9331c70971aaba89e015a321ec645e335bc394082fc3ac8395781"
+  },
+  "accepted_scope": {
+    "altitude_field_quarantine_count": 11,
+    "missing_values_not_imputed": true,
+    "ascent_altitude_rmse_m_max": 3000,
+    "ascent_speed_rmse_mps_max": 150,
+    "both_maximum_rmse_fraction_of_new_source_baseline": 0.8,
+    "speed_frame_is_conditional_assumption": true,
+    "booster_maximum_target_m": 99000,
+    "booster_maximum_tolerance_m": 10000,
+    "descending40km_reference_interval_s": [
+      353,
+      354
+    ],
+    "descending40km_maximum_interval_distance_s": 15,
+    "maximum_independent_adjustable_scalars_per_stage": 6
+  },
+  "qualification_or_execution_grant": false,
+  "still_requires_separate_scope": [
+    "source/environment-bound stage registration before physics",
+    "approval of unsourced propulsion assumptions if needed",
+    "Stage3 native-model mission cohort",
+    "public publication scope",
+    "irreversible storage deletion"
+  ],
+  "supersedes_proposal_state_without_modifying_v1": true
+}

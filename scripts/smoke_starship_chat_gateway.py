@@ -23,6 +23,8 @@ sys.path.insert(0, str(ROOT))
 
 from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS, SUPERVISED_SCENARIOS, RETAINED_RETURN_SCENARIOS, CATCH_CATALOG, LAUNCH_CATCH_SCENARIO, BOOSTER_RECOVERY_POLICY  # noqa: E402
 from src.runtime.starship_replanning import SCENARIOS as M1_SCENARIOS, SCOPE as M1_SCOPE  # noqa: E402
+from src.runtime.starship_m2_control import SCENARIOS as M2_SCENARIOS, SCOPE as M2_SCOPE  # noqa: E402
+from src.runtime.starship_m3_live import SCENARIOS as M3_SCENARIOS, SCOPE as M3_SCOPE  # noqa: E402
 from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS, SCOPE  # noqa: E402
 
 
@@ -106,7 +108,7 @@ def sixdof_evidence(scenario: str, plan: dict, study: dict, verification: dict) 
     return evidence
 
 
-def run(port: int, scenario: str, output: Path) -> dict:
+def run(port: int, scenario: str, output: Path, *, operator_poll=None) -> dict:
     # Refuse before planning/approval so an old failed attempt is never replaced.
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise ValueError("starship_smoke_output_must_be_empty")
@@ -140,6 +142,9 @@ def run(port: int, scenario: str, output: Path) -> dict:
     approved = turn("/approve")["operation_result"]
     assert approved["status"] == "approved" and approved["execution"] == {}
     assert approved["approval"]["authenticated_operator_identity"] is False
+    if scenario in (*M2_SCENARIOS, *M3_SCENARIOS):
+        assert approved["approval"]["scope"] == (M3_SCOPE if scenario in M3_SCENARIOS else M2_SCOPE)
+        assert approved["approval"]["mission_envelope"] == approved["plan"]["mission_envelope"]
     if scenario in M1_SCENARIOS:
         assert approved["approval"]["scope"] == M1_SCOPE
         assert approved["approval"]["mission_envelope"] == approved["plan"]["mission_envelope"]
@@ -157,15 +162,17 @@ def run(port: int, scenario: str, output: Path) -> dict:
     launched = turn("/run")["operation_result"]
     assert launched["status"] == "running" and launched["execution"]["subprocess_spawned"] is True
     assert turn("/run")["operation_result"]["status"] == "blocked"
-    deadline = time.monotonic() + (1900 if scenario in M1_SCENARIOS else 1500 if scenario in MANAGED_SCENARIOS else 1200 if scenario == LAUNCH_CATCH_SCENARIO else 600 if scenario in SIXDOF_SCENARIOS else
+    deadline = time.monotonic() + (2500 if scenario in (*M2_SCENARIOS, *M3_SCENARIOS) else 1900 if scenario in M1_SCENARIOS else 1500 if scenario in MANAGED_SCENARIOS else 1200 if scenario == LAUNCH_CATCH_SCENARIO else 600 if scenario in SIXDOF_SCENARIOS else
                                    480 if scenario == "dispenser_jev_shadow" else 300)
     while time.monotonic() < deadline:
+        if operator_poll is not None:
+            operator_poll(launched)
         response = turn("/status")
         result = response["operation_result"]
         if result["status"] != "running":
             break
         time.sleep(1)
-    assert result["status"] == "verified", result
+    assert result["status"] in ({"verified", "unresolved"} if scenario in (*M2_SCENARIOS, *M3_SCENARIOS) else {"verified"}), result
     assert result["execution"]["worker_receipt_verified"] is True
     if scenario == "dispenser_jev_shadow":
         assert result["execution"]["process_role"] == "jev_shadow_observer_broker"
@@ -241,6 +248,42 @@ def run(port: int, scenario: str, output: Path) -> dict:
         assert verdict["case_accepted"] is True, verdict
         summary["m1"] = {"case_accepted": True, "outcome": verdict["outcome"], "decisions": len(study["decisions"]),
             "forecasts": study["forecast_count"], "human_inflight_commands": study["human_inflight_commands"]}
+    if scenario in M2_SCENARIOS:
+        study = json.loads((output/"study.json").read_text())
+        verdict = json.loads((output/"verification.json").read_text())
+        assert study["authority"] == result["plan"]["mission_envelope"]
+        assert study["authority"]["case"] == M2_SCENARIOS[scenario]
+        assert verdict["passed"] is True, verdict
+        assert study["runtime"]["human_inflight_commands"] == 0
+        assert result["execution"]["process_role"] == "credential_free_m2_simulator_worker"
+        summary["m2"] = {"case_accepted": verdict["case_accepted"],
+            "case_issues": verdict["case_issues"], "outcome": verdict.get("outcome"),
+            "released_count": study["handoff"]["released_count"],
+            "retained_count": study["handoff"]["retained_count"],
+            "model_calls": study["runtime"]["model_calls"],
+            "provider_accounting": verdict["provider_attempts"],
+            "human_inflight_commands": 0}
+    if scenario in M3_SCENARIOS:
+        study = json.loads((output / "study.json").read_text())
+        verdict = json.loads((output / "verification.json").read_text())
+        assert study["authority"] == result["plan"]["mission_envelope"]
+        assert study["authority"]["case"] == M3_SCENARIOS[scenario]
+        assert verdict["passed"] is True, verdict
+        assert study["human_inflight_commands"] == 0 and study["retry_performed"] is False
+        assert result["execution"]["process_role"] == "credential_free_m3_simulator_worker"
+        inner = study["m2_study"]
+        handoff = inner.get("handoff") or {}
+        summary["m3"] = {
+            "case_accepted": verdict["case_accepted"], "case_issues": verdict["case_issues"],
+            "live_phase_decisions": verdict.get("live_phase_decisions", {}),
+            "ai_control_demonstrated": verdict.get("ai_control_demonstrated", False),
+            "booster_water_entry_met": verdict.get("booster_water_entry_met", False),
+            "released_count": handoff.get("released_count"),
+            "retained_count": handoff.get("retained_count"),
+            "model_calls": verdict.get("model_calls"),
+            "human_inflight_commands": 0, "retry_performed": False,
+            "m3_completed": verdict.get("m3_completed", False),
+        }
     (output / "chat-receipt.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
     (output / "chat-transcript.json").write_text(json.dumps(turns, ensure_ascii=False, indent=2) + "\n")
     return summary
@@ -249,13 +292,14 @@ def run(port: int, scenario: str, output: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, required=True)
-    parser.add_argument("--scenario", choices=("dispenser_comparison", "flight14_inspired", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M1_SCENARIOS), required=True)
+    parser.add_argument("--scenario", choices=("dispenser_comparison", "flight14_inspired", "dispenser_jev_shadow", *SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M1_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS), required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error("invalid loopback port")
-    print(json.dumps(run(args.port, args.scenario, args.output_dir), ensure_ascii=False, indent=2))
-    return 0
+    result = run(args.port, args.scenario, args.output_dir)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if all(result.get(name, {}).get("case_accepted", True) for name in ("m2", "m3")) else 3
 
 
 if __name__ == "__main__":

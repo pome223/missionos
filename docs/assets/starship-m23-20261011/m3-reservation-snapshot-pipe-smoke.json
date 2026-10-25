@@ -1,0 +1,43 @@
+{
+  "burn_dispatches": 0,
+  "candidate_sha256": "d6257f413d19e141b704b0347ed96a4a7ed279a901eb4d2059494bbc73ed8666",
+  "canonical_candidate_bytes": 5271754,
+  "compact_coast_samples": [
+    3367,
+    3367,
+    3367,
+    3367
+  ],
+  "executor_initialization": "fixture object with saved candidate, saved booking metadata and saved observed-origin telemetry; no simulator constructor",
+  "fixture_wall_time_s": 100.0,
+  "full_candidate_digest_calls_inside_snapshot": 0,
+  "full_flight_completion_claimed": false,
+  "invocation_boundary": "current InflightReplanningExecutor._publish_snapshot -> approval_snapshot -> real anonymous ApprovalPipeWriter/Reader",
+  "matches_saved_booking": true,
+  "model_calls": 0,
+  "new_approvals": 0,
+  "observed_time_s": 1000.9500000000407,
+  "passed": true,
+  "performance_benchmark": false,
+  "pipe_frames_received": 1,
+  "retry_performed": false,
+  "saved_artifact_sha256": {
+    "flight/mission/return/forecast-4.json": "14c76d08890657d8aea748976cbcc9f614b1f04386fcf92493bcb5db7f42ff3a",
+    "flight/mission/return/forecast-5.json": "9aecfc15ac23d532570c12ed16d5e00b934fdbfbaa98f79fefb4be623c9a4590",
+    "flight/mission/return/forecast-6.json": "f5580661388f056dc4818ef76980c0072eba2629d615d0556cda56ebe28c810d",
+    "flight/mission/return/forecast-7.json": "e009db41c674dc02aeb26821f342840c2ca7d15aaa4caacd3c0cbb1357de443c"
+  },
+  "saved_snapshot_equals_received": true,
+  "schema": "missionos.m3_reservation_snapshot_pipe_smoke.v1",
+  "simulator_runs": 0,
+  "snapshot_digest_calls": 2,
+  "snapshot_digest_input_bytes": [
+    167,
+    2202
+  ],
+  "snapshot_wire_bytes": 633,
+  "source_sha256": {
+    "src/runtime/starship_inflight_executor.py": "01ce5c46a91b625cc53c70e0ee9c50c57e1d5f22b5c7a5099041730afb128fa0",
+    "src/runtime/starship_inflight_runtime.py": "e7de0b78a8553c03721a99a3a39f2001e933a0f7ad9d59076ad77ddbf0ffb644"
+  }
+}

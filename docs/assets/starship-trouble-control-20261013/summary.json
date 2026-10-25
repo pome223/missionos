@@ -1,0 +1,176 @@
+{
+  "schema": "missionos.starship_trouble_control_summary_portable.v1",
+  "scope": "Separate experimental MissionOS CLI; not existing M3 Gateway integration or fault-return qualification.",
+  "frozen_scenario": {
+    "seed": 20261013,
+    "allowed_families": [
+      "payload_jam"
+    ],
+    "nominal_probability": 0,
+    "duration_s": 800
+  },
+  "authority": {
+    "actions": [
+      "continue_mission",
+      "collect_status",
+      "withhold_deployment",
+      "inhibit_return"
+    ],
+    "maximum_llm_calls": null,
+    "maximum_wall_time_s": 2400,
+    "maximum_output_bytes": 500000000,
+    "minimum_free_bytes": 5368709120,
+    "physical_execution_authorized": false,
+    "human_approval_authenticated": false,
+    "fault_return_qualified": false
+  },
+  "attempts": [
+    {
+      "attempt": "01",
+      "role": "original_failed_engineering_trial",
+      "same_engineering_scenario": true,
+      "held_out": false,
+      "plan_sha256": "a5acf27a8aebb850a1f07c03089459734486a92693c011c85f3c10b2180c9524",
+      "source_map_sha256": "46f780dd15a8e65ec4ca688e466dd2f100e5734c785229a0231e9e4759995bd3",
+      "source_unchanged": true,
+      "host_wall_s": 50.18462195794564,
+      "exit_code": 2,
+      "artifact_sha256": {
+        "study.json": "dc4de287192751af4da59e6adf2d41c03879aad6fc42844868e3c3e7ee969171",
+        "verification.json": "67dabc2fe865681244512cbf5e498fc6ab216af7a210c6c23bde5eb321d91842",
+        "summary.json": "90239339c9d175347748086ee0fa7cc85831f4cc3d6422c2d842e32576b560ee",
+        "host-execution.json": "5d5db8d0a7adc016bd5baa8f1a70e0f51bff719f4c7bc9153e3638dcdeced83c"
+      },
+      "providers": {
+        "typesafe": {
+          "model": "jev-1.13.0",
+          "attempted": 76,
+          "valid_responses": 75,
+          "statuses": {
+            "succeeded": 75,
+            "invalid_response": 1
+          }
+        },
+        "deepseek": {
+          "model": "deepseek-v4-flash",
+          "attempted": 0,
+          "valid_responses": 0,
+          "statuses": {}
+        }
+      },
+      "accepted_model_choices": 75,
+      "physics_record_passed": true,
+      "fault_record_passed": true,
+      "control_record_passed": false,
+      "control_completion_accepted": false,
+      "control_errors": [
+        "diagnostic_not_completed:65"
+      ],
+      "diagnostic_requests": {
+        "booster": 53,
+        "ship": 8
+      },
+      "diagnostics_completed": 60,
+      "fallback_count": 1,
+      "payload_fault_at_s": 489.5374400000408,
+      "model_withhold_at_s": 489.7874400000408,
+      "later_observation": {
+        "time_s": 490.0374400000408,
+        "sequencer_state": "skipped",
+        "deployment_withheld": true,
+        "released_count": 0
+      },
+      "ship": {
+        "end_time_s": 800.0,
+        "phase": "orbital_coast",
+        "termination": "time_limit",
+        "released_count": 0,
+        "return_resolved": false
+      },
+      "booster": {
+        "contact_at_s": 608.2163426041903,
+        "contact_point_speed_mps": 8.275476860170805,
+        "contact_envelope_met": false,
+        "catch_verified": false
+      }
+    },
+    {
+      "attempt": "02",
+      "role": "explicitly_authorized_post_boundary_repair",
+      "same_engineering_scenario": true,
+      "held_out": false,
+      "plan_sha256": "321b525a7ed69fbaf980f66704e55bb47f07d8fc60f2a3e5827918374f939f0b",
+      "source_map_sha256": "9318ee2cc3b7e3c2cac95db23984a488ba2343aadb1ba44916e33cf59dc0a7cc",
+      "source_unchanged": true,
+      "host_wall_s": 42.32449991698377,
+      "exit_code": 0,
+      "artifact_sha256": {
+        "study.json": "fa00c0f4fdb48b4281289d5bb3f2188b95f2187cb22583bf4c0ee542a1532308",
+        "verification.json": "484b2cb245601471151ca2737dae1beb3b8a79aee2c10c323f7c25a16bcd233a",
+        "summary.json": "bb7c8b0fec5112e4454772ec340037f9b84b163a8ad2ad072c19efef0ab4a3cf",
+        "host-execution.json": "94cdc1d75477a62d50ad5593f93b377d28b98f17aa8b73013877e7dcbef37124"
+      },
+      "providers": {
+        "typesafe": {
+          "model": "jev-1.13.0",
+          "attempted": 21,
+          "valid_responses": 21,
+          "statuses": {
+            "succeeded": 21
+          }
+        },
+        "deepseek": {
+          "model": "deepseek-v4-flash",
+          "attempted": 1,
+          "valid_responses": 0,
+          "statuses": {
+            "invalid_response": 1
+          }
+        }
+      },
+      "accepted_model_choices": 20,
+      "physics_record_passed": true,
+      "fault_record_passed": true,
+      "control_record_passed": true,
+      "control_completion_accepted": true,
+      "control_errors": [],
+      "diagnostic_requests": {
+        "ship": 5
+      },
+      "diagnostics_completed": 5,
+      "fallback_count": 1,
+      "payload_fault_at_s": 489.5374400000408,
+      "model_withhold_at_s": 489.7874400000408,
+      "later_observation": {
+        "time_s": 490.0374400000408,
+        "sequencer_state": "skipped",
+        "deployment_withheld": true,
+        "released_count": 0
+      },
+      "ship": {
+        "end_time_s": 800.0,
+        "phase": "orbital_coast",
+        "termination": "time_limit",
+        "released_count": 0,
+        "return_resolved": false
+      },
+      "booster": {
+        "contact_at_s": 608.2163426041903,
+        "contact_point_speed_mps": 8.275476860170805,
+        "contact_envelope_met": false,
+        "catch_verified": false
+      }
+    }
+  ],
+  "original_failure_preserved": true,
+  "automatic_retry": false,
+  "post_live_prompt_contract_clarification": "Exact response-field and size limits are now explicit; live02 predates this prompt clarification. No new model inference or claim about past failure cause.",
+  "current_prompt_live_revalidated": false,
+  "limitations": [
+    "Synthetic current component health; ideal kinematics and noisy quantized fuel proxy.",
+    "Both trials are the same engineering case, separated by explicit boundary repairs, not held-out reliability measurement.",
+    "DeepSeek was attempted once, returned an invalid response, and produced no accepted decision; cause was not preserved by the transport taxonomy.",
+    "No raw provider response or hidden reasoning was retained; hashes do not establish the reason for a decode failure.",
+    "Ship return unresolved at800s; Booster baseline contact fails the envelope; no recovery/catch/M3 completion claim."
+  ]
+}

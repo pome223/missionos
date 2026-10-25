@@ -1,0 +1,31 @@
+{
+  "schema": "missionos.booster_report_media_validation.v1",
+  "data_and_artifact_hash_checks_passed": true,
+  "complete_flight_samples_preserved": true,
+  "ffprobe": {
+    "codec": "h264",
+    "width": 1280,
+    "height": 720,
+    "frames": 2880,
+    "fps": 24,
+    "duration_s": 120
+  },
+  "browser_native_mp4": {
+    "ready_state": 4,
+    "duration_s": 120,
+    "current_time_observed_s": 7.289435,
+    "paused": false,
+    "error": null
+  },
+  "visual_frames_checked_video_s": [
+    0,
+    23,
+    49.9,
+    116
+  ],
+  "browser_console_errors": 0,
+  "source_commit_binding_files": 110,
+  "private_path_scan_passed": true,
+  "local_links_passed": true,
+  "hidden_reasoning_exported": false
+}

@@ -162,3 +162,28 @@ def test_invalid_worker_frame_is_rejected_before_an_extra_router_call(tmp_path, 
     with pytest.raises(ValueError, match="invalid_observation"):
         shadow.run_shadow(tmp_path / "invalid", mode="fixture", router=router)
     assert len(called) == (1 if invalid == "duplicate" else 0)
+
+
+@pytest.mark.parametrize("returncode", [0, None])
+def test_worker_group_permission_error_is_ignored_only_after_child_exit(monkeypatch, returncode):
+    from types import SimpleNamespace
+    import signal
+    polls = iter([None, returncode])
+    child = SimpleNamespace(pid=12345, poll=lambda: next(polls))
+    def denied(*_args):
+        raise PermissionError("synthetic_group_permission_error")
+    monkeypatch.setattr(shadow.os, "killpg", denied)
+    if returncode is None:
+        with pytest.raises(PermissionError, match="synthetic_group_permission_error"):
+            shadow._signal_worker_group(child, signal.SIGTERM)
+    else:
+        shadow._signal_worker_group(child, signal.SIGTERM)
+
+
+def test_already_exited_worker_is_not_signalled(monkeypatch):
+    from types import SimpleNamespace
+    import signal
+    def forbidden(*_args):
+        pytest.fail("Do not signal a finished worker group")
+    monkeypatch.setattr(shadow.os, "killpg", forbidden)
+    shadow._signal_worker_group(SimpleNamespace(pid=12345, poll=lambda: 0), signal.SIGTERM)

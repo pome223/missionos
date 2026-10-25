@@ -1,0 +1,300 @@
+{
+  "schema": "missionos.starship_reference_data_quality.v1",
+  "created_on": "2026-10-18",
+  "review_plan_sha256": "02d2481b26b3de74c875d008b252ea5ead11f381fd0531b082152a9afe745be0",
+  "inputs": [
+    {
+      "path": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "rows": 528,
+      "first_t_plus_s": -6,
+      "last_t_plus_s": 539,
+      "body_labels": {
+        "stack_then_ship": 528
+      },
+      "speed_readings": 479,
+      "altitude_readings": 204,
+      "duplicate_body_times": 0,
+      "source_class": "processed_OCR_rolling_median_not_raw_display_readings",
+      "ascent_window": {
+        "elapsed_s": [
+          0,
+          491
+        ],
+        "rows": 474,
+        "speed_readings": 442,
+        "altitude_readings": 156,
+        "missing_seconds": [
+          3,
+          25,
+          34,
+          35,
+          52,
+          53,
+          54,
+          55,
+          79,
+          86,
+          87,
+          89,
+          93,
+          99,
+          371,
+          429,
+          433,
+          434
+        ],
+        "altitude_missing_every_second_inclusive": [
+          139,
+          420
+        ],
+        "altitude_absence_cause": "ship_altitude_not_displayed_in_layout"
+      }
+    },
+    {
+      "path": "docs/assets/starship-flight14-telemetry-20261017/booster_return.csv",
+      "sha256": "c0ad296231c5e7a6c4677d705b258adf23fd51669a797290cace34952eeafb45",
+      "rows": 209,
+      "first_t_plus_s": 197,
+      "last_t_plus_s": 420,
+      "body_labels": {
+        "super_heavy": 209
+      },
+      "speed_readings": 171,
+      "altitude_readings": 206,
+      "duplicate_body_times": 0,
+      "source_class": "processed_OCR_rolling_median_not_raw_display_readings"
+    },
+    {
+      "path": "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv",
+      "sha256": "7daff51380372f20ee2a38dc79f9c7609430e1771e20c1267924e6effb3fcfd8",
+      "rows": 1459,
+      "first_t_plus_s": 9841,
+      "last_t_plus_s": 11310,
+      "body_labels": {
+        "ship": 1459
+      },
+      "speed_readings": 1396,
+      "altitude_readings": 1438,
+      "duplicate_body_times": 0,
+      "source_class": "processed_OCR_rolling_median_not_raw_display_readings"
+    }
+  ],
+  "proposed_field_quarantine": [
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 414,
+      "t_plus_s": 421,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": true
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 415,
+      "t_plus_s": 422,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 416,
+      "t_plus_s": 423,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 417,
+      "t_plus_s": 424,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 418,
+      "t_plus_s": 425,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 419,
+      "t_plus_s": 426,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 420,
+      "t_plus_s": 427,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 421,
+      "t_plus_s": 428,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 422,
+      "t_plus_s": 430,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 423,
+      "t_plus_s": 431,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": false
+    },
+    {
+      "source": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "source_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+      "line": 424,
+      "t_plus_s": 432,
+      "field": "displayed_altitude_km",
+      "stored_value": 0.0,
+      "disposition": "quarantine_wrong_body_interval",
+      "replacement_value": null,
+      "basis": "Selected frames F12/F13 show Ship speed on right with engine dial; zero altitude remains on left booster channel. F14 shows later left-side Ship altitude150km. Interior rows not individually re-read.",
+      "sampled_interval_endpoints": [
+        "F12",
+        "F13"
+      ],
+      "per_row_visual_confirmation": true
+    }
+  ],
+  "original_csvs_modified": false,
+  "corrected_csv_generated": false,
+  "future_reference_effect": {
+    "ascent_altitude_points_before": 156,
+    "ascent_altitude_points_after_proposed_quarantine": 145,
+    "ascent_speed_points_unchanged": 442,
+    "apply_only_after_reference_acceptance": true
+  },
+  "narrative_issues": [
+    {
+      "anchor_s": 58,
+      "audit_altitude_km": 7.9,
+      "processed_csv_altitude_km": 7.8,
+      "new_frame_altitude_km": 7.7,
+      "interpretation": "Different processing/time alignment; not a simulator discrepancy or established OCR-only error."
+    },
+    {
+      "anchor_s": 100,
+      "audit_speed_kmh": 3406,
+      "processed_csv_speed_kmh": 3389,
+      "new_frame_speed_kmh": 3400,
+      "interpretation": "Different processing/time alignment; retain all versions with provenance."
+    },
+    {
+      "anchor_s": 491,
+      "audit_speed_kmh": 25378,
+      "processed_csv_speed_kmh": null,
+      "processed_csv_25378_5_time_s": 492,
+      "interpretation": "Audit anchor is not an exact transcription of this frozen row."
+    }
+  ],
+  "limits": [
+    "Twenty purposively selected frames do not estimate an unbiased corpus OCR error rate.",
+    "Even visually correct display transcription does not establish instrument accuracy.",
+    "Reacquired screenshots are new evidence; old raw frames and raw OCR do not exist in this bundle.",
+    "Filtering can create fractional values and temporal differences; do not call all screen/CSV disagreements OCR errors.",
+    "F01 launch speed0 supports a surface-relative speed working assumption at launch only; later-ascent frame and altitude datum remain independently unconfirmed.",
+    "No physics or model-acceptance tolerance is approved by this data-quality report."
+  ]
+}

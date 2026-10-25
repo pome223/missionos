@@ -136,3 +136,39 @@ def test_worker_rejects_different_actual_inputs_even_when_process_returns_zero(t
     assert result["status"] == "failed"
     assert result["execution"]["failure_reason"] == "sixdof_execution_input_binding_mismatch"
     assert not result["execution"].get("artifacts")
+
+
+def test_sixdof_cli_provenance_covers_every_worker_required_source(tmp_path, monkeypatch):
+    """Exercise artifact production without physics; source admission stays exact."""
+    import importlib.util
+    from hashlib import sha256
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[2] / "scripts/run_starship_sixdof.py"
+    spec = importlib.util.spec_from_file_location("sixdof_source_contract_cli", path)
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    monkeypatch.setattr(cli, "ROOT", control.REPO)
+    monkeypatch.setattr(cli, "simulate", lambda *_a, **_kw: {
+        "scenario": "gimbal_step", "samples": [{"q_body_to_eci": [1., 0., 0., 0.]}],
+        "events": [], "outcome": {"termination": "time_limit", "duration_s": 0.,
+            "max_altitude_m": 0., "final_ground_speed_mps": 0.,
+            "orbit_gate_reached": False, "payload_released_count": 0},
+    })
+    monkeypatch.setattr(cli, "build_report", lambda _: "<html>fixture source-map check</html>")
+    monkeypatch.setattr(cli.sys, "argv", [str(path), "--approve-simulation",
+        "--scenario", "gimbal_step", "--profile", str(control.REPO / SIXDOF_PROFILE),
+        "--output-dir", str(tmp_path / "result")])
+    assert cli.main() == 0
+    recorded = json.loads((tmp_path / "result/study.json").read_text())["provenance"]["source_sha256"]
+    admission_only = {
+        "src/runtime/starship_sixdof_catalog.py", SIXDOF_PROFILE,
+        "src/runtime/starship_sixdof_verifier.py", "src/runtime/starship_retained_return_verifier.py",
+        "src/runtime/starship_booster_catch_verifier.py", "src/runtime/starship_booster_recovery_verifier.py",
+        "src/runtime/starship_wind_verifier.py",
+    }
+    expected = set(SIXDOF_SOURCES) - admission_only
+    assert set(recorded) == expected
+    assert {name: sha256((control.REPO / name).read_bytes()).hexdigest()
+            for name in expected} == recorded
+    assert {"src/runtime/starship_concurrent.py", "src/runtime/starship_booster_coast_probe.py"} <= recorded.keys()

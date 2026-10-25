@@ -1,0 +1,1892 @@
+{
+  "paths": [
+    {
+      "path": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9"
+    },
+    {
+      "path": "docs/assets/starship-reference-v1-20261018/data-quality.json",
+      "sha256": "51905a0b78dffdd3e9558239b08fa9aba67a562cef94fd735c3191e69cd0afac"
+    },
+    {
+      "path": "docs/assets/starship-reference-v2-20261018/acceptance.json",
+      "sha256": "4318ca69bfbfb5767315c553f9d27bc67a35a0fb3ffa70484abafe9d3ebddef8"
+    },
+    {
+      "path": "docs/assets/starship-reference-v2-20261018/reference.json",
+      "sha256": "eefdd1b147a13d371e87c2b861fc69d57b0ea6c497e679e9f67d2f15b26229c7"
+    },
+    {
+      "path": "docs/assets/starship-reference-v3-20261018/ascent_stack_and_ship.csv",
+      "sha256": "cb5380593b065f7ebbb4b8ca5d3fe4ca18530bbd790018e74b65567a69c50b48"
+    },
+    {
+      "path": "docs/assets/starship-reference-v3-20261018/reference.json",
+      "sha256": "e869be69cabfb88552066394fea3f983b96fd94040f8e04eb9e82972d2c7c4de"
+    },
+    {
+      "path": "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json",
+      "sha256": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9"
+    },
+    {
+      "path": "docs/assets/starship-system-repair-20261018/speed-reference-review-v2-manual.csv",
+      "sha256": "5cfca4c1c98390511f84be69a682efd9e24bc5eb9b21cd3011d526131852b9b3"
+    },
+    {
+      "path": "examples/spaceflight/starship-ascent-path-registration-v2.json",
+      "sha256": "295b15c33eba7d9a2c24c9c4cdbc7bb2ee430c1cbb214b2692bbcba2a6bac6ce"
+    },
+    {
+      "path": "examples/spaceflight/starship-ascent-path-registration-v3.json",
+      "sha256": "5c7f72f7fcc3c2da40e24fd5bd467e25fd76e897776e2c43e7ab13e90e2e75fd"
+    },
+    {
+      "path": "examples/spaceflight/starship-ascent-path-registration.json",
+      "sha256": "21868b9434c8c4f24276e851db545c2bda71ccbc768c96ef76aa27b31c9ef356"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-fidelity-registration-v1.json",
+      "sha256": "cf8bf34e60b974eb745d89f7f1def27c8bab32830d022cba1121d7fcfc44ff2b"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-lowq-capture-v1.json",
+      "sha256": "14eae619db11d0b32c65e1854ff850fef0dd364dd3b18eecf830bb740e0653b5"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-outage-repair-v1.json",
+      "sha256": "f2124ddc668df30d07ad273daa284fdc2918b46f9a38401fdc72e2f133a299ec"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-powered-reference-v1.json",
+      "sha256": "a0e06c78fc8e93c9f650603dc478cf790aca7a160916597b5b6ca7031c6abc4a"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-residual-reference-v1.json",
+      "sha256": "f42a5544adf86c218fed21f797c68b1a2ef461e16f1147e4424ba418e241fb9f"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-tail-allocation-v1.json",
+      "sha256": "f847088857e9ee77bddb03b39b6b34308852e990483191e9928c492665716905"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-terminal-allocation-v1.json",
+      "sha256": "ed85239739b0ef30727c8ba8ff5b2f852c41692c7d19e88fb7129577147b685d"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-terminal-braking-v1.json",
+      "sha256": "289c49a83644d9f8cc0b50e3305d3f3a7f8be3e980e5c77135fec93c306f502a"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-terminal-compensation-v1.json",
+      "sha256": "816bff21464f7ba2d30f0842ee137f752911cb4422cb36b3259d5c25bc24052b"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-terminal-descent-v1.json",
+      "sha256": "f12f795a20d066187116116b7afe7adcb5e66942971d0615af667a5c8999d769"
+    },
+    {
+      "path": "examples/spaceflight/starship-booster-terminal-recovery-v1.json",
+      "sha256": "6d7191b6778bab6e936a3a1357c24f21ec0fed7df8c01537fb4a75521a43dd43"
+    },
+    {
+      "path": "examples/spaceflight/starship-catch-profile.json",
+      "sha256": "9692beee1929febdf1341301d2f890ac007cc1f209ac081f62fd5a095c7626d2"
+    },
+    {
+      "path": "examples/spaceflight/starship-comparison-operations.json",
+      "sha256": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68"
+    },
+    {
+      "path": "examples/spaceflight/starship-fidelity-acceptance-registration.json",
+      "sha256": "8109b95cf3b9331c70971aaba89e015a321ec645e335bc394082fc3ac8395781"
+    },
+    {
+      "path": "examples/spaceflight/starship-final/configuration-v1.json",
+      "sha256": "033daba44d62725b95ece79981a233a92d07b67a19d69c244e648788188b0ba0"
+    },
+    {
+      "path": "examples/spaceflight/starship-flight14-calibrated-profile.json",
+      "sha256": "9d0d6efda46c07f297063f8b5b7febe62795cb18f4eac0c5640d72c8b18b6898"
+    },
+    {
+      "path": "examples/spaceflight/starship-flight14-calibration-ledger.json",
+      "sha256": "3861537fb7f2c4e83237fdb1eea7cfa2ec9664fd5e478178a58d0f5e84f1917c"
+    },
+    {
+      "path": "examples/spaceflight/starship-flight14-observations.json",
+      "sha256": "2b2ccd569dfdfbbc372c4165655b613ed6fc6ef2bb76f9f6b9a58225d37bd823"
+    },
+    {
+      "path": "examples/spaceflight/starship-insertion-continuation-v1.json",
+      "sha256": "994c7138976619ef1074f86e47ec971e3861edacbece76f14a4383888d269703"
+    },
+    {
+      "path": "examples/spaceflight/starship-m1-operations.json",
+      "sha256": "77efbdb6e2368503b52cdfc333e7eaf4977697761b784ebd1679265438e2b110"
+    },
+    {
+      "path": "examples/spaceflight/starship-m3-sensor-completion-registration.json",
+      "sha256": "f254de98be1dd9f66b86c9fd9ff3d3f3990f851c3f2905df5a25a74687f3986a"
+    },
+    {
+      "path": "examples/spaceflight/starship-m3-sensor-registration-v2.json",
+      "sha256": "0ae60218416ef97a3910dbc4c6d9bfccf38e44973222d8a7743c2f149661cde7"
+    },
+    {
+      "path": "examples/spaceflight/starship-m3-sensor-registration.json",
+      "sha256": "e3e28e38c91d21ffbff8e5aed2ead262244ea65897ee32df747d00e8e00f21be"
+    },
+    {
+      "path": "examples/spaceflight/starship-propulsion-reference-fixture.json",
+      "sha256": "1868290c3bd37e2cbba9182339a4700394f4591cdfb7f15620946efdbac879c2"
+    },
+    {
+      "path": "examples/spaceflight/starship-propulsion-step2a-registration-v2.json",
+      "sha256": "eb0a66150662a36bdc8d980c23a504e8fe98e5b18205605832c8cc9a3c8b5398"
+    },
+    {
+      "path": "examples/spaceflight/starship-propulsion-step2a-registration.json",
+      "sha256": "7cf8996d1d9028e71d6bc8c8b75a5e33f64c63f95c650c343c19e30128d63b5b"
+    },
+    {
+      "path": "examples/spaceflight/starship-reference-speed-review-v1.json",
+      "sha256": "b18779925c22fc3ceab4c7dbd2f6c751be89beb9189c0681c6f1cdde3015e2e0"
+    },
+    {
+      "path": "examples/spaceflight/starship-reference-speed-review-v2.json",
+      "sha256": "39b3b9b237c3f1c7e7d3399dd7e1811eef4196ccb3726ce76da2cd63a18b1653"
+    },
+    {
+      "path": "examples/spaceflight/starship-restoration-regressions-v1.json",
+      "sha256": "dd663801e23f2c5e9d7956800aa18b17dd782e0dd48716e736615d3f0bf6d3ed"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-fidelity-reference-v1.json",
+      "sha256": "e17e08c942ccf792a7393c057c255c6e067b2ed72d606f7d74d0b0b874d25141"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-fixture-v1.json",
+      "sha256": "a6c56e751e8ecc5b3e05e76411f03a3b3677b5368c6473173e57b957aa9a86c5"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-fixture-v2.json",
+      "sha256": "851779a1086c7f5e74f645c89543c4f575407d302dfc515a6df395100e093193"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-fixture-v3.json",
+      "sha256": "b92d4711c0cefa95d541817cbc40cc3fc6caba9f10a1385edde80aa967c436e4"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-intent-fixture-v1.json",
+      "sha256": "9f26941f5f79d86ca9931ae229abe6164fbfa1c8d563abe686c67e056b1e7782"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-intent-live-v1.json",
+      "sha256": "4daf5b5315f7d8a3b5b049dc893818f982247ee8ae043196e33952b71131ea16"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v1.json",
+      "sha256": "aac752cc11a03fef49815a832376a1be9f67449c71474ac3f6f2d3f3c3e9c83d"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v2.json",
+      "sha256": "02a0d987338176dcab0d5ba580a8eccf1e513f8e09feb6c8ef724ab3892397de"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v3.json",
+      "sha256": "acbbc757db056f4cc44f31cd2a33fabc2e0358b0b2aac8c743581f01ad298567"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v4.json",
+      "sha256": "253b1d66278718a403ee4e648549a5a1f52b703589bf43ff591584b19d4f1cb8"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v5.json",
+      "sha256": "987884d21af741af6c009e03d3bc27ec46a6769332b9455d75534d0b383979e7"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-fixture-v6.json",
+      "sha256": "b6c9921badce338ef5b85c0c7c10d6ce18238f1fd7b18ed49a2c66f6525b4253"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-native-live-v1.json",
+      "sha256": "39fb4c6af700cc81072bec88d18ddfafce1b10ae218731ed39a274b3c358c541"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-numerics-fix-v1.json",
+      "sha256": "c1311377c186821131f3f343b7a6e2406a33111bc4c47be9d2a07fcbc7f721f1"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-numerics-v1.json",
+      "sha256": "45251107b3299b35e2199fc55989fd1acdca129718ec0de07d47cee83503e28c"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-refinement-v1.json",
+      "sha256": "12ea9ffb128e58a2a53ff0bdcb5e1e3cbab024d15d4d086477967a4622206b39"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-return-context-fixture-v1.json",
+      "sha256": "c41f0c03f7d7e3991553babbc6c06b6d92c20b1fc9c8769804e55b0cb01178df"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-return-context-live-v1.json",
+      "sha256": "0e933b6d134e7130749e38d33e66301b07af1e529e7acb68959c9d20948a5b43"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-return-review-fixture-v1.json",
+      "sha256": "61890b2445c3f64a4f29f3eb9f251d752156e909de7f82bbf013a4844c848c63"
+    },
+    {
+      "path": "examples/spaceflight/starship-restored-return-review-live-v1.json",
+      "sha256": "3fa6cbfa9621581f04674472f90d95391426593b8c9b38b858004d5734901af0"
+    },
+    {
+      "path": "examples/spaceflight/starship-return-sites-model-test.json",
+      "sha256": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step1-5-registration.json",
+      "sha256": "65012043ae1fe6920038b70a060b9d9fd6c1ef2c87092dbf57a84aa1a8cdb512"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step1-registration.json",
+      "sha256": "16744e51b7bbe41ba426900d9d897b0c08227426caab8f4a788f2873acbfe69a"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step2-registration.json",
+      "sha256": "3ec1a89f27f4ffeb754de208fc8c22d1c39bb28199fe2824a11ad8f5c717a1b1"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step2-resume-registration.json",
+      "sha256": "e496774f9fc7ac5d4d3de88c71386e99573cbe7384ec4bd962136664485d3df8"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-jev-live-registration.json",
+      "sha256": "cefb0fec2e9a132d3633f8a677d33f8a5049a5482d4613ef88c1b3cc42ea5384"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-jev-preflight-registration.json",
+      "sha256": "56cd65bbb421fc975f2e560c80b9c0c38cc3b703979749100287b845d16da898"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-preflight-registration.json",
+      "sha256": "78c19fab52c4cbf2e36de120bb0a2d98e4720080384890d561dd5a71641d7369"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-registration.json",
+      "sha256": "b314f3c7ef0549b3f185339f8dcccf017f17628f5f74a37339c7aa83401d6651"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-repair-registration.json",
+      "sha256": "0c9f94c9b2d2dcfaf8663755bef59be13214cc9ca1e646dd4871c5062c2658af"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-reviewed-live-registration.json",
+      "sha256": "04b5923f5b2c60fbd48f93c748d5ad20d6c6eed43761152dc77f2c9e3967e6fc"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-stream-registration.json",
+      "sha256": "6a8838b60180d87333e6cbc55fbdd9cc7b4d5c841bb14a64bf421303015124db"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fidelity-registration-v1.json",
+      "sha256": "e94bb4d110a8db62d8864fe63a9138f26a44a445234d13ef0f03379e1c24a70d"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-sensor-diagnosis-registration.json",
+      "sha256": "6fb42076a632921f471ee149d11e6aab473c48b0541ccaa35becaf3429556441"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-sensor-model-route-repair-registration.json",
+      "sha256": "931578c9b1013a1de7d99b011623e6bd3419700a5304897d82a02cdddd1c6b7d"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-sensor-reconsideration-registration.json",
+      "sha256": "9f402866afe6ee57f4f877ae641b13ffad8b8d9e041fb6805e12386bf9f1e5b4"
+    },
+    {
+      "path": "examples/spaceflight/starship-sixdof-profile.json",
+      "sha256": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+    },
+    {
+      "path": "examples/spaceflight/starship-sixdof-sources.json",
+      "sha256": "bd0de77464a6c57887d6bc1e6341ac2876a5b051ac92a925653fd1adf7f7df55"
+    },
+    {
+      "path": "examples/spaceflight/starship-splashdown-goal.json",
+      "sha256": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-insertion-v1.json",
+      "sha256": "626a1db716de95d26944005f13719f0b10c41a06a01a9186df98cd9dcbb8b15a"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-insertion-v2.json",
+      "sha256": "5d94f2487c47e42afa171032a23cb3ccaedf2ab37a41e04a34e029de4db35bda"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v1.json",
+      "sha256": "2e9872e9073ac7b8a020639df31c3e73129c20ba0e19a60281a568f9bd7d0152"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v10.json",
+      "sha256": "eb2be4ae2a96c10a8f9ffbe3a22df7436a8887d431cc7f12c62106da4ca10971"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v11.json",
+      "sha256": "69aa2423b37deaf91d9563ff95e949f5af7d0a39e52fda5120fad21382af9652"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v12.json",
+      "sha256": "47065dc9f134c29e93a8d5e0cb2b2fc8bcddeeeae6b8b17b3641511e119a9860"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v2.json",
+      "sha256": "df91570d8d05bd1334b706d53334ceb5e93eb41bf41e579071692d642e516f6e"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v4.json",
+      "sha256": "ed1fd6906ae735f1df3162f956f009c04513ffc6240c453bcf536d75ed46674d"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v5.json",
+      "sha256": "b58a7a9630c9cc9b7720280eaa1a2526e49c3f724e766f777a41dafbdb860d8e"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v6.json",
+      "sha256": "55a5dec1193c6c6cbf366436ff2143283fb63d1039f7899ecb0fc911ef19c34a"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v7.json",
+      "sha256": "2dfec1fd52ce76221faae97fc929e79ea36e10c24493531a2345d5d5c46c132c"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v8.json",
+      "sha256": "af7c1fd20ffcceb501737e1d82623f267f1e1db4ffecaa46328d83a7746b2c92"
+    },
+    {
+      "path": "examples/spaceflight/starship-state-mission-v9.json",
+      "sha256": "fcff8cd4aa72d35877df6a977f2647347f048729e1425c287f76951e0870ef48"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ascent-v1.json",
+      "sha256": "0cb255fd746bd437632dfa5fed03db9ccccf3b4326f05e104eaaedf8c3263bcc"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ascent-v2.json",
+      "sha256": "8bba053bad8873b1d0a8ebff0188bd05b232c4ac69cb6edf9e7a58e14314d759"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ascent-v3.json",
+      "sha256": "798c22661225952d499eb5d57bd601d4819e217963176fee1bfe143fc58e8189"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ascent-v4.json",
+      "sha256": "f730a6ad87a54db8fa259818b3cd2d75abce0c955bbbd4d959633672b5dd0600"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-diagnostic-v1.json",
+      "sha256": "402f57fa67214c302f34da3dff4941081996d4e87b00ed8e72c88647e8dff5f0"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ship-v1.json",
+      "sha256": "5db98024a90b3fa1184840bacbde9b045a974eaa2aac6020bb5ce12ed8bd5894"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-ship-v2.json",
+      "sha256": "b0dad78fffb8838845bb3056fe11024275970926c9375e8702291f948390f288"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-water-v1.json",
+      "sha256": "2e56613bdd7e253d1e7fab2bb0094c1db3126c4b6f267209cd0449d20a179697"
+    },
+    {
+      "path": "examples/spaceflight/starship-system-repair-water-v2.json",
+      "sha256": "dfcb6ca7d4d60eba5afcef175eba8233ea78f243bc4ee492fd6a272d75a64443"
+    },
+    {
+      "path": "examples/spaceflight/starship-unified-registration.json",
+      "sha256": "8f96e6f18a53754dcc71ff861d5bd7ce79bd26df1e9e847bc86cfa2c487820b0"
+    },
+    {
+      "path": "examples/spaceflight/starship-unified-trouble-registration-v2.json",
+      "sha256": "5ea42901867cc34546e0329bfcf7199e5509adf77cafe2bf2f02774f4b4a4a45"
+    },
+    {
+      "path": "examples/spaceflight/starship-unified-trouble-registration.json",
+      "sha256": "9a1232a35b1c2eacb220b1d13ef05396407f1f707ce7f66bff4538ef320d090a"
+    },
+    {
+      "path": "examples/spaceflight/starship-visual-native-evaluation-registration.json",
+      "sha256": "1ab655c9a2af1a5a9aad4794df97c8a8a324d0d9a028fc3ec988937b2aecfeb4"
+    },
+    {
+      "path": "examples/spaceflight/starship-visual-observation-registration.json",
+      "sha256": "5ea612b57bdfd756f99d561ce8c41822189aade8504bb1d2e94e4a594a146289"
+    },
+    {
+      "path": "scripts/audit_starship_final_saved.py",
+      "sha256": "9401f27ff34b7da94b75f64d9bd379cc073e22d056706f935010932fbbbc579f"
+    },
+    {
+      "path": "scripts/audit_starship_final_timing.py",
+      "sha256": "2ea43e09d8481f26cb79bf18317352c4829451461604e9245bc664e757e472ae"
+    },
+    {
+      "path": "scripts/check_starship_current_admission.py",
+      "sha256": "47fb8d1c1e318f69f990e2be7917ef5e330e39767b9687c41afbe37c559cc3ae"
+    },
+    {
+      "path": "scripts/check_starship_final_port.py",
+      "sha256": "5895a79c0815960e05ecc69d4ade110351dcfcd9fe65d570ad0c0c762987ff5a"
+    },
+    {
+      "path": "scripts/forecast_starship_restored_candidate.py",
+      "sha256": "0517cb3816654948133c2c74bfbb7529f8d92f5f1c10428db9924fc9ae827ce5"
+    },
+    {
+      "path": "scripts/qualify_starship_final_saved.py",
+      "sha256": "e2ca25f6773540567816f6eb178c6b10503e5246e0e311b88970a93a0d87981b"
+    },
+    {
+      "path": "scripts/run_starship_final_mission.py",
+      "sha256": "db792d112dffffd59fb85fd6a687a9a1792c3074482c35c630ab20b098457f0b"
+    },
+    {
+      "path": "scripts/smoke_starship_final_protocol.py",
+      "sha256": "0565e51fb545487ae28aea3a9c1cbc2aab9ed206c2d4f4e2be7c1751c0a09922"
+    },
+    {
+      "path": "scripts/smoke_starship_final_runtime.py",
+      "sha256": "38fcf51421a569ce0e76e8d64188b4d53867574284dfc976a458251597c57d3f"
+    },
+    {
+      "path": "scripts/smoke_starship_final_timing.py",
+      "sha256": "d5454f9885b4a091bf38c9fc95a08dca3dad14574c324d6be33876ce6916fac6"
+    },
+    {
+      "path": "scripts/smoke_starship_restored_approval.py",
+      "sha256": "8429313bd9baa04ffd2d8bde97aaa85c573aa70d4ce5186a468297d446645021"
+    },
+    {
+      "path": "scripts/smoke_starship_restored_decision_pipe.py",
+      "sha256": "8c6a1a2851b619df9d00ad89c8c0d372fd67f9cecebe8c462d7d9d42bb2c53a3"
+    },
+    {
+      "path": "scripts/smoke_starship_restored_native_host.py",
+      "sha256": "abdc44605de7662b0269e61bddfd4fd87379722eb15ea553d0dededfc0863ce2"
+    },
+    {
+      "path": "scripts/smoke_starship_restored_outer.py",
+      "sha256": "b34cf527ad446dde751f5a1785c35e1a3adecd081b9c1d1ce70f3931567d07b4"
+    },
+    {
+      "path": "scripts/smoke_starship_restored_process_owner.py",
+      "sha256": "b4511ca87a455d2864374f1716c6fd7990e4d8f1f91a88711af7e3d8bb977f06"
+    },
+    {
+      "path": "scripts/starship_final_qualification_chunks.py",
+      "sha256": "8c9a4defadea5cec28a2c837beada59cf788a6b086cd20693205072c0366e6df"
+    },
+    {
+      "path": "src/gateway/starship_chat.py",
+      "sha256": "d96c39101d4a7536d0ade9b941ffb367198ff69b99f2fb61276a69f9b57c3189"
+    },
+    {
+      "path": "src/gateway/starship_inflight_approval.py",
+      "sha256": "2843486f9c8a22001ef98420d4d67446e8efb569c8d86b1b0a779d76acf97319"
+    },
+    {
+      "path": "src/gateway/starship_ship_capability_chat.py",
+      "sha256": "dcdf575330d60a182f2e41c4f2dbc07f268b538bad3b0f28a080a4953dc8ec9d"
+    },
+    {
+      "path": "src/gateway/starship_ship_sensor_chat.py",
+      "sha256": "50d5c0012190c8124b195a61d5f27aba0b31f97f96e02826094427323779a4fb"
+    },
+    {
+      "path": "src/intelligence/starship_booster_recovery_evidence.py",
+      "sha256": "4f3da6bcff077a9019712733493053404ccb4e3799c9ab3e617b17d3e175d2b8"
+    },
+    {
+      "path": "src/intelligence/starship_capability_stream_probe.py",
+      "sha256": "59b447e9cafe65abd442b5e6c6bfda7bb16f4742e2335c17b856b112ed53185c"
+    },
+    {
+      "path": "src/intelligence/starship_final_sensor_agent.py",
+      "sha256": "974a72475e397f9b001a82c8e3d9cabaad40ed1132e3093f4755641ce6592fad"
+    },
+    {
+      "path": "src/intelligence/starship_final_supervision_agent.py",
+      "sha256": "084c98a7a878d4b6422a41bdd4feaf395981723db063626ae5846aae33db780c"
+    },
+    {
+      "path": "src/intelligence/starship_flight_supervisor.py",
+      "sha256": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106"
+    },
+    {
+      "path": "src/intelligence/starship_jev_router.py",
+      "sha256": "40a8af3225d38e2a9a61bda3097ac086bb7bb1cb1e2203a8bb25eec22c679241"
+    },
+    {
+      "path": "src/intelligence/starship_m2_broker.py",
+      "sha256": "6c3902fc972fc76422d2a129666f9ee955ccac9916f5b7042afe7aa7e3d1b5a5"
+    },
+    {
+      "path": "src/intelligence/starship_m3_broker.py",
+      "sha256": "2fbe0e080dae71bbb453fbb88d2bc7bfb6a612c92eaca7fbbe21429a05d14ed0"
+    },
+    {
+      "path": "src/intelligence/starship_mission_director.py",
+      "sha256": "3db6e4d0bc1664971ae85ff6a01190e985a0ae1220bd73b8fbce6c3491a6af47"
+    },
+    {
+      "path": "src/intelligence/starship_mission_planner.py",
+      "sha256": "db030d5b43c6690f5ac09a202db0ac71306e89f6ef6447660e6de7a8ab2f1234"
+    },
+    {
+      "path": "src/intelligence/starship_orbital_protocol_campaign.py",
+      "sha256": "c2f3aa4071017c8dfec70693af74e518c01b0a445e1d7999de8e3e856ad6d085"
+    },
+    {
+      "path": "src/intelligence/starship_protocol_campaign.py",
+      "sha256": "92c6c5dd5d26031f1301b61f5c9f1dd7c7c9f76a4ba6109a45abeef10801028b"
+    },
+    {
+      "path": "src/intelligence/starship_protocol_probe.py",
+      "sha256": "5c0fb6cd92a6bdccfb53c17610e8231d24b60aed267b546431a82451fefb8b88"
+    },
+    {
+      "path": "src/intelligence/starship_reference_protocol.py",
+      "sha256": "453e303f028bb132900a1855f92e5a14a1eebf7c671bdcc4853bedb0067a4a59"
+    },
+    {
+      "path": "src/intelligence/starship_replanning.py",
+      "sha256": "1d907650511a5cffdcdf055b8f9bf31fc2dabd1abad36d621bc024520499abe1"
+    },
+    {
+      "path": "src/intelligence/starship_restored_agent.py",
+      "sha256": "2f05aaaef0e43ce138b75b20fb04ee69d82b3b203bd1fa66a1904be46e872b3e"
+    },
+    {
+      "path": "src/intelligence/starship_ship_capability_agent.py",
+      "sha256": "945a5a93c860eb7da3708690718c84669b931b729e4d169395a2976651511a00"
+    },
+    {
+      "path": "src/intelligence/starship_ship_sensor_agent.py",
+      "sha256": "6df0816a3b12ddaa675509331d95cf19a929b1ef26b772f4dc4338aac0b3afe3"
+    },
+    {
+      "path": "src/intelligence/starship_trouble_agent.py",
+      "sha256": "4bc0949242bd3efe540618191a222f1af5869070ccb7e84ca76d60e490ec3a24"
+    },
+    {
+      "path": "src/intelligence/starship_visual_agent.py",
+      "sha256": "9ea36021996f8ce0aae9010c75a5dce00b5e6a22bdaf311e7c64e75dd1d81e7e"
+    },
+    {
+      "path": "src/intelligence/starship_visual_transport.py",
+      "sha256": "0d2dbfab57aa09497e8b8b579f1daa7cc421d614a89a34a0ab0f3ef3eaf93522"
+    },
+    {
+      "path": "src/runtime/assets/starship_cg_models.js",
+      "sha256": "7b0f53ba496c848b93ca93fdd5feea88a28a55085081b786f902e887a9724a7b"
+    },
+    {
+      "path": "src/runtime/assets/starship_cg_renderer.js",
+      "sha256": "572fc8a9b432158afae63175d867142bec267a96c3fc06ae6c9db1c938704582"
+    },
+    {
+      "path": "src/runtime/assets/starship_cg_replay.js",
+      "sha256": "d0c1e18e1b70f4c85dcb767bf4d88561ee69493a8dc31158f9e70ae58799c60b"
+    },
+    {
+      "path": "src/runtime/assets/starship_inflight_operator.html",
+      "sha256": "98a065d33722b6d6c380645adc9afc2688915f720404de9118987ed93512054b"
+    },
+    {
+      "path": "src/runtime/assets/starship_operator.html",
+      "sha256": "a7744b73e8dbfd9a16d8717d35b75b0ae2cd2deb546a67e1885a5364c1448683"
+    },
+    {
+      "path": "src/runtime/assets/starship_sixdof_replay.js",
+      "sha256": "0d678bc2ba3e01c0377e701f89e6970c60da28d1909739037e53182365a7d44b"
+    },
+    {
+      "path": "src/runtime/starship_3d_report.py",
+      "sha256": "becb6263d63965b5a8852a22c1c4e581b7302cb5b7b2145c8cda8f1a07edaf5c"
+    },
+    {
+      "path": "src/runtime/starship_actual_forecast_corpus.py",
+      "sha256": "c8b279539dcc943f9fef991b4140f797e7a975492b1001d396e58eec02cc8aa0"
+    },
+    {
+      "path": "src/runtime/starship_actual_recovery_planning_verifier.py",
+      "sha256": "e355b57bd5ceb786606f921c2b2c85973a22d9b67bd0e3e42376a747745e5cec"
+    },
+    {
+      "path": "src/runtime/starship_actual_recovery_shooting.py",
+      "sha256": "767981c84084351b8814c553d77cc6d2a99b60f0fc5150e897ef39c578102d4a"
+    },
+    {
+      "path": "src/runtime/starship_anomaly_events.py",
+      "sha256": "ebce6a646918b1290baa5c4275c40fd1b0cb3c5c7201af4cb78da57bfa26b459"
+    },
+    {
+      "path": "src/runtime/starship_artifacts.py",
+      "sha256": "1b00779f7b7cdab28ac7ee35e21405c722b2583b88e996538a8683a5bb3a2d95"
+    },
+    {
+      "path": "src/runtime/starship_ascent.py",
+      "sha256": "b60094a14ae111055bc9a5458990e877ca92c9e4308ce225323807bd3dbe3b36"
+    },
+    {
+      "path": "src/runtime/starship_ascent_control.py",
+      "sha256": "a895915527dea386a137bdb71a76ef785972f785d5036c20b7a19da5ddbb4926"
+    },
+    {
+      "path": "src/runtime/starship_ascent_control_metrics.py",
+      "sha256": "b600c4492f04bf741f48ca62e6c5c19b40c14ea6361c539bc7f96ad643f13e1b"
+    },
+    {
+      "path": "src/runtime/starship_ascent_metrics.py",
+      "sha256": "24690522a50af26294d6ef6768e5dc8f56bd49d775d5e78e7b8ea70c43f80a3c"
+    },
+    {
+      "path": "src/runtime/starship_ascent_phase_metrics.py",
+      "sha256": "5917baac2722accd605d4203eaba74bca6703203b777181270b189013dc9b849"
+    },
+    {
+      "path": "src/runtime/starship_ascent_retry_metrics.py",
+      "sha256": "99e986d109f004603205021cc0f92dd1baec3f6eb0b1532516053a98b458839c"
+    },
+    {
+      "path": "src/runtime/starship_ascent_state_metrics.py",
+      "sha256": "abf577e75b9168780124e26c7d72864188adc4163ef025dd503f1d01f159d85e"
+    },
+    {
+      "path": "src/runtime/starship_ascent_supervisor.py",
+      "sha256": "309d8430bc9c574a00b69f05a8a5bba282cad1bb90cb5cf0d53cd95f81d1b44a"
+    },
+    {
+      "path": "src/runtime/starship_attitude_reference.py",
+      "sha256": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a"
+    },
+    {
+      "path": "src/runtime/starship_boostback_shooting.py",
+      "sha256": "d7b5825000449aa76de7fd52af9bd9067e300a326ec88674e46cfd288a430f69"
+    },
+    {
+      "path": "src/runtime/starship_booster_capture_impulse.py",
+      "sha256": "7b52db2e4e6465d3f8d56343a499d4bf8e6ea43143f810dd29655a9091d20d60"
+    },
+    {
+      "path": "src/runtime/starship_booster_catch.py",
+      "sha256": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3"
+    },
+    {
+      "path": "src/runtime/starship_booster_catch_verifier.py",
+      "sha256": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490"
+    },
+    {
+      "path": "src/runtime/starship_booster_coast_probe.py",
+      "sha256": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e"
+    },
+    {
+      "path": "src/runtime/starship_booster_control.py",
+      "sha256": "0e0b95f75da2b542857e7e681430636686d7dcd0734f425b08763b85bdd83245"
+    },
+    {
+      "path": "src/runtime/starship_booster_energy_control.py",
+      "sha256": "9b1bc1cf47d80e4c09af10d5d4b0a9da5ce66f69ccedd33beba2f1ff3c7f933c"
+    },
+    {
+      "path": "src/runtime/starship_booster_energy_guidance.py",
+      "sha256": "3b4bbfe97208015cf26d36aa419e94a2c6b177575cc56240ae5a5c415bf0b7b6"
+    },
+    {
+      "path": "src/runtime/starship_booster_energy_metrics.py",
+      "sha256": "7893ccb2271eb7a58bec79662eb9070073fe715cf8e5868a44f128a769f88c9e"
+    },
+    {
+      "path": "src/runtime/starship_booster_fidelity.py",
+      "sha256": "8a863284ce4558cd235c0de19aafa6a80c5d29283863441b685618391a150c1a"
+    },
+    {
+      "path": "src/runtime/starship_booster_fidelity_metrics.py",
+      "sha256": "ea90bf4cc48eb112c347b54e0bf9654a172940d2567b625c2ef988fc714b7a94"
+    },
+    {
+      "path": "src/runtime/starship_booster_finite_authority.py",
+      "sha256": "9fa379a971b47a84e32b0f81b66bba148b9bb9d0cca7dcb6ff9bcd1a59f7c6bd"
+    },
+    {
+      "path": "src/runtime/starship_booster_guidance.py",
+      "sha256": "1990a46e57e555067cda44719dabe7f82ab29e523741161dab169a8ea6a70352"
+    },
+    {
+      "path": "src/runtime/starship_booster_impulse_metrics.py",
+      "sha256": "7d583cd24ecc298f6945e239d7b4e3df9318714bb09186664d32e00917902e15"
+    },
+    {
+      "path": "src/runtime/starship_booster_lowq_capture.py",
+      "sha256": "8aa0c12d3675788c8e312b36de37b22a7754875e43e21e7fb851493c1f33857b"
+    },
+    {
+      "path": "src/runtime/starship_booster_outage_control.py",
+      "sha256": "f94a7f36e6de312316c9a99cf8a4fc8cbab4fd4c58ad3c739b81b57a449e9234"
+    },
+    {
+      "path": "src/runtime/starship_booster_outage_metrics.py",
+      "sha256": "a64676f09ac5fea5668f928cbc3710fe26315538e560637b616b70867292ec1c"
+    },
+    {
+      "path": "src/runtime/starship_booster_powered_capture.py",
+      "sha256": "c577ec3222cb619e9125893e262353013d7deb408b0c2dc9471ef8b2d5d0861e"
+    },
+    {
+      "path": "src/runtime/starship_booster_recovery.py",
+      "sha256": "6cbc1aff602f01c680cc42a65da75d3876bff81ae2497994cd4254df7e40b3ee"
+    },
+    {
+      "path": "src/runtime/starship_booster_recovery_verifier.py",
+      "sha256": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5"
+    },
+    {
+      "path": "src/runtime/starship_booster_reference.py",
+      "sha256": "e22aa8db9b0b279454588305e53ae7f380a73ccaa74240c327ee399309c1ff5d"
+    },
+    {
+      "path": "src/runtime/starship_booster_residual_capture.py",
+      "sha256": "2826939a327669cd42dbf3b04bb862b97f9eb45ebb7f75bcea40fa656862817f"
+    },
+    {
+      "path": "src/runtime/starship_booster_terminal_control.py",
+      "sha256": "5b53d7770374449248e536e5d3a31702158d22a092b05a21f6da07eb62110898"
+    },
+    {
+      "path": "src/runtime/starship_booster_terminal_descent.py",
+      "sha256": "a7072dad64c73cc20eeb8f0a415b051552ed8a0ee3cc0692698b2b23e5e0ca38"
+    },
+    {
+      "path": "src/runtime/starship_booster_terminal_metrics.py",
+      "sha256": "69a11c02b5de472e5e4cfeb354e29fc170f419fb05f9abeb47da58b634400666"
+    },
+    {
+      "path": "src/runtime/starship_booster_water_metrics.py",
+      "sha256": "2458397beb43d5517a326a8271a5e9a2d1efe20440aa3188aaf2776739298802"
+    },
+    {
+      "path": "src/runtime/starship_call_limits.py",
+      "sha256": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43"
+    },
+    {
+      "path": "src/runtime/starship_capture_diagnostic_report.py",
+      "sha256": "54186db93fb48d5bbeb10dea3ae7b918683cbcd290b1d13d6f9bd6fd54eaf2ca"
+    },
+    {
+      "path": "src/runtime/starship_capture_diagnostics.py",
+      "sha256": "b30e263f9c946004038b9260d014db1f862d8f6ccb0c34e5278a95bd21f476e8"
+    },
+    {
+      "path": "src/runtime/starship_completion_report.py",
+      "sha256": "a2444f74807aa01f260807acc4061fc46f70ee8fa100a42327723dbefd3eb222"
+    },
+    {
+      "path": "src/runtime/starship_concurrent.py",
+      "sha256": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b"
+    },
+    {
+      "path": "src/runtime/starship_constrained_guidance.py",
+      "sha256": "355a52445f39f3b9af2fe345a734c597c96f011e15d02f6ac412e990f47f095c"
+    },
+    {
+      "path": "src/runtime/starship_constrained_recovery.py",
+      "sha256": "94dd88b0df70115125dab737ee92f7320eb44cd9a9bd04c004459eee38039a64"
+    },
+    {
+      "path": "src/runtime/starship_constrained_recovery_verifier.py",
+      "sha256": "2c42b26bf77fad2c32ada6f759dac195c4fe6bb6f485e90c36fff12f9f1ce234"
+    },
+    {
+      "path": "src/runtime/starship_coupled_pin_landing.py",
+      "sha256": "2c19c539a183d2abcb1ef272becc31f770b697a7a1b66ca6ff478a19f15cdf99"
+    },
+    {
+      "path": "src/runtime/starship_coupled_pin_landing_verifier.py",
+      "sha256": "4e513602bbb3b93c0140c13c5b6aa26ba381dcbc0c8b2fb9dfef5ac2c5f68fae"
+    },
+    {
+      "path": "src/runtime/starship_coupled_terminal_reference.py",
+      "sha256": "c1ceeb2ce069d52bf94d01a2e20593bd7b104b6cf4c3276af127cf74cf88bcf5"
+    },
+    {
+      "path": "src/runtime/starship_coupled_terminal_reference_verifier.py",
+      "sha256": "5a8be510ace205788883848a5debeac0b0ba7b910b19e2a37230068ddcf411a6"
+    },
+    {
+      "path": "src/runtime/starship_decision_evidence.py",
+      "sha256": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56"
+    },
+    {
+      "path": "src/runtime/starship_deployment_forecast.py",
+      "sha256": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847"
+    },
+    {
+      "path": "src/runtime/starship_deployment_handoff.py",
+      "sha256": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a"
+    },
+    {
+      "path": "src/runtime/starship_deployment_handoff_verifier.py",
+      "sha256": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73"
+    },
+    {
+      "path": "src/runtime/starship_deployment_world.py",
+      "sha256": "f645f4614b2a7b72f0a61c9fb905b5b3aaa9c9acc8f606b73944c8a5b83cd963"
+    },
+    {
+      "path": "src/runtime/starship_dispenser_experiment.py",
+      "sha256": "b802a87fa5e109cdd9f16527c7937e982fd3256586246633ee680b2bb504c031"
+    },
+    {
+      "path": "src/runtime/starship_dispenser_report.py",
+      "sha256": "a0ba23dc10746e8d603c200a98caf21644f1ff2d6a2f15bb1c77d16e16a33d69"
+    },
+    {
+      "path": "src/runtime/starship_dispenser_verifier.py",
+      "sha256": "87a1eff29fed995f9c02f03be91a434f3c9fd33f281fb04e1f0b50eb98ed517a"
+    },
+    {
+      "path": "src/runtime/starship_entry_diagnostics.py",
+      "sha256": "6b93a6898191dd956a9d6ca49ca80e8981a5fbddd3af7edb116cbd88b7a6c2f8"
+    },
+    {
+      "path": "src/runtime/starship_entry_pretrim.py",
+      "sha256": "2cb6ff8019790f952a4915268eaf2a5e44224abd12be8809a10e10d68e51bb9b"
+    },
+    {
+      "path": "src/runtime/starship_entry_pretrim_verifier.py",
+      "sha256": "e8855aec0c2366a8717bbd14549d95ba1bb50f9099a81b4bf8d7eadc8b306503"
+    },
+    {
+      "path": "src/runtime/starship_entry_trim.py",
+      "sha256": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219"
+    },
+    {
+      "path": "src/runtime/starship_experimental_continuation.py",
+      "sha256": "0a5786e5e44127053009e6564e69a588200a8b2c81595b9092932266bb6762f5"
+    },
+    {
+      "path": "src/runtime/starship_experimental_mission.py",
+      "sha256": "1dadad3c738e13a15e97e1a63d4efe980212f1c66cb791fa19032f3853fb6d59"
+    },
+    {
+      "path": "src/runtime/starship_experimental_mission_metrics.py",
+      "sha256": "52ccd11672e2ac2cc611a3998bb514b4f97048b89cd2fc6e22b1e9358655acbe"
+    },
+    {
+      "path": "src/runtime/starship_fin_allocation.py",
+      "sha256": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745"
+    },
+    {
+      "path": "src/runtime/starship_fin_report.py",
+      "sha256": "f07e5fa31a9b55df294892879433e07912f476269a1297f99452b6e42b59ab56"
+    },
+    {
+      "path": "src/runtime/starship_final_faults.py",
+      "sha256": "8813d372b7501a995de350dd0a7067ca6b049f03a96d38a344194a8311ae76ab"
+    },
+    {
+      "path": "src/runtime/starship_final_fixture.py",
+      "sha256": "5453f5a0ac042ea3eca8cffd4bdc772b2117a876a76076df9652ae6927815cfa"
+    },
+    {
+      "path": "src/runtime/starship_final_gateway.py",
+      "sha256": "d0c67f261f018f537aa866d341b1f3cf86f8df6159a18835c8b0a2aaf0811ade"
+    },
+    {
+      "path": "src/runtime/starship_final_handoff.py",
+      "sha256": "2a795a194e3eca4378d3a3257f6e5b62c54372795f6e689d2d6e6a6f5d95ecbe"
+    },
+    {
+      "path": "src/runtime/starship_final_native.py",
+      "sha256": "fb4778a332ea574949308fc9ad5b4407d229d97fe7017ec848b2757f9fe8e52e"
+    },
+    {
+      "path": "src/runtime/starship_final_outer.py",
+      "sha256": "42408fac6745aabd2832ab9434b65515d4e097a3cdde41a92aee4527327542ed"
+    },
+    {
+      "path": "src/runtime/starship_final_plan.py",
+      "sha256": "a1b9f537d82cfa813e28e76ffc9b55998a500e2e92226df955dad6d94d804b6a"
+    },
+    {
+      "path": "src/runtime/starship_final_prefix_supervision.py",
+      "sha256": "330f327ebc660393f0fd1574cecd04e5052f00e63ecf0d52dd0fb00d982cf373"
+    },
+    {
+      "path": "src/runtime/starship_final_prefix_verifier.py",
+      "sha256": "1b8b6c451961627774770241a3e7c83da141d183d42d910601494c3d739543e6"
+    },
+    {
+      "path": "src/runtime/starship_final_protocol.py",
+      "sha256": "b437d3d00839e9411d8ee6cd9a3064fda3499fef5ea5e5c48c11d1ed0f02abfe"
+    },
+    {
+      "path": "src/runtime/starship_final_qualification.py",
+      "sha256": "c6983c8b1d9f2badc686f64ad7f90809acd03b20784bb5fb74db9512cf24d7ec"
+    },
+    {
+      "path": "src/runtime/starship_final_record_storage.py",
+      "sha256": "078c19fa34e0064a4874a810a0977636b2a63dca16b2e7e5cc73b71e1c3fc87b"
+    },
+    {
+      "path": "src/runtime/starship_final_replay.py",
+      "sha256": "c90b73aebd99b448e434a641116a8fdefea2f190977903dcb9c65ebc1980bd29"
+    },
+    {
+      "path": "src/runtime/starship_final_sensor_execution.py",
+      "sha256": "1c7038dca7e9ab90f311c06895576f65cd95c737a4a15c001662511d37e3eff9"
+    },
+    {
+      "path": "src/runtime/starship_final_sensor_guard.py",
+      "sha256": "15ab3d4dbd4a40a4d1368b37c203bc672f893735322af6aa3ad55a4a35a344f7"
+    },
+    {
+      "path": "src/runtime/starship_final_sensor_prediction.py",
+      "sha256": "83483dc62781cbb359a8ff4eb0ad75f98d1d588f48acd36799b8d00bb0e29dd4"
+    },
+    {
+      "path": "src/runtime/starship_final_shared.py",
+      "sha256": "9bf5a400706affc22c8a76f33ba4b883ef6178cdd884088b5babbb7c943079cb"
+    },
+    {
+      "path": "src/runtime/starship_final_tasks.py",
+      "sha256": "791da5f51e2a06379c136a74de6c2bca1352df6a268f092950a88fb140aec394"
+    },
+    {
+      "path": "src/runtime/starship_final_timing.py",
+      "sha256": "5c4a065b1caf46672bf119b8cd0113ed84602f4a356761dfc1e858b1642c5444"
+    },
+    {
+      "path": "src/runtime/starship_final_verifier.py",
+      "sha256": "b8763cfd4ea3c5b0b5bcfed5293aca199ff0f0137f105a06ab2e77d8acadfdef"
+    },
+    {
+      "path": "src/runtime/starship_final_visual.py",
+      "sha256": "d3fa531133cf24f64de701fcf5e17c78ab462a630bff3690f7356c24707cabd9"
+    },
+    {
+      "path": "src/runtime/starship_fixed_terminal_reference.py",
+      "sha256": "d0d227c3ef091066f1ad9932a7ac5d0c1c2f0b0a4ff44f2bd2fa395522a6bfa3"
+    },
+    {
+      "path": "src/runtime/starship_fixed_terminal_reference_verifier.py",
+      "sha256": "05291a7665a4782f22eab23aa7650a1b52d2e1552b4046e833295c10ede81644"
+    },
+    {
+      "path": "src/runtime/starship_flight.py",
+      "sha256": "3f12eb6f2d3fcb72c4fea50e877c5b5f4467ef4b97a0cd37c9f9a4c1c12c9620"
+    },
+    {
+      "path": "src/runtime/starship_flight_broker.py",
+      "sha256": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce"
+    },
+    {
+      "path": "src/runtime/starship_flight_supervision.py",
+      "sha256": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc"
+    },
+    {
+      "path": "src/runtime/starship_flight_supervision_verifier.py",
+      "sha256": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d"
+    },
+    {
+      "path": "src/runtime/starship_inflight_approval.py",
+      "sha256": "ccc9986d1ed7488dacbfb85f94b2ad3d519c5182bfd4ff7a1d6657df80042f23"
+    },
+    {
+      "path": "src/runtime/starship_inflight_executor.py",
+      "sha256": "5d0478b78afd679a02cfccd4c03840ff235fd8e53bd380c614c7e0b449b2dccd"
+    },
+    {
+      "path": "src/runtime/starship_inflight_runtime.py",
+      "sha256": "3942d0300f4cd2aa61e0b06eb77b6d1ca814fcb7a5ff260307a4ad2f197d88ed"
+    },
+    {
+      "path": "src/runtime/starship_jev_shadow.py",
+      "public_adaptation": "preserve protocol rejection across already-exited diagnostic worker cleanup; live permission failures still raise",
+      "selected_original_sha256": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b",
+      "sha256": "affd064167f4f9b46df984c6bf534546503c473c76a39555d0d8dae229961109"
+    },
+    {
+      "path": "src/runtime/starship_jev_shadow_report.py",
+      "sha256": "8332c8e806b2a3f0deeccec01a7daa2889541e9e90b2f9b4d6803f009794f48a"
+    },
+    {
+      "path": "src/runtime/starship_jev_shadow_verifier.py",
+      "sha256": "bf547cbb95813b0e1097b7cf61c50bd7081bd270e3312379c655173765f59f48"
+    },
+    {
+      "path": "src/runtime/starship_landing_context.py",
+      "sha256": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07"
+    },
+    {
+      "path": "src/runtime/starship_landing_decision.py",
+      "sha256": "32bb61b776ff601ce8741424f27fc9ea85bffadf4d0abb147f3782cb0343007e"
+    },
+    {
+      "path": "src/runtime/starship_landing_decision_verifier.py",
+      "sha256": "a3992551890eafc0b330077c81b02b68ddeaeac60c75637cf49e74c1746afb76"
+    },
+    {
+      "path": "src/runtime/starship_landing_forecast.py",
+      "sha256": "cc2b41002362048b37c1263b1f52fed67d940f346b1c50bab3125b94fa89765c"
+    },
+    {
+      "path": "src/runtime/starship_landing_forecast_report.py",
+      "sha256": "e387f67f1433c505059ae7e5850e5590850ef6c2685344ce888cb4699372dd38"
+    },
+    {
+      "path": "src/runtime/starship_landing_forecast_verifier.py",
+      "sha256": "e4e4c90edc3efa5fdb1530618a9c34effd4fd4cc80cfba686075736a84f86765"
+    },
+    {
+      "path": "src/runtime/starship_m2_attempts.py",
+      "sha256": "29c07539b10c35af9555928c2d96dd4ccc32ab59c8870e9b234411650593f0e7"
+    },
+    {
+      "path": "src/runtime/starship_m2_contract.py",
+      "sha256": "5a2d5543a578973886b92d19bcc632b98eddcde54040196bb1d44189ae202439"
+    },
+    {
+      "path": "src/runtime/starship_m2_control.py",
+      "sha256": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71"
+    },
+    {
+      "path": "src/runtime/starship_m2_decision_verifier.py",
+      "sha256": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a"
+    },
+    {
+      "path": "src/runtime/starship_m2_runner.py",
+      "sha256": "363d708ba4f727898750053d7b35d6aa0e5b765a7ec3ade6a94d459e6f1fb112"
+    },
+    {
+      "path": "src/runtime/starship_m2_verifier.py",
+      "sha256": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9"
+    },
+    {
+      "path": "src/runtime/starship_m3_completion.py",
+      "sha256": "64bef486e19160ced54cab3aa829264c28a17ccbbd47254a4d85575b787c11d3"
+    },
+    {
+      "path": "src/runtime/starship_m3_directors.py",
+      "sha256": "f19463461d77fe8a9144c3eaf409b5e4ad6fd30bcea66f808f31bf5fd250fd85"
+    },
+    {
+      "path": "src/runtime/starship_m3_fixture.py",
+      "sha256": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10"
+    },
+    {
+      "path": "src/runtime/starship_m3_inflight.py",
+      "sha256": "47056d8231af6b6048d0351c62be51f55df76e44ece84875cdecafa31809cbf9"
+    },
+    {
+      "path": "src/runtime/starship_m3_live.py",
+      "sha256": "1e29e37d490c68f915b7fa529af91c1a90037c1d1f19b54de758c17ce8a231d5"
+    },
+    {
+      "path": "src/runtime/starship_m3_prefix.py",
+      "sha256": "f689aaf0c9110cd171a8105dd3035f49c08a2cba0dd6366c4a09f58001d1a69f"
+    },
+    {
+      "path": "src/runtime/starship_m3_prefix_verifier.py",
+      "sha256": "b7384df49b24f244e3c347db164d35d2349bd496e3de5badcb3a70904ef78039"
+    },
+    {
+      "path": "src/runtime/starship_m3_sensor_executor.py",
+      "sha256": "3cf91e45fc468dfced6b85b957240f5c09ee37960ea3d7e6c9c4600fdf3b6fa8"
+    },
+    {
+      "path": "src/runtime/starship_m3_sensor_mission.py",
+      "sha256": "c44b05bda03075341c5dd367c56ad596a994830d286d88e4b3130052af91c047"
+    },
+    {
+      "path": "src/runtime/starship_mission_control.py",
+      "sha256": "0bdaebd04053c7088a2882e8509e7e1297143d875f676621623d94d8974e1c9f"
+    },
+    {
+      "path": "src/runtime/starship_mission_director.py",
+      "sha256": "3da261888b1e0df6064b0dbbbbca4949b92bed1d59dc50b0aa1a7ad12f2634fe"
+    },
+    {
+      "path": "src/runtime/starship_mission_director_verifier.py",
+      "sha256": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9"
+    },
+    {
+      "path": "src/runtime/starship_model_diagnostics.py",
+      "sha256": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07"
+    },
+    {
+      "path": "src/runtime/starship_operational_trials.py",
+      "sha256": "9731a3cbc36199d2450a182e8eccf80d1b6b4d9ea8174deeb328165095c978dc"
+    },
+    {
+      "path": "src/runtime/starship_operator_resolution.py",
+      "sha256": "9cfce545bb03b2972b50aa4dadfc4f3be3decdeca98db68e09c587b28377f111"
+    },
+    {
+      "path": "src/runtime/starship_orbital_window.py",
+      "sha256": "ba492475f6c61f91ebaeb73313e039d16db4d49e059349854220c249c2781154"
+    },
+    {
+      "path": "src/runtime/starship_physics.py",
+      "sha256": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9"
+    },
+    {
+      "path": "src/runtime/starship_propulsion_reference.py",
+      "sha256": "d68cfb15a1e6f72162f577c702c674c6cd14f9dda2c67a5c71958c1bc35c4c89"
+    },
+    {
+      "path": "src/runtime/starship_qualified_return.py",
+      "sha256": "9e9e9720bb8ce9da0080f5c3672b6313f4d00cbba8f869d7ce629568f3a9aeff"
+    },
+    {
+      "path": "src/runtime/starship_recovery_reports.py",
+      "sha256": "49ed21de8949d2db3b10f785c921488c056840659a016b777b1de8871534738c"
+    },
+    {
+      "path": "src/runtime/starship_reference_ids.py",
+      "sha256": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675"
+    },
+    {
+      "path": "src/runtime/starship_reference_tracking.py",
+      "sha256": "726bfe4b37707d92a68e61ed20ce1e48ee6d0ece99ba3433425e19d756b530da"
+    },
+    {
+      "path": "src/runtime/starship_reference_tracking_verifier.py",
+      "sha256": "cae08a63cc06e47aac6bca4ea2abad797a111084b2f8bb8e119819c3ad553bb6"
+    },
+    {
+      "path": "src/runtime/starship_replanning.py",
+      "sha256": "e0b65f59d1fe435ae7dda503a93696f8b0e2f59f355f773e7bbfd14c54cc5163"
+    },
+    {
+      "path": "src/runtime/starship_replanning_comparison.py",
+      "sha256": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51"
+    },
+    {
+      "path": "src/runtime/starship_replanning_events.py",
+      "sha256": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8"
+    },
+    {
+      "path": "src/runtime/starship_replanning_executor.py",
+      "sha256": "f3008e2983a0bfa8904d1bb000f68a55ec8e6a29b6ab6c2bc2b05aa01c257e61"
+    },
+    {
+      "path": "src/runtime/starship_replanning_verifier.py",
+      "sha256": "5741a24d04c011eb8cf77fe62ee5c3cfeb45859943a5051bf25e6b587750e20c"
+    },
+    {
+      "path": "src/runtime/starship_restored_admission.py",
+      "sha256": "315ead9a244528df321e1b83dce1d7bc6d10fa54325ab153f3c3371a15dbc2f8"
+    },
+    {
+      "path": "src/runtime/starship_restored_approval.py",
+      "sha256": "665a422d4271e4c45fd376a6b2d42be2420b1859b95d79086da82d0fafa0bf37"
+    },
+    {
+      "path": "src/runtime/starship_restored_approval_admission.py",
+      "sha256": "2f5e0276cd42134be4fa02a25266bf74e448df6ebe744492ebfd49f149db9d7f"
+    },
+    {
+      "path": "src/runtime/starship_restored_artifacts.py",
+      "sha256": "844628c4459ac35581d1dccdb4e6a1913db5f23cf8c5479fbe9075d5c4477418"
+    },
+    {
+      "path": "src/runtime/starship_restored_contract.py",
+      "sha256": "6bf866f162da7b80857fb5f5393e7422c3350a9d0223443d444b5fc376f28ac0"
+    },
+    {
+      "path": "src/runtime/starship_restored_coordinator.py",
+      "sha256": "7b1ebc547dd088089598f360ae0b686cca6452795f57449fd6b94a6fa7ea2de9"
+    },
+    {
+      "path": "src/runtime/starship_restored_decision_pipe.py",
+      "sha256": "5de60096fc247f84278401d381e5df9a910308e0019dfb1f620ff4035e861ffd"
+    },
+    {
+      "path": "src/runtime/starship_restored_deployment.py",
+      "sha256": "a69b4d3901b0c19d653d3b244b6dbe20371ffddd5cde3034427830636084c21e"
+    },
+    {
+      "path": "src/runtime/starship_restored_environment.py",
+      "sha256": "8ae8ae38b50e0f9195ea48913c8960333ae5190146140620dad0b839652cda9a"
+    },
+    {
+      "path": "src/runtime/starship_restored_forecast_pool.py",
+      "sha256": "735ec16261048242de0d02d6e7ba5ef6eff97b2e21abe593de328d2b334fc790"
+    },
+    {
+      "path": "src/runtime/starship_restored_integration.py",
+      "sha256": "19b9d46c700904e83625d65bd5a03848e6a68ed5d17347224a3bfb4e021a9382"
+    },
+    {
+      "path": "src/runtime/starship_restored_intent.py",
+      "sha256": "6cb62741c2495350facc46a9875ab73c2475e10f896e5fa2576c34f5f1d97ae1"
+    },
+    {
+      "path": "src/runtime/starship_restored_native.py",
+      "sha256": "629da064f95958873c580ca986476a235f9293aacc773ad275dacd718a23ff95"
+    },
+    {
+      "path": "src/runtime/starship_restored_native_host.py",
+      "sha256": "b9657f68c0145f2d0ce7a09520b30731302818cd2f20120e1d61895c31a1ef77"
+    },
+    {
+      "path": "src/runtime/starship_restored_native_verifier.py",
+      "sha256": "a05fb68580d3f1259d9a99382b22e797b4ba571562af44f5089a140edd4d4826"
+    },
+    {
+      "path": "src/runtime/starship_restored_operations.py",
+      "sha256": "ed61e116c7f284fab7e029d2b4431417e7d8e4c9754c3c523d399aa749dd4935"
+    },
+    {
+      "path": "src/runtime/starship_restored_outer.py",
+      "sha256": "24dd2eaa80cf10e92480312239a526f364b4651a1d54c860a55fd0555c1fcff0"
+    },
+    {
+      "path": "src/runtime/starship_restored_prefix.py",
+      "sha256": "ac03d20c8b2da2b962b44c3120ae52937204ca67afa7cbc380cc3e372e93ccd7"
+    },
+    {
+      "path": "src/runtime/starship_restored_process_owner.py",
+      "sha256": "1164b50f477ea93264470f529feae4752672a927522aa8357a5afb2e0ad5c7ec"
+    },
+    {
+      "path": "src/runtime/starship_restored_replay.py",
+      "sha256": "66b05361e640b06a74689cab82d743928d0f30443d060203b564fa8e18fbe0aa"
+    },
+    {
+      "path": "src/runtime/starship_restored_return.py",
+      "sha256": "c940155b7a829ac650197bf0d7de246d5d56452446de3be706afbad7828c1f5b"
+    },
+    {
+      "path": "src/runtime/starship_restored_return_context.py",
+      "sha256": "806d026d4a0398287dab15d9c5738efbd9fb303f10442fe3a2f2137e0effc1f5"
+    },
+    {
+      "path": "src/runtime/starship_restored_return_review.py",
+      "sha256": "91720340eaec45f3e6bce0dae8106136449f011856b664c92cba355cff05eb70"
+    },
+    {
+      "path": "src/runtime/starship_restored_verifier.py",
+      "sha256": "87404f935893e5d5b8e2d441f6645ee78477d6404e65f2fa2531d25af4d978ac"
+    },
+    {
+      "path": "src/runtime/starship_restored_wait.py",
+      "sha256": "302322b8872f5b1b7b3d592c7dbb75e0a556e7a283601350a0cea3237dfe914c"
+    },
+    {
+      "path": "src/runtime/starship_retained_return.py",
+      "sha256": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea"
+    },
+    {
+      "path": "src/runtime/starship_retained_return_verifier.py",
+      "sha256": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66"
+    },
+    {
+      "path": "src/runtime/starship_return_feasibility.py",
+      "sha256": "6ee5f47384bcb0d95b844713333a435624438f144889077928022e4915556e12"
+    },
+    {
+      "path": "src/runtime/starship_return_feasibility_verifier.py",
+      "sha256": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009"
+    },
+    {
+      "path": "src/runtime/starship_return_prediction.py",
+      "sha256": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5"
+    },
+    {
+      "path": "src/runtime/starship_return_prediction_verifier.py",
+      "sha256": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e"
+    },
+    {
+      "path": "src/runtime/starship_return_sites.py",
+      "sha256": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60"
+    },
+    {
+      "path": "src/runtime/starship_return_sites_verifier.py",
+      "sha256": "d27bb52fb25f6f8034c180854540fef016642426d08a28265bb56666fd7a245c"
+    },
+    {
+      "path": "src/runtime/starship_return_time_search.py",
+      "sha256": "2f0f64496987db523241a1828429d36adeff0938cf979e52ebbba1d74d74d147"
+    },
+    {
+      "path": "src/runtime/starship_runtime_budget.py",
+      "sha256": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853"
+    },
+    {
+      "path": "src/runtime/starship_ship_capability_control.py",
+      "sha256": "bb1963327f4fe36ba0034aa67002bb575195bc99bf966882893df34628a809dd"
+    },
+    {
+      "path": "src/runtime/starship_ship_capability_guard.py",
+      "sha256": "ee2e860622d8b82e95cb70c47a2ed652a483bec0da23ea50f06ac8a8d51ff8c6"
+    },
+    {
+      "path": "src/runtime/starship_ship_capability_matrix.py",
+      "sha256": "a5547489e759a38bde1f42c38d59935cf8680ea48991cdb4e2338336ad5c4cb6"
+    },
+    {
+      "path": "src/runtime/starship_ship_capability_observation.py",
+      "sha256": "4837ece4dba83dc9b4f9647d0bc5496c7c1cb8a055939eb0a210ae25413efc05"
+    },
+    {
+      "path": "src/runtime/starship_ship_fault_screen.py",
+      "sha256": "342982409c20ae4233038c32f405a4bddd07f4db942a44623ef8e7ce4e6622c1"
+    },
+    {
+      "path": "src/runtime/starship_ship_fidelity.py",
+      "sha256": "b36ce01c7c489d8127ea1835e2c5effdebe84fcc36d9515addcf30692cb8e957"
+    },
+    {
+      "path": "src/runtime/starship_ship_fidelity_metrics.py",
+      "sha256": "fa54c72a135b8ccd218fcb322d9a958949b54a140da7ea7a72b5a64e5600c831"
+    },
+    {
+      "path": "src/runtime/starship_ship_online_guard.py",
+      "sha256": "9001d5ecb13a5e6c415f304f2903782d13d06cf546f7d19853b805b96902d3d9"
+    },
+    {
+      "path": "src/runtime/starship_ship_online_prediction.py",
+      "sha256": "e138442790c6cc225fbb4611f8780e17a9acd50f46ca4eff7f5c9ba483ef35b7"
+    },
+    {
+      "path": "src/runtime/starship_ship_return.py",
+      "sha256": "9b57d7928e5a78d06985347e387a6daa0f5b22472f950f51b6d56fc20db2404e"
+    },
+    {
+      "path": "src/runtime/starship_ship_sensor_control.py",
+      "sha256": "72c14f678d812096ed56bb621b135e28da356215bf1176a135bfa59e74ac7d77"
+    },
+    {
+      "path": "src/runtime/starship_ship_sensor_guard.py",
+      "sha256": "190cd7510e4b6ae2972668cda100964e00e696d76efd41902c0bf898e24db29a"
+    },
+    {
+      "path": "src/runtime/starship_ship_sensor_observation.py",
+      "sha256": "48dc178d735764a56b4fd108054db361d067bbac621666988ad9e9846466eaab"
+    },
+    {
+      "path": "src/runtime/starship_sixdof.py",
+      "sha256": "4a7fa2f8889e9dc8618c95a8fa2cfba4065bb27e5f5c961643445efaaff96870"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_booster.py",
+      "sha256": "977a1eafa15f8b292e3627be48f6957f6ed28db206cbc6575ae50381e79e9442"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_catalog.py",
+      "sha256": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_contact.py",
+      "sha256": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_mission.py",
+      "sha256": "2538c5d38cf1c743257356e3840cf07cb59bf4f010b5c711407571e86bdf4f03"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_report.py",
+      "sha256": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_separation.py",
+      "sha256": "36c23c0542bf0172874cd4063ab9e41ddbf04a80e168b6f3c64ed7eb7f03ca68"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_validation.py",
+      "sha256": "19ad244cae8353244cffd1c43e4319b7e091c232edf48a51375798c0a038f36c"
+    },
+    {
+      "path": "src/runtime/starship_sixdof_verifier.py",
+      "sha256": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11"
+    },
+    {
+      "path": "src/runtime/starship_splashdown.py",
+      "sha256": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed"
+    },
+    {
+      "path": "src/runtime/starship_splashdown_verifier.py",
+      "sha256": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b"
+    },
+    {
+      "path": "src/runtime/starship_state_insertion_continuation.py",
+      "sha256": "6fc95a50552d5f5f8991c8f36759b95f173ee7995183e67ee2308f751bdf6b94"
+    },
+    {
+      "path": "src/runtime/starship_state_mission.py",
+      "sha256": "fc52236f5ea4016fafc92d021b295564854ef19b05abb774ff14b82a293fd91f"
+    },
+    {
+      "path": "src/runtime/starship_state_mission_metrics.py",
+      "sha256": "439101bf585bd5461a0685c9f0afcbf79a574b3fca931f098b952c2463207f11"
+    },
+    {
+      "path": "src/runtime/starship_static_artifacts.py",
+      "sha256": "91cc117fbd57f8c563321eff5d217d49dbf3830959090a39543c986335dcd1ad"
+    },
+    {
+      "path": "src/runtime/starship_study.py",
+      "sha256": "879373a4f538fa4a3eb24222c70563b44b18184d705ca81806aca87c5782d782"
+    },
+    {
+      "path": "src/runtime/starship_terminal_guidance.py",
+      "sha256": "735b2a4b5aa6a9af95e5e5eaae36eb101c39ebc66d6acc95016d6a6707037dad"
+    },
+    {
+      "path": "src/runtime/starship_terminal_reference_screen.py",
+      "sha256": "29d865645e0efd1b2c90cbd6e3b01061f29c3369083e87eb66ddfaa6ea2136d5"
+    },
+    {
+      "path": "src/runtime/starship_terminal_reference_screen_verifier.py",
+      "sha256": "363da8fcd715ea944c88e670f31db004268adacba06ba2230c54e44f6cbd8829"
+    },
+    {
+      "path": "src/runtime/starship_terminal_wrench.py",
+      "sha256": "a0d03182194ad9a69179d04ca272e16c51556c88a1a2a760b5c698de18cae5fa"
+    },
+    {
+      "path": "src/runtime/starship_terminal_wrench_verifier.py",
+      "sha256": "96fc32bf0b04046a706850fda045ad9f3470f54a1652162138a85805e08c4050"
+    },
+    {
+      "path": "src/runtime/starship_tower_actor.py",
+      "sha256": "fd36b18c3af97653dceacf16d09eab310069daa4952a35eb31fb72c17f8eae1e"
+    },
+    {
+      "path": "src/runtime/starship_tower_broker.py",
+      "sha256": "d3ff440eb482dd88d79d7780dba34ffb18e2f65f2df2310e3662cfb5881c4a25"
+    },
+    {
+      "path": "src/runtime/starship_tower_preburn_gate.py",
+      "sha256": "a4227bf5f7af70aaad441946f88ab9831c752827dffdc668c48f6062b815d502"
+    },
+    {
+      "path": "src/runtime/starship_tower_runtime.py",
+      "sha256": "26292405e58a48228fb62eef98f365dbaf6f49cd26f5bd34df7a0e76fb9af748"
+    },
+    {
+      "path": "src/runtime/starship_tower_supervision.py",
+      "sha256": "e4fa539ab940d23caee683c2f28d719ffb6ba6900538267cd6f2680ce1e4aa16"
+    },
+    {
+      "path": "src/runtime/starship_tower_supervision_verifier.py",
+      "sha256": "ab14ef1c8c28824ce7e8274593022ea42cb518cea6cdd05bb903e4cc693ae13a"
+    },
+    {
+      "path": "src/runtime/starship_trouble_control.py",
+      "sha256": "7625c8c504d73c43d12d7bf272aaa70149855e62150a09118feb5c90624d71c2"
+    },
+    {
+      "path": "src/runtime/starship_trouble_control_verifier.py",
+      "sha256": "b4e3d1b9b28f2d69151a1ed887b5718b1264097cf8259cf108b946bee241924d"
+    },
+    {
+      "path": "src/runtime/starship_trouble_engine.py",
+      "sha256": "f0b244a8318871228c0771f04cfc2ddeb566d11f78a7a4432ed0e129380a8120"
+    },
+    {
+      "path": "src/runtime/starship_trouble_verifier.py",
+      "sha256": "09ec0893eb653aa90d4c4eeefdabe05317b398e00a98d3aa74c8b6e3104842a1"
+    },
+    {
+      "path": "src/runtime/starship_unified_contract.py",
+      "sha256": "cd9c209019dea34b139c385c520beec172d3000f9810ad9fd9a2a0b7fe99cb0a"
+    },
+    {
+      "path": "src/runtime/starship_unified_mission.py",
+      "sha256": "2db8d68111d35061ad464c24bb851eb2a4c53fca067d6b759cb76b657733a99f"
+    },
+    {
+      "path": "src/runtime/starship_unified_trouble.py",
+      "sha256": "6852458fc0a6e6bf70d5ee94a81a21aecd176866fd536dd922092b35f1a4c0ae"
+    },
+    {
+      "path": "src/runtime/starship_upstream_report.py",
+      "sha256": "30949f37f2cca3710cb9a5118fd27f39a5a6ad648e6a5cb2b1a638411a063daa"
+    },
+    {
+      "path": "src/runtime/starship_visual_contract.py",
+      "sha256": "92595931cbdb0e475d98c33bf56f8a278f367deb7d1c1119c8c81c6d36be9eac"
+    },
+    {
+      "path": "src/runtime/starship_visual_director.py",
+      "sha256": "924673b6f1ead21a5106eaff0b01637d26f0520812639ed3e3c05e2539681bef"
+    },
+    {
+      "path": "src/runtime/starship_visual_observation.py",
+      "sha256": "9ba19c7275913b2ea3a5840f0be0c8135ad10d1b1153d54f887a6ea4c7dc08ee"
+    },
+    {
+      "path": "src/runtime/starship_visual_runner.py",
+      "sha256": "6eeaaf4574df12066fec3b7880e54ce63c2ab469c04b1728bc85b1b47bb1b57a"
+    },
+    {
+      "path": "src/runtime/starship_visual_verifier.py",
+      "sha256": "2b9161e5cebfe9730ecd78df248d76cc87b2953142e30340f3c0b9d6b9d3efcd"
+    },
+    {
+      "path": "src/runtime/starship_wind.py",
+      "sha256": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f"
+    },
+    {
+      "path": "src/runtime/starship_wind_verifier.py",
+      "sha256": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412"
+    },
+    {
+      "path": "tests/contract/starship_port_integration_fixtures.py",
+      "sha256": "6fecdaf780db3bb932a63bb35168150486f5d47df13df2b49ab4f1de8d494d00"
+    },
+    {
+      "path": "tests/contract/test_starship_ascent_control_metrics.py",
+      "sha256": "0ef85749c4275da68a1b24f675303258a0c5ce05898be7e7e1935b069d4facbe"
+    },
+    {
+      "path": "tests/contract/test_starship_ascent_state_metrics.py",
+      "sha256": "17762b013c87b90521580fe90ff2d27fe2d30e4f043692fb570d1a4494660b08"
+    },
+    {
+      "path": "tests/contract/test_starship_final_cohort.py",
+      "sha256": "f7d432f8daa5bc0a4f45b246d669bac99131a23b36165dc78aaeb0ffa3cd400d"
+    },
+    {
+      "path": "tests/contract/test_starship_final_faults.py",
+      "sha256": "e90aceae32f442f9d060ff007fd76c13e7ce0c7364de8af3a15f668f03bc90a7"
+    },
+    {
+      "path": "tests/contract/test_starship_final_fuel_events.py",
+      "sha256": "f6022552eafa108faa0674c55c36a82a0b17dec37251535869be8512dab735ef"
+    },
+    {
+      "path": "tests/contract/test_starship_final_handoff.py",
+      "sha256": "5820cb58dd719068309b1d2e28ccf695cbc5d24ff87b343cb402fc771d49f7a0"
+    },
+    {
+      "path": "tests/contract/test_starship_final_mission_witness_plumbing.py",
+      "sha256": "ffce316cbef9ee3e6f1c3d1d0b3f695b57c8277ef91df119e822b0fe631488a5"
+    },
+    {
+      "path": "tests/contract/test_starship_final_outer.py",
+      "sha256": "d58f38fae36998caae4a8972021eae62519d630ee09cc8c1fe5d687384375007"
+    },
+    {
+      "path": "tests/contract/test_starship_final_plan.py",
+      "sha256": "0e04af9d6bf76e57f0b2ba2f92c1d36360141a4d015ecca078e810146a682a37"
+    },
+    {
+      "path": "tests/contract/test_starship_final_prefix_supervision.py",
+      "sha256": "9ead7eeb8f1215a08ca45d3508b3c8d2b8e2b5f21b808712c4bf516b0d3fa075"
+    },
+    {
+      "path": "tests/contract/test_starship_final_prefix_verifier.py",
+      "sha256": "120671f61b36ba907377498ec414a3b80ed1b4e7d61c629ef965a6906c3c48ca"
+    },
+    {
+      "path": "tests/contract/test_starship_final_protocol.py",
+      "sha256": "3e67ee1a697666845152f6d41b503daaf296c099fa8d8a85666838e4a2985f74"
+    },
+    {
+      "path": "tests/contract/test_starship_final_qualification.py",
+      "sha256": "112846bb577bcd5480bb6ef1b4b1f86184bdc03a3a289d6f4f452d607c2c0016"
+    },
+    {
+      "path": "tests/contract/test_starship_final_qualification_chunks.py",
+      "sha256": "13ee61166383a320c66121d6b955748da358cabaaaef312ebb085c6ead731860"
+    },
+    {
+      "path": "tests/contract/test_starship_final_record_storage.py",
+      "sha256": "389e931a5ec85e98c15c609355408c63c0437c0f9fc52c146936ab99c48faad1"
+    },
+    {
+      "path": "tests/contract/test_starship_final_replay.py",
+      "sha256": "d17513931ba5dc824572d171ab1f5d7c20ab11dd65cbd6fa0b4806d1d40fac72"
+    },
+    {
+      "path": "tests/contract/test_starship_final_runtime_visual_smoke.py",
+      "sha256": "417197055c4e0035df2653337a48dea74931a3952e5c14db2069f1599a4082f9"
+    },
+    {
+      "path": "tests/contract/test_starship_final_saved_audit.py",
+      "sha256": "19c129bff92b24c3b00fb78a7fbece2cee7dbdd235f4b8faea1ae13981fb2bda"
+    },
+    {
+      "path": "tests/contract/test_starship_final_saved_qualification.py",
+      "sha256": "db482e62f090a27b9ee0d894247cd1401ee9cfec9835a18f974d79a83ffe22ed"
+    },
+    {
+      "path": "tests/contract/test_starship_final_sensor_agent.py",
+      "sha256": "f9e1fbdc18927eeac93727e15c7f5a7de3034808d4f194c8da0d4a28bd6090ef"
+    },
+    {
+      "path": "tests/contract/test_starship_final_sensor_execution.py",
+      "sha256": "cff7d02f708fb36bc191f7430c490b16cc13fa60219a7b3b0f9f9d17645647ed"
+    },
+    {
+      "path": "tests/contract/test_starship_final_sensor_guard.py",
+      "sha256": "705e117985f8781c59b77588e977c61fadd5899c253b945f652ced747f20d600"
+    },
+    {
+      "path": "tests/contract/test_starship_final_sensor_prediction.py",
+      "sha256": "f2b213523f1772761ab6d05216871b357b3a6439d736c7bb465a1ff3a74a0a48"
+    },
+    {
+      "path": "tests/contract/test_starship_final_shared.py",
+      "sha256": "cbcd7522f167a2471069aba90fd0394e54fdf81c37ff81c0ce08cd90e131018e"
+    },
+    {
+      "path": "tests/contract/test_starship_final_supervision_agent.py",
+      "sha256": "992dcc726be8f117ddcf7fefe771e1f1859e611de56371bd4ef7e9a9b4fcdef4"
+    },
+    {
+      "path": "tests/contract/test_starship_final_tasks.py",
+      "sha256": "801a2af78c1302e97e12ac4752b309ceab61298ad1141725cb0f70fd9464e837"
+    },
+    {
+      "path": "tests/contract/test_starship_final_timing.py",
+      "sha256": "7101c2bae3948c76d164791a2de13f692b0295aabae2c8d77fcf9c13eda25f41"
+    },
+    {
+      "path": "tests/contract/test_starship_final_timing_audit.py",
+      "sha256": "303697d28e1344e301c3b0744e5f04f2436c2a8f6c4e737cbd1e97ff1ae882c6"
+    },
+    {
+      "path": "tests/contract/test_starship_final_verifier.py",
+      "sha256": "50c82d45bc4c9195bb9eba2463f4f962375c4600c4c8484c551bb68df4ad1411"
+    },
+    {
+      "path": "tests/contract/test_starship_final_visual.py",
+      "sha256": "4d623a9a12b75c2ca85e4a411b45b677975fdfd0409f2faa78b282c8ff73a879"
+    },
+    {
+      "path": "tests/contract/test_starship_final_visual_counter.py",
+      "sha256": "af7500566bcea30b377fc2f34b7d6637ccf32b1f80e344fbe1ec0c2112741a72"
+    },
+    {
+      "path": "tests/contract/test_starship_final_visual_http_contract.py",
+      "sha256": "fa772ffa304e82dd1055f9af87229db8edbd33499d8e99d96dc2d70c815ff41d"
+    },
+    {
+      "path": "tests/contract/test_starship_final_visual_withhold_verifier.py",
+      "sha256": "b4c76c6b256788b1124a58454ed39c18c2e43c75aa3406acc9ca9e4903751561"
+    },
+    {
+      "path": "tests/contract/test_starship_inflight_approval.py",
+      "sha256": "a65f0a1efafad16ce275c4508e0bf9abd5084a8e09de2ecaf4fa51cebd086726"
+    },
+    {
+      "path": "tests/contract/test_starship_inflight_gateway.py",
+      "sha256": "6347671bd3e4c58b09cc78a59de5f1c8c1a358c6ff1b801fcbd58079c3b649dd"
+    },
+    {
+      "path": "tests/contract/test_starship_inflight_runtime.py",
+      "sha256": "f614d63c22f6bc3f63dc8d2a254ce78256d8424124315174ba3dacccf5e3690d"
+    },
+    {
+      "path": "tests/contract/test_starship_qualified_return.py",
+      "sha256": "86f6a52109d08b526d2253e5c2540e40e101682883dd0f76379ce813c213ccbe"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_admission.py",
+      "sha256": "ba80a0b303772ae271507f9a628dba59bdfb0ae3f36a399a3e9cb8076a5e893c"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_agent.py",
+      "sha256": "ac434ad02b1848d954cf34558be170237a863b1e6a262906b6034eaa187d575b"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_approval.py",
+      "sha256": "045cbd84d424f84df4f6443a9beaddc98f1ae4cf0fa5ebf68a0517ec01fbd3f3"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_approval_admission.py",
+      "sha256": "929adb108e4f48081997fdbd805aafc511e251a7b50f5118b906b65f3c88ba76"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_artifacts.py",
+      "sha256": "d9d9068bc2f9004d6e04abfe4d03e184b2fb786a14b84c35ad1f6470f69d1f7d"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_contract.py",
+      "sha256": "c4ac5ff24af914ffd9a41abc7dbd0a4cec36e6893f966d07b689deeb2b086753"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_coordinator.py",
+      "sha256": "db258f014492c99442067321bf8a4a4b82d3804cf3b31d5e0ad62461674d6506"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_decision_pipe.py",
+      "sha256": "4b50eb165d29fafe1ba82aed10fa5d5999c29e876d38c7f71d24ba8dfa699336"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_decision_review_pipe.py",
+      "sha256": "f2492e52f899fcb23567af3a375a493c734a55bd5fd35ecb023cb6aad3842b5a"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_dispatch_resources.py",
+      "sha256": "387b3a6f35fa26036e1a17153813d804b339456485e960f47603af2f0a182641"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_forecast_pool.py",
+      "sha256": "6e319d0539f04ac1f733fdbca3b3d3f78f3ce38cfe95274451b3c029345b64ca"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_integration.py",
+      "sha256": "1e91f8731921536c2b1e98d8075ece853e44db3732c3ae074ba37a2787da77ce"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_intent.py",
+      "sha256": "115caa5186c2e65537726526150e63513b0cd4ab43534c86b272c25b4e2d2916"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_intent_deployment.py",
+      "sha256": "18b87de8fcdba8e6b390529dd6866e1560431963a14e6427954f4153b43cb834"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native.py",
+      "sha256": "0a41181559a0fc6c983674cd2e363dfd697e2767f35e886ebbce06d37d0fee69"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_host.py",
+      "sha256": "6503d44ff7e49bdba86825c235feb377e2aa9adae621e9d0a43a9a78ec3abe98"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_host_budget.py",
+      "sha256": "765e75663485236247681aca897e08308de382260aaa2f6b913672b3aee4ec66"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_intent.py",
+      "sha256": "89a77450a116a3c0c4dfd92abb6be8d891de6ba3c4578ab601c9748cf97045e0"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_return_context.py",
+      "sha256": "81964a45ba382354c4b861189746b4b6a1a5b115050a44543ba31329d6b65b7e"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_return_review.py",
+      "sha256": "713670f6d6e28edacb178014654cb1e56bdc19a3449a2fd1bc0569ca9a8224e2"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_native_verifier.py",
+      "sha256": "e60b10afe12207bb1725851faf86fcc1c463989d944a04e1ddc24f98ac5ba178"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_operations.py",
+      "sha256": "95b176b43f64d12d64525c22e000a04659554874ea79c0fac45dbb36d372dd2f"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_outer.py",
+      "sha256": "ef3e679e653c34478a9446fb22169836147ba6502aff5f3aacd1e8e7a98fa6d7"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_prefix.py",
+      "sha256": "25c34a9668fab89c4801c455848fde000e3d95bb872493ffd4ecb9f7587b7d68"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_process_owner.py",
+      "sha256": "7eba2c90e0b30785c196ff15cc68b42c2879cef082a837f82bb989fddb0c28ea"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_return.py",
+      "sha256": "46350c3dfac51be494084b78f9d3d6cd3e86f6e295abe1f6e7bb146ea92d0808"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_return_context.py",
+      "sha256": "1c08a3861da102e6754167c83a4e6ff77a5b7b887971340e81d3d16af03fe5b6"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_return_context_boundary.py",
+      "sha256": "ba86173ccc2e33ca66909b31e588d435f9dd96b5a2e894624cffaed281a4fd97"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_return_review.py",
+      "sha256": "605241ea64de551c6a8cfdf1764fcd5ee141fda47dcd0215615e5d37800c75f6"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_review_consumers.py",
+      "sha256": "09b3bc07b6bd3d8defd92a80bf68cd661a628228f8a0054726dc5f47611f7556"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_verifier.py",
+      "sha256": "069454e41907790110f1e6e9d078f9e9339e441e4f070906e78db61e396cf23f"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_verifier_integration.py",
+      "sha256": "a0b886674ac5ecabc874350fa5aaec23f77e38cb6774362d66aef763ac25ab16"
+    },
+    {
+      "path": "tests/contract/test_starship_restored_wait.py",
+      "sha256": "dacfc13243f5b6815a2010455dffe585b5de42a4e73acb0304c9c1718abc73bf"
+    },
+    {
+      "path": "tests/contract/test_starship_state_mission.py",
+      "sha256": "b840bca1416bf90982e090eec6fb1e0f115438b1430b7ff113a08684104c89b5"
+    },
+    {
+      "path": "tests/contract/test_starship_state_mission_metrics.py",
+      "sha256": "d914133bdd795b9140b0676f0db9f5a484090d32f594053533c8cb03e031a83f"
+    },
+    {
+      "path": "tests/fixtures/starship/restored-numerics-diagnostic-source.py.txt",
+      "sha256": "1100d0be24aca4d766fdc674fa5d54525bf4d28071e7060470c6144ae8175c9e"
+    }
+  ],
+  "private_outputs_imported": false,
+  "public_adaptations": [
+    {
+      "path": "tests/contract/test_starship_deployment_forecast.py",
+      "reason": "old_certificate_must_reject_changed_public_source_instead_of_assuming_still_qualified",
+      "sha256": "10834a87c73ff83e6da659b744761bf0124cbc16ceadfe4738f2583705a53a0f"
+    },
+    {
+      "path": "tests/contract/test_starship_replanning.py",
+      "reason": "scoped synthetic qualification for approval_receipt_UI tests_only; unpatched refusal asserted",
+      "sha256": "7886f4618cf5f750f56484ff182207155d35f0e6bb8bfe4b9d30b6637f93e2fd"
+    },
+    {
+      "path": "tests/contract/test_starship_m3_fixture.py",
+      "reason": "scoped synthetic prerequisite to reach directory setup; test stops before first physics step",
+      "sha256": "c52f260a9c79f11e36db718e3426f9e8cc4b89258f73b8664012d7356001cc57"
+    },
+    {
+      "path": "src/runtime/starship_jev_shadow.py",
+      "reason": "finished worker signal race only; no control, qualification or threshold change",
+      "sha256": "affd064167f4f9b46df984c6bf534546503c473c76a39555d0d8dae229961109"
+    },
+    {
+      "path": "tests/contract/test_starship_jev_shadow_control.py",
+      "reason": "force exit-during-signal, live-denial and already-exited cases",
+      "sha256": "8a461ba3a40c01a3bf8722055a04fcae1354e6f09c510de6de167c8b0ff5dfb3"
+    },
+    {
+      "path": "tests/contract/test_smoke_inventory.py",
+      "reason": "expect explicitly classified 129 scripts after eight additions",
+      "sha256": "10fe10a35c9ce6e2638350a4569ab0dcaad4c813efb4cb3fa1f31d446aed028e"
+    },
+    {
+      "path": "scripts/smoke_inventory.toml",
+      "reason": "classify eight new Starship opt-in boundary scripts",
+      "sha256": "d50b04c6fe0ba9ba9365f9a6522589c9d710efafa3648d9faae69518d1edaa40"
+    }
+  ],
+  "public_baseline": "bdf95820dce250f460b4bc2148b77ab962bcf341",
+  "reviewed_summary_paths": [
+    "docs/assets/starship-final-chunked-qualification-20261024/results.json",
+    "docs/assets/starship-current-return-admission-20261024/results.json"
+  ],
+  "schema": "missionos.starship_selected_public_port.v1",
+  "selected_source_commit": "5d23fa48056b86bbcc8789ffd3c14880f9c39453",
+  "source_identity_is_qualification": false
+}

@@ -1,0 +1,810 @@
+{
+  "schema": "missionos.starship_incident_catalog.v1",
+  "researched_at": "2026-10-13",
+  "scope": {
+    "program": "Starship integrated flight tests",
+    "flight_range": [
+      1,
+      14
+    ],
+    "latest_completed_flight_verified": 14,
+    "date_basis": "Launch calendar date at Starbase, Texas.",
+    "latest_flight_source_urls": [
+      "https://www.spacex.com/launches",
+      "https://www.spacex.com/launches/starship-flight-14"
+    ],
+    "excludes": [
+      "Prototype hops and high-altitude SN tests",
+      "Ground-test incidents, including Ship 36",
+      "Unflown plans"
+    ]
+  },
+  "interpretation": {
+    "observed": "Publicly reported behavior; not an independent telemetry reconstruction.",
+    "reported_cause": "Source attribution retains provisional language. Null means no cause established by the selected sources.",
+    "event_classification": "Technical event classification is separate from whether FAA required a mishap investigation.",
+    "planned_test_events": "Intentional stress, disposition and destructive demonstrations are not automatic evidence of an unexpected failure.",
+    "simulation_mapping": "A candidate abstraction for the local simulator. It does not assert that SpaceX's physical cause or complete flight has been reproduced.",
+    "probabilities": "Scenario weights, timing and severity are test-design controls, not estimated Starship failure probabilities.",
+    "empty_incidents": "No unexpected anomaly verified in the selected official narrative; not proof that every subsystem was fault-free."
+  },
+  "simulation_scope": {
+    "families": [
+      "ascent_engine_out",
+      "ship_engine_out",
+      "rcs_channel_loss",
+      "flap_jam",
+      "payload_jam",
+      "tower_unavailable",
+      "booster_restart_failure"
+    ],
+    "unsupported_physics": [
+      "Thermal transport and heatshield burn-through",
+      "Propellant leaks, slosh and fluid-system pressure",
+      "Fire, combustion and explosions",
+      "Structural fracture and debris propagation"
+    ],
+    "limits": [
+      "Engine, RCS and mechanism state changes represent bounded consequences only.",
+      "The catalog does not validate exact Starship mass, engine performance, aerodynamics or orbital dynamics.",
+      "Historical flight-control-team decisions are not evidence of LLM or MissionOS control.",
+      "Proposal, authorization, constraint checking, execution and verified outcome remain distinct."
+    ],
+    "historical_mapping_status": {
+      "flap_jam": "No verified primary mapping in this catalog. Synthetic scenario only; excluded from historically sourced defaults."
+    }
+  },
+  "flights": [
+    {
+      "flight_number": 1,
+      "date": "2023-04-20",
+      "summary": "Control loss, delayed destruction and pad damage.",
+      "incidents": [
+        {
+          "id": "ift01_control_loss",
+          "observed": "Vehicle control was lost.",
+          "reported_cause": "Propellant leakage, fire and lost engine communications.",
+          "cause_status": "reported_by_operator",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ascent_engine_out",
+              "status": "consequence_only",
+              "note": "Engine unavailability is a consequence proxy; fire and common-mode communications are unsupported."
+            }
+          ],
+          "limitations": [
+            "Do not recast the separately planned electric thrust-vector-control upgrade as proof of a TVC failure."
+          ]
+        },
+        {
+          "id": "ift01_termination_delay",
+          "observed": "Flight-termination response was delayed.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "simulation_mapping": [],
+          "limitations": [
+            "Flight-termination dynamics are unsupported."
+          ]
+        },
+        {
+          "id": "ift01_pad_damage",
+          "observed": "Launch-pad foundation damaged.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/faa-closes-spacex-starship-mishap-investigation"
+          ],
+          "simulation_mapping": [],
+          "limitations": [
+            "Pad fracture and debris propagation are unsupported; this does not justify an in-flight tower-health injection."
+          ]
+        }
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": [
+        {
+          "note": "FAA closed the investigation September 8, 2023.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/faa-closes-spacex-starship-mishap-investigation"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 2,
+      "date": "2023-11-18",
+      "summary": "Both stages lost.",
+      "incidents": [
+        {
+          "id": "ift02_booster_loss",
+          "observed": "Booster lost during boostback.",
+          "reported_cause": "Most likely: oxidizer-filter blockage.",
+          "cause_status": "most_likely",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Use unavailable engines only; feed-system physics are unsupported."
+            }
+          ],
+          "limitations": []
+        },
+        {
+          "id": "ift02_ship_loss",
+          "observed": "Ship lost during ascent.",
+          "reported_cause": "Leak and fire during oxidizer venting.",
+          "cause_status": "reported_by_operator",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ship_engine_out",
+              "status": "consequence_only",
+              "note": "Represent thrust loss only; leakage, fire and flight termination are unsupported."
+            }
+          ],
+          "limitations": []
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Oxidizer venting was intentional; vehicle loss was not.",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ]
+        }
+      ],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 3,
+      "date": "2024-03-14",
+      "summary": "Booster thrust shortfall; ship attitude loss.",
+      "incidents": [
+        {
+          "id": "ift03_booster_thrust_shortfall",
+          "observed": "Booster recovery thrust was insufficient.",
+          "reported_cause": "Continuing oxidizer-filter blockage.",
+          "cause_status": "reported_by_operator",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://new.spacex.com/updates"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Unavailable engines are a consequence proxy; filter physics are unsupported."
+            }
+          ],
+          "limitations": []
+        },
+        {
+          "id": "ift03_ship_roll_control",
+          "observed": "Ship lost roll control.",
+          "reported_cause": "Most likely: roll-control-valve blockage.",
+          "cause_status": "most_likely",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://new.spacex.com/updates"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "rcs_channel_loss",
+              "status": "consequence_only",
+              "note": "Represent lost attitude-control authority; no valve or fluid-system reconstruction."
+            }
+          ],
+          "limitations": [
+            "The planned in-space relight was skipped for attitude conditions, not attempted and failed."
+          ]
+        }
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 4,
+      "date": "2024-06-06",
+      "summary": "Controlled reentry and both soft splashdowns reported.",
+      "incidents": [],
+      "note": "The inspected official postflight narrative does not establish the often-reported individual flap/heatshield damage or engine-out details. Those claims are excluded pending a verified primary passage.",
+      "source_urls": [
+        "https://www.spacex.com/launches/starship-flight-4"
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": [
+        {
+          "note": "Preflight test-induced-damage exceptions do not establish that a particular failure occurred.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 5,
+      "date": "2024-10-13",
+      "summary": "First booster catch and planned ship splashdown.",
+      "incidents": [],
+      "note": "No unexpected anomaly verified in the selected official narrative; retain as an outcome/control entry.",
+      "source_urls": [
+        "https://www.youtube.com/watch?v=hI9HQfCAw64"
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 6,
+      "date": "2024-11-19",
+      "summary": "Tower check prevented catch; booster diverted and soft-splashed.",
+      "incidents": [
+        {
+          "id": "ift06_tower_health_catch_abort",
+          "observed": "A critical tower-hardware health check stopped the catch attempt; the booster executed the preplanned ocean divert.",
+          "reported_cause": "Tower health-check failure; specific component cause not established here.",
+          "cause_status": "reported_condition",
+          "event_classification": "unexpected_ground_condition_with_planned_contingency",
+          "source_urls": [
+            "https://www.youtube.com/watch?v=CMGiNKcVSek"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "tower_unavailable",
+              "status": "consequence_only",
+              "note": "Represent unavailable recovery infrastructure and the catch/divert decision."
+            }
+          ],
+          "limitations": [
+            "Do not infer antenna, sensor or communication hardware damage without an additional primary source."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Intentional thermal-protection and high-angle-of-attack tests are separate from the catch abort.",
+          "source_urls": [
+            "https://www.youtube.com/watch?v=CMGiNKcVSek"
+          ]
+        }
+      ],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 7,
+      "date": "2025-01-16",
+      "summary": "Ship lost; booster caught.",
+      "incidents": [
+        {
+          "id": "ift07_ship_loss",
+          "observed": "Ship lost during ascent.",
+          "reported_cause": "Probable: vibration-induced propulsion-hardware failure.",
+          "cause_status": "probable",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ship_engine_out",
+              "status": "consequence_only",
+              "note": "Thrust loss is a consequence proxy; vibration, leakage, combustion and breakup are unsupported."
+            }
+          ],
+          "limitations": [
+            "Keep this mechanism distinct from Flight 8."
+          ]
+        },
+        {
+          "id": "ift07_booster_start_abort",
+          "observed": "One boostback engine startup aborted; it later restarted.",
+          "reported_cause": "Low ignition-system power.",
+          "cause_status": "reported_by_operator",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/starship-2025-report"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Temporary restart availability loss; ignition physics are unsupported."
+            }
+          ],
+          "limitations": []
+        }
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": [
+        {
+          "note": "Investigation closed March 28, 2025; FAA announced closure March 31.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 8,
+      "date": "2025-03-06",
+      "summary": "Ship lost; booster caught with relight shortfalls.",
+      "incidents": [
+        {
+          "id": "ift08_ship_loss",
+          "observed": "Ship lost during ascent.",
+          "reported_cause": "Probable: Raptor hardware failure caused propellant mixing and ignition.",
+          "cause_status": "probable",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ship_engine_out",
+              "status": "consequence_only",
+              "note": "Represent thrust loss only; physical hardware failure and combustion are unsupported."
+            }
+          ],
+          "limitations": []
+        },
+        {
+          "id": "ift08_booster_ignition_shortfall",
+          "observed": "Boostback lit 11/13 engines; landing lit 12/13.",
+          "reported_cause": "Most probable: local igniter thermal conditions.",
+          "cause_status": "most_probable",
+          "event_classification": "unexpected_anomaly",
+          "source_urls": [
+            "https://www.spacex.com/updates/reusability"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Represent restart availability only; igniter thermal physics are unsupported."
+            }
+          ],
+          "limitations": []
+        }
+      ],
+      "planned_test_events": [],
+      "regulatory_notes": [
+        {
+          "note": "FAA investigation closed June 12, 2025.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 9,
+      "date": "2025-05-27",
+      "summary": "Upper stage lost after pressure and attitude anomalies; booster lost during its landing burn.",
+      "incidents": [
+        {
+          "id": "ift09_booster_structural_loss",
+          "observed": "Twelve of thirteen landing engines relit; an aft energetic event preceded telemetry loss.",
+          "reported_cause": "Most probable: increased descent loads exceeded fuel-transfer-tube capability, allowing propellant mixing and ignition.",
+          "cause_status": "most_probable",
+          "event_classification": "unexpected_loss_during_planned_stress_test",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Reduced landing thrust is only a consequence proxy; structural failure and combustion are unsupported."
+            }
+          ],
+          "limitations": [
+            "The higher-angle-of-attack experiment was intentional; the precise failure chain is reported as most probable."
+          ]
+        },
+        {
+          "id": "ift09_ship_pressure_attitude_payload",
+          "observed": "Fuel-tank pressure fell while nosecone pressure rose. Attitude error and door loads prevented payload deployment; passivation skipped the relight. Entry telemetry was lost.",
+          "reported_cause": "Most probable: failure of the main fuel-tank pressurization diffuser.",
+          "cause_status": "most_probable",
+          "event_classification": "unexpected_vehicle_loss",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "rcs_channel_loss",
+              "status": "consequence_only",
+              "note": "Represent degraded attitude authority only; no leak-pressure dynamics."
+            },
+            {
+              "family": "payload_jam",
+              "status": "consequence_only",
+              "note": "Represent unavailable deployment only; not the historical door-pressure mechanism."
+            }
+          ],
+          "limitations": [
+            "RCS was used to reduce the error; this source does not identify an RCS hardware failure.",
+            "No flight-termination-system activation was reported."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Higher-angle-of-attack booster descent and ocean splashdown target.",
+          "source_urls": [
+            "https://www.spacex.com/updates#flight-9-report"
+          ]
+        }
+      ],
+      "regulatory_notes": [
+        {
+          "note": "FAA investigated the upper-stage loss; booster loss fell within an approved test-induced-damage exception. Investigation closed August 15, 2025.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 10,
+      "date": "2025-08-26",
+      "summary": "SpaceX reported all major objectives achieved, including payload demonstration, in-space relight and both ocean splashdowns.",
+      "incidents": [],
+      "note": "No unexpected anomaly is established by the selected official postflight narrative; this is not a claim that every subsystem was fault-free.",
+      "planned_test_events": [
+        {
+          "event": "A center engine was deliberately disabled during booster landing; a middle-ring engine provided backup.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-10"
+          ]
+        },
+        {
+          "event": "Heatshield and structure were intentionally stressed; ship soft splashdown was planned.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-10"
+          ]
+        }
+      ],
+      "source_urls": [
+        "https://www.spacex.com/launches/starship-flight-10"
+      ],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 11,
+      "date": "2025-10-13",
+      "summary": "All major objectives achieved; both vehicles completed planned ocean splashdowns.",
+      "incidents": [
+        {
+          "id": "ift11_booster_boostback_relight",
+          "observed": "One of thirteen planned boostback engines did not relight; all thirteen later ignited for landing.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_relight_shortfall_with_recovery",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-11"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Temporary engine unavailability with later recovery; engine startup physics are unsupported."
+            }
+          ],
+          "limitations": [
+            "The public narrative does not identify the underlying mechanical cause."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Booster landing-profile experiment and intentional upper-stage heatshield stress and banking maneuver.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-11"
+          ]
+        }
+      ],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 12,
+      "date": "2026-05-22",
+      "summary": "Upper stage reached its planned trajectory despite engine loss and splashed down; booster recovery failed.",
+      "incidents": [
+        {
+          "id": "ift12_booster_engine_and_recovery",
+          "observed": "One ascent engine stopped. Incomplete boostback ignition led to early cutoff; landing ignition was attempted before a hard splashdown.",
+          "reported_cause": "FAA accepted heat effects on propulsion components during ascent and erroneous engine-alarm settings as two most-probable causes of booster loss.",
+          "cause_status": "most_probable",
+          "event_classification": "unexpected_booster_loss",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12",
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ascent_engine_out",
+              "status": "consequence_only",
+              "note": "Represent ascent engine unavailability only, not the physical failure mechanism."
+            },
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Represent unavailable engines and thrust consequences; thermal and alarm-system mechanisms are unsupported."
+            }
+          ],
+          "limitations": [
+            "Do not assign each individual engine event to one specific cause without further evidence."
+          ]
+        },
+        {
+          "id": "ift12_ship_vacuum_engine_loss",
+          "observed": "One vacuum engine was lost during ascent; engine-out operation still achieved the planned trajectory. Landing used two engines.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_engine_loss_with_trajectory_recovery",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ship_engine_out",
+              "status": "consequence_only",
+              "note": "Reduced available thrust is a proxy; the local simulator is not a calibrated V3 vehicle model."
+            }
+          ],
+          "limitations": [
+            "The selected official postflight narrative does not explain the vacuum-engine failure or establish why landing used two engines."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Suborbital payload demonstration, rear-flap structural stress, banking maneuver and ocean splashdown were planned tests.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-12"
+          ]
+        }
+      ],
+      "regulatory_notes": [
+        {
+          "note": "FAA classified booster return as a mishap on May 27; investigation closed July 13, 2026.",
+          "source_urls": [
+            "https://www.faa.gov/newsroom/statements/general-statements"
+          ]
+        }
+      ]
+    },
+    {
+      "flight_number": 13,
+      "date": "2026-07-24",
+      "summary": "Booster hard-splashed after incomplete recovery burns; ship deployed its test payload and splashed down intact.",
+      "incidents": [
+        {
+          "id": "ift13_booster_boostback_and_landing",
+          "observed": "Boostback ended early; only a subset of landing engines relit before a hard splashdown.",
+          "reported_cause": "SpaceX's Flight 14 preflight account described signs of ice clogging in three center engines late in Flight 13 boostback.",
+          "cause_status": "reported_indication",
+          "event_classification": "unexpected_recovery_failure",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-13",
+            "https://www.spacex.com/launches/starship-flight-14?tblci=Giro+d"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Represent engine availability loss only; ice formation, filtration and feed-system physics are unsupported."
+            }
+          ],
+          "limitations": [
+            "Cause detail comes from a search-indexed preflight edition of the official Flight 14 page; its current canonical narrative has been replaced by the postflight report.",
+            "Signs of ice clogging are not an independently verified complete root-cause chain."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Twenty satellites were deployed suborbitally for a test and expected to demise on reentry; this was not failure to place an operational constellation in orbit.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-13"
+          ]
+        }
+      ],
+      "regulatory_notes": []
+    },
+    {
+      "flight_number": 14,
+      "date": "2026-09-28",
+      "summary": "First orbital flight; deployed 26 satellites and returned to an alternate, pre-coordinated Pacific zone.",
+      "incidents": [
+        {
+          "id": "ift14_booster_engine_shortfalls",
+          "observed": "One ascent engine stopped; 31 of 33 planned boostback engines and 11 of 13 landing engines relit.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_engine_availability_shortfall",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ascent_engine_out",
+              "status": "consequence_only",
+              "note": "Represent ascent engine unavailability only, not the physical failure mechanism."
+            },
+            {
+              "family": "booster_restart_failure",
+              "status": "consequence_only",
+              "note": "Represent reduced engine availability only; no exact multi-engine V3 reconstruction."
+            }
+          ],
+          "limitations": [
+            "The published narrative does not establish root causes."
+          ]
+        },
+        {
+          "id": "ift14_ship_engine_loss_and_early_return",
+          "observed": "A vacuum engine stopped early. Longer operation of the other five engines compensated. Controllers shortened orbital duration and completed alternate-zone deorbit and splashdown.",
+          "reported_cause": null,
+          "cause_status": "not_reported",
+          "event_classification": "unexpected_engine_loss_with_mission_replan",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ],
+          "simulation_mapping": [
+            {
+              "family": "ship_engine_out",
+              "status": "consequence_only",
+              "note": "Use reduced thrust as a mission-replanning stimulus, not as a validated replay of this flight."
+            }
+          ],
+          "limitations": [
+            "No claim about exact vehicle masses, engine parameters or reproduced orbital dynamics.",
+            "Health assessment, permission to proceed, execution and observed splashdown are separate facts."
+          ]
+        }
+      ],
+      "planned_test_events": [
+        {
+          "event": "Booster oxidizer depletion experiment and flight-termination-system demonstration after landing-burn shutdown were deliberate.",
+          "source_urls": [
+            "https://www.spacex.com/launches/starship-flight-14"
+          ]
+        }
+      ],
+      "regulatory_notes": []
+    }
+  ],
+  "sources": [
+    {
+      "id": "source_01",
+      "url": "https://new.spacex.com/updates",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_02",
+      "url": "https://www.faa.gov/newsroom/faa-closes-spacex-starship-mishap-investigation",
+      "publisher": "Federal Aviation Administration",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_03",
+      "url": "https://www.faa.gov/newsroom/statements/general-statements",
+      "publisher": "Federal Aviation Administration",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_04",
+      "url": "https://www.spacex.com/launches",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_05",
+      "url": "https://www.spacex.com/launches/starship-flight-10",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_06",
+      "url": "https://www.spacex.com/launches/starship-flight-11",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_07",
+      "url": "https://www.spacex.com/launches/starship-flight-12",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_08",
+      "url": "https://www.spacex.com/launches/starship-flight-13",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_09",
+      "url": "https://www.spacex.com/launches/starship-flight-14",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_10",
+      "url": "https://www.spacex.com/launches/starship-flight-14?tblci=Giro+d",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13",
+      "edition_note": "Search-indexed Flight 14 preflight text; current canonical page is the postflight report."
+    },
+    {
+      "id": "source_11",
+      "url": "https://www.spacex.com/launches/starship-flight-4",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_12",
+      "url": "https://www.spacex.com/updates#flight-9-report",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_13",
+      "url": "https://www.spacex.com/updates/reusability",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_14",
+      "url": "https://www.spacex.com/updates/starship-2025-report",
+      "publisher": "SpaceX",
+      "source_type": "official_webpage",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_15",
+      "url": "https://www.youtube.com/watch?v=CMGiNKcVSek",
+      "publisher": "SpaceX",
+      "source_type": "official_video_description",
+      "accessed_at": "2026-10-13"
+    },
+    {
+      "id": "source_16",
+      "url": "https://www.youtube.com/watch?v=hI9HQfCAw64",
+      "publisher": "SpaceX",
+      "source_type": "official_video_description",
+      "accessed_at": "2026-10-13"
+    }
+  ]
+}

@@ -20,6 +20,10 @@ from .starship_ship_return import ReturnController, control_interval, record_sam
 from .starship_flight_supervision import FlightSupervision
 from .starship_retained_return import CONDITIONED_POLICY_ID, TRIMMED_POLICY_ID, new_record
 from .starship_wind import wind_from_profile
+from .starship_ascent import (AscentController, AscentObjectives, AscentCoastOrbitObjectives,
+                             AscentScreenSettings, AscentControlOptions, StateInsertionOptions,
+                             ExperimentalMissionAscentSettings)
+from .starship_ascent_control import AscentControlRuntime
 
 
 def _vec(v):
@@ -331,10 +335,62 @@ def _sample(s, v, phase, command=None, diagnostics=None):
     return result
 
 
-def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+def _simulate_steps(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
              booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
-             _development_return_qualification=None):
+             _development_return_qualification=None, _defer_booster=False, _defer_director_finish=False, deployment_permission=None, _trouble_engine=None, _trouble_control=None,
+             visual_runtime=None, _ascent_screen=None, _experimental_ascent_origin=None,
+             _experimental_mission_ascent=None, restored_runtime=None):
     """Run continuous 6DOF. Short initialized cases are clearly separate flights."""
+    if _ascent_screen is not None and (type(_ascent_screen) is not AscentScreenSettings
+            or not _ascent_screen.finite_mode or scenario != "launch" or dt_scale != 1.
+            or return_policy != "fixed_v1" or booster_policy != "fixed_v1" or not _defer_booster
+            or any(x is not None for x in (supervision, catch_config, mission_director, mission_case,
+                return_sites, splashdown_goal, _development_return_qualification, deployment_permission,
+                _trouble_engine, _trouble_control, visual_runtime, _experimental_ascent_origin,
+                _experimental_mission_ascent, restored_runtime))):
+        raise ValueError("ascent_screen_cannot_borrow_mission_execution_scopes")
+    if _experimental_ascent_origin is not None:
+        from .starship_experimental_continuation import ExperimentalAscentOrigin, development_settings
+        from .starship_state_insertion_continuation import StateInsertionOrigin
+        if (type(_experimental_ascent_origin) not in (ExperimentalAscentOrigin, StateInsertionOrigin) or _ascent_screen is not None
+                or _experimental_mission_ascent is not None or restored_runtime is not None
+                or scenario != "launch" or dt_scale != 1. or return_policy != TRIMMED_POLICY_ID
+                or booster_policy != "fixed_v1" or not _defer_booster or _defer_director_finish
+                or _development_return_qualification != development_settings()
+                or any(x is not None for x in (supervision, catch_config, mission_director, mission_case,
+                    return_sites, splashdown_goal, deployment_permission, _trouble_engine, _trouble_control, visual_runtime))):
+            raise ValueError("experimental_ascent_origin_cannot_borrow_execution_scopes")
+        _experimental_ascent_origin.validate_profile(profile)
+        if (type(duration_s) not in (int, float) or not math.isfinite(duration_s)
+                or not _experimental_ascent_origin.record()["return_request_time_s"] < duration_s
+                <= _experimental_ascent_origin.time_s+6000.):
+            raise ValueError("invalid_experimental_continuation_absolute_horizon")
+    experimental_state_mission = False
+    if _experimental_mission_ascent is not None:
+        from .starship_experimental_continuation import development_settings
+        from .starship_state_mission import ExperimentalStateMissionAscentSettings
+        experimental_state_mission = type(_experimental_mission_ascent) is ExperimentalStateMissionAscentSettings
+        if (type(_experimental_mission_ascent) not in (ExperimentalMissionAscentSettings, ExperimentalStateMissionAscentSettings)
+                or _ascent_screen is not None or _experimental_ascent_origin is not None
+                or scenario != "launch" or dt_scale != 1. or return_policy != TRIMMED_POLICY_ID
+                or booster_policy != "fixed_v1" or not _defer_booster or not _defer_director_finish
+                or _development_return_qualification != development_settings()
+                or any(x is not None for x in (supervision, catch_config, mission_director, mission_case,
+                    return_sites, splashdown_goal, deployment_permission, _trouble_engine, _trouble_control, visual_runtime))):
+            raise ValueError("experimental_mission_ascent_cannot_borrow_execution_scopes")
+        _experimental_mission_ascent.validate_profile(profile)
+        if (type(duration_s) not in (int, float) or not math.isfinite(duration_s)
+                or not 3336. < duration_s <= min(7500., profile["integration"]["max_duration_s"])):
+            raise ValueError("invalid_experimental_mission_absolute_horizon")
+    if restored_runtime is not None:
+        from .starship_restored_prefix import RestoredPrefixRuntime
+        if (type(restored_runtime) is not RestoredPrefixRuntime or not experimental_state_mission
+                or any(x is not None for x in (supervision, catch_config, mission_director, mission_case,
+                    return_sites, splashdown_goal, deployment_permission, _trouble_engine, _trouble_control, visual_runtime))):
+            raise ValueError("restored_prefix_cannot_borrow_execution_scopes")
+        restored_runtime.begin(profile, _experimental_mission_ascent, duration_s)
+    if deployment_permission is not None and (not callable(deployment_permission) or scenario != "launch"):
+        raise ValueError("deployment_permission_requires_launch_callable")
     if scenario not in ("launch", "engine_out", "entry_perturbation", "gimbal_step", "flap_asymmetry", "deployment_no_effect", "terminal_engine_out"):
         raise ValueError("unknown 6DOF scenario")
     if booster_policy not in ("fixed_v1", "predictive_return_v1"):
@@ -354,6 +410,27 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         raise ValueError("mission director requires its explicit launch case")
     if mission_director is not None and mission_director.envelope.get("splashdown_goal") != (splashdown_goal.to_dict() if splashdown_goal is not None else None):
         raise ValueError("unapproved_splashdown_goal")
+    unified = False
+    if visual_runtime is not None and getattr(visual_runtime, "composition", None) is not None:
+        from .starship_unified_contract import validate_runtime
+        validate_runtime(visual_runtime, mission_director, deployment_permission, _trouble_engine, profile)
+        unified = True
+        if supervision is not None or _trouble_control is not None or _development_return_qualification is not None or catch_config is not None:
+            raise ValueError("unified_cannot_borrow_other_execution_scopes")
+    if visual_runtime is not None and not unified:
+        from .starship_visual_director import VisualRuntime, VisualDeploymentDirector
+        if (type(visual_runtime) is not VisualRuntime or type(mission_director) is not VisualDeploymentDirector
+                or mission_director.visual_runtime is not visual_runtime or scenario != "launch"
+                or _trouble_engine is not None or _trouble_control is not None or supervision is not None
+                or deployment_permission is not None or _development_return_qualification is not None):
+            raise ValueError("visual_runtime_requires_bound_deployment_director")
+    # Fault trials are a separate experimental plant domain. The existing
+    # approval envelopes and empirical return certificate do not cover faults.
+    if _trouble_engine is not None and not unified and (scenario != "launch" or return_policy != "fixed_v1"
+            or booster_policy != "fixed_v1" or any(x is not None for x in
+                (mission_director, supervision, _development_return_qualification, mission_case,
+                 deployment_permission, return_sites, splashdown_goal, catch_config))):
+        raise ValueError("trouble_trial_requires_unqualified_standalone_launch")
     development = _development_return_qualification
     registered_return = False
     qualification_identity = None
@@ -380,34 +457,61 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     if return_policy != "fixed_v1" and scenario != "deployment_no_effect" and development is None and not registered_return:
         raise ValueError("retained return policy requires deployment_no_effect")
     return_controller = None
+    ascent_settings = (_experimental_mission_ascent.ascent if _experimental_mission_ascent is not None else _ascent_screen)
+    ascent_controller = AscentController(ascent_settings)
+    ascent_controller.validate_profile(profile)
+    ascent_transition_witnesses = []
+    ascent_cutoff_measurement = None
+    ascent_first_cutoff_measurement = None
+    experimental_insertion_vehicle = None
+    experimental_schedule = None
+    experimental_settled_measurement = None
+    ascent_trace_record = None
+    ascent_handoff_completed = False
     if not math.isfinite(dt_scale) or not 0 < dt_scale <= 2:
         raise ValueError("dt_scale must be in (0,2]")
     p, g = profile, profile["guidance"]
     ship, booster = vehicle(p), vehicle(p, "booster")
-    v = stack_vehicle(p, ship, booster) if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else ship
-    phase = "stack_ascent" if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else scenario
     initial = p["perturbation_initial_state"]
-    initial_altitude = dyn.mass_properties(v, v.propellant_capacity_kg).com_body_m[2]+p["launch"]["release_base_altitude_m"] if phase == "stack_ascent" else initial["altitude_m"]
-    base = env.surface_state(p["launch"]["latitude_deg"], p["launch"]["longitude_deg"], initial_altitude, v.propellant_capacity_kg)
-    up, east, north = env.local_frame(base)
-    q = _attitude(up, north)
-    fuel = v.propellant_capacity_kg
-    velocity, omega = base.v, dyn.inverse_rotate(q, (0., 0., env.EARTH_ROTATION_RAD_S))
-    if phase != "stack_ascent":
-        fuel = initial["propellant_kg"]
-        velocity = env.add(base.v, env.add(env.scale(east, initial["east_speed_mps"]), env.scale(up, initial["vertical_speed_mps"])))
-        q = _attitude(east, north)
-        omega = tuple(math.radians(x) for x in initial["body_rate_deg_s"])
-    s = dyn.State6DOF(0., base.r, velocity, q, omega, fuel,
-                      tuple(dyn.EngineState(throttle=1. if phase == "stack_ascent" and p["launch"]["main_engines_initially_spooled"] and "main" in e.name else 0.) for e in v.engines),
-                      tuple(0. for _ in v.aero_panels))
+    continuation_origin = None
+    if _experimental_ascent_origin is None:
+        v = stack_vehicle(p, ship, booster) if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else ship
+        phase = "stack_ascent" if scenario in ("launch", "engine_out", "deployment_no_effect", "terminal_engine_out") else scenario
+        initial_altitude = dyn.mass_properties(v, v.propellant_capacity_kg).com_body_m[2]+p["launch"]["release_base_altitude_m"] if phase == "stack_ascent" else initial["altitude_m"]
+        base = env.surface_state(p["launch"]["latitude_deg"], p["launch"]["longitude_deg"], initial_altitude, v.propellant_capacity_kg)
+        up, east, north = env.local_frame(base)
+        q = _attitude(up, north)
+        fuel = v.propellant_capacity_kg
+        velocity, omega = base.v, dyn.inverse_rotate(q, (0., 0., env.EARTH_ROTATION_RAD_S))
+        if phase != "stack_ascent":
+            fuel = initial["propellant_kg"]
+            velocity = env.add(base.v, env.add(env.scale(east, initial["east_speed_mps"]), env.scale(up, initial["vertical_speed_mps"])))
+            q = _attitude(east, north)
+            omega = tuple(math.radians(x) for x in initial["body_rate_deg_s"])
+        s = dyn.State6DOF(0., base.r, velocity, q, omega, fuel,
+                          tuple(dyn.EngineState(throttle=1. if phase == "stack_ascent" and p["launch"]["main_engines_initially_spooled"] and "main" in e.name else 0.) for e in v.engines),
+                          tuple(0. for _ in v.aero_panels))
+    else:
+        continuation_origin = _experimental_ascent_origin.record()
+        s = dyn.state_from_dict(continuation_origin["state"])
+        v = dyn.vehicle_from_dict(continuation_origin["vehicle"])
+        phase = "orbital_coast"
+        initial_altitude = dyn.observe(s, v)["altitude_m"]
     limit = float(duration_s if duration_s is not None else p["integration"]["max_duration_s"] if phase == "stack_ascent" else 30.)
     if not math.isfinite(limit) or limit <= 0:
         raise ValueError("duration must be finite positive")
     events, samples, steps = [], [], 0
+    final_supervision_actual_witnesses = []
+    ascent_control_runtime = (AscentControlRuntime(ascent_settings, p)
+                              if ascent_controller.control_trace_mode else None)
+    registered_ascent_limit = limit
+    insertion_shutdown_until_s = None
     satellites = []
     max_altitude, max_rate, max_error, released = initial_altitude, 0., 0., 0
     stage_state, orbit_time, next_release = None, None, None
+    separation_for_scheduler = None
+    deployment_withheld = False
+    trouble_return_inhibited = False
     return_time, failed_engine, termination = None, False, "time_limit"
     contact_receipt = None
     sequencer_state, release_attempts, release_acknowledged = None, 0, False
@@ -418,52 +522,183 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     return_observation_started = None
     return_halt_started = None
     return_execution_checks = []
+    if continuation_origin is not None:
+        # A controller phase changes; the actual source state and every finite
+        # actuator are imported verbatim, with an absolute clock and inventory.
+        samples.append(_sample(s, v, continuation_origin["source_phase"]))
+        max_rate = env.norm(s.omega_body_rad_s)
+        orbit_time = continuation_origin["final_gate_time_s"]
+        next_release = continuation_origin["first_release_time_s"]
+        return_time = continuation_origin["return_request_time_s"]
+        next_sample = s.time_s
     def director_observation():
         from .starship_mission_director import fuel_sensor
         # This proxy is distinct from the plant log. The provider gets bounded
         # sensor values, command inventory and tool outputs, never mass/inertia,
         # engine truth, scenario identity or future faults. Fuel is quantized.
-        row = {"time_s": s.time_s, "phase": "orbital_coast", "released_count": released,
+        confirmed_released = released if visual_runtime is None else visual_runtime.observed_count
+        row = {"time_s": s.time_s, "phase": "orbital_coast", "released_count": confirmed_released,
             "release_acknowledged": release_acknowledged, "sequencer_state": sequencer_state or "running",
             "fuel_kg": fuel_sensor(s.propellant_kg, s.time_s, "ship"), "return_deadline_s": return_time,
             "hold_expires_at_s": deployment_hold_until,
             "tower_ready": mission_case != "tower_unavailable",
             "numerical_tools": {"orbit_release_feasible": bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
                 and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]),
-                "retained_payload_present": released < p["payload"]["count"],
+                "retained_payload_present": confirmed_released < p["payload"]["count"],
                 "capture_corridor_certified": False, "mechanism_status": mechanism_status},
             "operations_notice": "Payload operations: suspend remaining deployment; return with the remaining manifest."
                 if mission_case == "operations_notice" and released >= 1 else ""}
         from .starship_return_feasibility import evaluate
-        row["numerical_tools"]["return_feasibility"] = evaluate(p, s, released, row["fuel_kg"])
+        row["numerical_tools"]["return_feasibility"] = evaluate(p, s, confirmed_released, row["fuel_kg"])
         return row
     def event(name, detail="", **fields):
         events.append({"time_s": s.time_s, "event": name, "detail": detail, **fields})
-    event("initial_state", "surface release, main engines already spooled" if phase == "stack_ascent" else "independent initialized atmospheric test; not a continuation of launch")
+    def ascent_transition(next_phase, name, detail, **fields):
+        # The loop's existing state is retained without rebuilding actuator,
+        # attitude, rate, fuel or translational histories at schedule boundaries.
+        before = asdict(s)
+        ascent_transition_witnesses.append({"time_s": s.time_s, "from_phase": phase,
+            "to_phase": next_phase, "state_before": before, "state_after": None,
+            "state_after_origin": None, "state_reset": False})
+        samples.append(_sample(s, v, phase))
+        event(name, detail, state=before, next_phase=next_phase, **fields)
+    if continuation_origin is None:
+        event("initial_state", "surface release, main engines already spooled" if phase == "stack_ascent" else "independent initialized atmospheric test; not a continuation of launch")
+    else:
+        event("initial_state", "Actual source-bound post-insertion checkpoint; no state or actuator reset")
+        event("experimental_ascent_continuation", "Same-state controller transition into shared deployment/return loop; no qualification or mission grant",
+            source_record_sha256=continuation_origin["source_record_sha256"],
+            source_phase=continuation_origin["source_phase"], controller_phase=phase,
+            state_before=continuation_origin["state"], state_after=asdict(s),
+            first_release_time_s=next_release, return_request_time_s=return_time)
     if development is not None:
         event("development_return_qualification", "explicit local experiment; not a MissionOS grant", **development)
     while s.time_s < limit-1e-9:
+        from .starship_concurrent import PhysicsTick
+        if ascent_controller.guidance_outcome_mode and not ascent_handoff_completed:
+            receipt_count = len(ascent_controller.shutdown_receipts)
+            before = asdict(s)
+            s = ascent_controller.before_step(s, v)
+            for shutdown in ascent_controller.shutdown_receipts[receipt_count:]:
+                event("ascent_screen_engine_unavailable", "registered absolute-time outage; engine index is representative, not an operator identification",
+                    shutdown=shutdown, state_before=before, state_after=asdict(s))
+        if _trouble_engine is not None:
+            s, v = _trouble_engine.before_step(s, v, "ship", phase)
+        if ascent_transition_witnesses and ascent_transition_witnesses[-1]["state_after"] is None:
+            ascent_transition_witnesses[-1]["state_after"] = asdict(s)
+            ascent_transition_witnesses[-1]["state_after_origin"] = "next_physics_tick_before_command"
+        yield PhysicsTick("ship", s.time_s, phase, s, separation_for_scheduler, sequencer_state, released, deployment_withheld)
+        separation_for_scheduler = None
         if supervision is not None:
             supervision.pace(s.time_s)
         if mission_director is not None:
             mission_director.pace("ship", s.time_s)
+        if deployment_permission is not None:
+            permitted = deployment_permission()
+            if type(permitted) is not bool:
+                raise ValueError("deployment_permission_must_return_boolean")
+            if not permitted and not deployment_withheld:
+                deployment_withheld = True
+                event("supervised_deployment_withheld", "bounded supervisor permission latched; propulsion and attitude commands unchanged",
+                      phase=phase, payload_released_count=released)
+            if deployment_withheld:
+                sequencer_state, next_release = "skipped", None
+                deployment_hold_until, reassessment_due = None, None
         ps = point_state(s)
         o = dyn.observe(s, v)
+        if restored_runtime is not None and restored_runtime.final_prefix_supervision is not None:
+            from .starship_final_protocol import digest
+            actual_supervisor = restored_runtime.final_prefix_supervision
+            started_wall = actual_supervisor.clock()
+            before_requests = len(actual_supervisor.requests)
+            actual_witness = None
+            if actual_supervisor.observation_due(s, v, phase, body="ascent"):
+                actual_state, actual_vehicle = asdict(s), asdict(v)
+                actual_witness = {"schema": "missionos.starship_final_actual_supervision_witness.v1",
+                    "body": "ascent", "time_s": s.time_s, "phase": phase,
+                    "state": actual_state, "vehicle": actual_vehicle,
+                    "state_sha256": digest(actual_state), "vehicle_sha256": digest(actual_vehicle),
+                    "origin": "actual_plant_tick_before_supervision", "state_or_inventory_assigned": False}
+            supervision_action = restored_runtime.observe_supervision(s, v, phase,
+                observation_started_wall_s=started_wall)
+            if len(actual_supervisor.requests) > before_requests:
+                if actual_witness is None:
+                    raise ValueError("final_ascent_trigger_without_actual_witness")
+                actual_witness["request_ids"] = [row["request_id"] for row in actual_supervisor.requests[before_requests:]]
+                final_supervision_actual_witnesses.append(actual_witness)
+            if supervision_action == "withhold_deployment" and not deployment_withheld:
+                deployment_withheld = True
+                event("restored_ascent_deployment_withheld",
+                    "bounded ascent proposal or explicit safety path latched future releases; numerical ascent GNC unchanged",
+                    payload_released_count=released, state_reset=False)
         altitude = o["altitude_m"]
         up, east, north = env.local_frame(ps)
         radial = env.dot(s.v_eci_mps, up)
         tangent_vec = env.add(s.v_eci_mps, env.scale(up, -radial))
         tangent = env.unit(tangent_vec) if env.norm(tangent_vec) > 1 else east
         orbit = env.orbital_elements(ps)
+        if (experimental_state_mission and phase == "ascent_screen_shutdown"
+                and insertion_shutdown_until_s is not None and s.time_s >= insertion_shutdown_until_s):
+            # The plant has evolved every finite actuator for five actual
+            # seconds. No source checkpoint or zero-spool state is injected.
+            from .starship_state_mission import settled_insertion_measurement
+            experimental_settled_measurement = settled_insertion_measurement(
+                s, v, p, _experimental_mission_ascent)
+            # Freezing the ascent controller may not discard a still-pending
+            # registered outage. This checks configuration completion only.
+            if len(ascent_controller.shutdown_receipts) != len(ascent_settings.shutdowns):
+                experimental_settled_measurement["gate_reached"] = False
+            ascent_trace_record = ascent_control_runtime.record()
+            ascent_control_runtime = None
+            if not experimental_settled_measurement["gate_reached"]:
+                termination = "state_insertion_settled_gate_unreached"
+                samples.append(_sample(s, v, phase))
+                event(termination, "actual settled envelope failed; no deployment or return schedule dispatched",
+                    settled_measurement=experimental_settled_measurement)
+                break
+            cutoff_time = ascent_cutoff_measurement["time_s"]
+            experimental_schedule = {"final_gate_time_s": cutoff_time,
+                "first_release_time_s": cutoff_time+g["orbit_release_delay_s"],
+                "return_request_time_s": cutoff_time+g["coast_before_return_s"]}
+            orbit_time = cutoff_time
+            next_release = experimental_schedule["first_release_time_s"]
+            return_time = experimental_schedule["return_request_time_s"]
+            experimental_insertion_vehicle = asdict(v)
+            ascent_transition("orbital_coast", "state_insertion_settled_handoff",
+                "same actual settled state; shared deployment/return controller, no qualification grant",
+                settled_measurement=experimental_settled_measurement, state_reset=False, **experimental_schedule)
+            event("orbit_cutoff_command", "experimental v7 measured cutoff and settled envelope; shared scheduling, no qualified-return grant",
+                orbit=orbit, state=asdict(s), state_reset=False, **experimental_schedule)
+            phase, termination = "orbital_coast", "time_limit"
+            ascent_handoff_completed = True
+            if restored_runtime is not None:
+                restored_runtime.settled(s, experimental_schedule)
+                sequencer_state = "running"
+            continue
+        if _trouble_control is not None:
+            from .starship_trouble_control import observe as trouble_observe
+            row = trouble_observe(s, v, _trouble_engine, "ship", phase,
+                released=released, sequencer=sequencer_state, withheld=deployment_withheld,
+                return_inhibited=trouble_return_inhibited, return_deadline=return_time)
+            witness_count = len(_trouble_control.observations)
+            action = _trouble_control.step(row, asdict(s))
+            if len(_trouble_control.observations) != witness_count:
+                witness = _sample(s, v, phase, diagnostics={"component_health": row["component_health"]})
+                witness["trouble_control_observation"] = row
+                samples.append(witness)
+            if action is not None:
+                event("trouble_control_command", "experimental independently checked mission action; no fault return qualification", action=action)
+                if action == "withhold_deployment":
+                    deployment_withheld = True
+                    sequencer_state, next_release = "skipped", None
+                elif action == "inhibit_return":
+                    trouble_return_inhibited = True
         target, throttle, count = _attitude(tangent, north), 0., 0
         if phase == "stack_ascent":
             t = s.time_s
-            program = g["pitch_program_time_deg"]
-            pitch = float(np.interp(t, [x[0] for x in program], [x[1] for x in program]))
-            azimuth = math.radians(p["launch"]["azimuth_deg"])
-            heading = env.add(env.scale(east, math.sin(azimuth)), env.scale(north, math.cos(azimuth)))
-            direction = env.add(env.scale(up, math.sin(math.radians(pitch))), env.scale(heading, math.cos(math.radians(pitch))))
-            target, throttle, count = _attitude(direction, north), .7 if o["dynamic_pressure_pa"] > g["max_q_pa"] else 1., 33
+            ascent_request = ascent_controller.request(s, v, p, phase, o, up, east, north,
+                radial, tangent_vec, tangent, orbit, _attitude)
+            target, throttle, count = ascent_request.target, ascent_request.throttle, ascent_request.count
             if scenario == "engine_out" and t >= 60 and not failed_engine:
                 states = list(s.engine_states)
                 states[3] = replace(states[3], available=False, throttle=0.)
@@ -473,27 +708,124 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 samples.append(_sample(s, v, phase))
                 bs, ss, receipt = _split(s, v, booster, ship, (0., 0., p["geometry"]["booster_length_m"]), p["ship"]["propellant_kg"])
                 stage_state = asdict(bs)
+                separation_for_scheduler = bs
                 event("stage_separation", "mass/linear/angular momentum checked; instantaneous rigid split", **receipt)
                 s, v, phase = ss, ship, "ship_ascent"
+                ascent_controller.separated(s.time_s)
                 continue
-        elif phase == "ship_ascent":
-            tangential_speed = env.norm(tangent_vec)
-            desired_vr = max(-50., min(800., (g["target_altitude_m"]-altitude)/g["ascent_altitude_response_s"]))
-            radial_acc = env.EARTH_MU_M3_S2/env.norm(s.r_eci_m)**2-tangential_speed**2/env.norm(s.r_eci_m)+(desired_vr-radial)/g["ascent_velocity_response_s"]
-            available_acc = sum(e.max_thrust_n for e in v.engines if "main" in e.name)/o["mass_kg"]
-            fraction = max(-.25, min(.95, radial_acc/available_acc))
-            direction = env.add(env.scale(up, fraction), env.scale(tangent, math.sqrt(1-fraction*fraction)))
-            target, throttle, count = _attitude(direction, north), 1., 6
-            if bound_orbit_above(orbit, g["target_perigee_m"]):
+        elif phase in ("ship_ascent", "suborbital_coast", "orbit_insertion", "ascent_screen_shutdown"):
+            ascent_request = ascent_controller.request(s, v, p, phase, o, up, east, north,
+                radial, tangent_vec, tangent, orbit, _attitude)
+            target, throttle, count = ascent_request.target, ascent_request.throttle, ascent_request.count
+            if ascent_settings is not None:
+                if ascent_request.termination is not None:
+                    termination = ascent_request.termination
+                    is_final_cutoff = termination.startswith("insertion_gate_")
+                    if is_final_cutoff:
+                        ascent_cutoff_measurement = {"time_s": s.time_s, "orbit": orbit,
+                            "gate_reached": termination == "insertion_gate_reached", "state": asdict(s)}
+                    next_phase = (("orbital_coast" if _experimental_mission_ascent is not None and not experimental_state_mission else "ascent_screen_shutdown")
+                                  if termination == "insertion_gate_reached" else phase)
+                    ascent_transition(next_phase, "ascent_screen_final_cutoff_command" if is_final_cutoff
+                        else "ascent_screen_physical_failure", "physical-only screen; measured orbit, no payload or return grant",
+                        orbit=orbit, termination=termination, main_engine_count=0)
+                    if termination == "insertion_gate_reached":
+                        if not experimental_state_mission:
+                            orbit_time = s.time_s
+                        if _experimental_mission_ascent is not None and not experimental_state_mission:
+                            # A measured gate changes only the controller phase.
+                            # No 1537-second checkpoint, state or actuator reset.
+                            from .starship_experimental_mission import schedule_from_actual_insertion
+                            experimental_schedule = schedule_from_actual_insertion(s, p, _experimental_mission_ascent)
+                            next_release = experimental_schedule["first_release_time_s"]
+                            return_time = experimental_schedule["return_request_time_s"]
+                            experimental_insertion_vehicle = asdict(v)
+                            event("orbit_cutoff_command", "experimental v5 measured final gate; shared deployment/return scheduling, no qualified-return grant",
+                                orbit=orbit, state=asdict(s), state_reset=False, **experimental_schedule)
+                            phase, termination = next_phase, "time_limit"
+                            continue
+                        if ascent_controller.state_insertion_mode:
+                            # Integrate the inherited finite throttle/gimbal
+                            # state after the measured cutoff; never zero it.
+                            insertion_shutdown_until_s = s.time_s+ascent_settings.insertion_options.shutdown_settle_s
+                            if not experimental_state_mission:
+                                limit = min(registered_ascent_limit, insertion_shutdown_until_s)
+                        # Evolve shutdown, residual thrust and bounded RCS:
+                        # legacy horizon or v7's registered settling interval.
+                        phase, termination = next_phase, "time_limit"
+                        continue
+                    # Record shutdown as a request, never assign a zero-throttle
+                    # plant state: finite actuator history remains in final_state.
+                    if ascent_control_runtime is not None:
+                        command, diagnostics = ascent_control_runtime.command(s, v, target, 0., 0,
+                            phase=phase, control_interval_s=control_interval(p, 0., altitude),
+                            control_fn=control, advancing=False, terminal_reason=termination)
+                    else:
+                        command, diagnostics = control(s, v, target, 0., 0, p,
+                            control_interval_s=control_interval(p, 0., altitude))
+                    samples.append(_sample(s, v, phase, command, diagnostics))
+                    break
+                if ascent_request.transition is not None:
+                    next_phase = ascent_request.transition
+                    detail = ("measured apoapsis/attitude window; finite state and actuators retained"
+                              if ascent_controller.state_insertion_mode and next_phase == "orbit_insertion" else
+                              "fixed approximate planned timing; state and finite actuators retained")
+                    if ascent_controller.guidance_outcome_mode and next_phase == "suborbital_coast":
+                        ascent_first_cutoff_measurement = {"time_s": s.time_s,
+                            "reason": ascent_request.transition_reason, "orbit": orbit, "state": asdict(s)}
+                        detail = "measured perigee gate sets cutoff; state and finite actuators retained, no mission grant"
+                        if ascent_controller.phase_objectives_mode:
+                            if ascent_controller.coast_orbit_mode:
+                                ascent_first_cutoff_measurement["objective"] = {
+                                    "first_burn_apogee_m": ascent_settings.objectives.first_burn_apogee_m,
+                                    "first_burn_perigee_m": ascent_settings.objectives.first_burn_perigee_m}
+                                detail = "registered first-burn perigee AND apogee gates set cutoff; final orbital gate remains separate"
+                            else:
+                                ascent_first_cutoff_measurement["objective"] = {
+                                    "first_burn_altitude_m": ascent_settings.objectives.first_burn_altitude_m,
+                                    "first_burn_perigee_m": ascent_settings.objectives.first_burn_perigee_m}
+                                detail = "registered first-burn suborbital perigee gate sets cutoff; final orbital gate remains unmet unless separately measured"
+                    ascent_transition(next_phase, "ascent_screen_first_cutoff_command" if next_phase == "suborbital_coast"
+                        else "ascent_screen_restart_command", detail,
+                        main_engine_count=0 if next_phase == "suborbital_coast" else 1)
+                    phase = next_phase
+                    continue
+            elif ascent_request.transition == "orbital_coast":
                 phase, orbit_time, next_release = "orbital_coast", s.time_s, s.time_s+g["orbit_release_delay_s"]
                 return_time = s.time_s+g["coast_before_return_s"]
                 event("orbit_cutoff_command", "measured osculating perigee threshold; shutdown spool still evolves", orbit=orbit)
                 continue
-            if s.propellant_kg <= p["ship"]["ascent_reserve_kg"] or s.time_s >= g["max_ascent_s"]:
+            elif ascent_request.transition == "ballistic_return":
                 phase = "ballistic_return"
+                if _trouble_engine is not None:
+                    # Preserve the failed ascent and integrate its actual descent.
+                    # No orbital state is invented for a fault trial.
+                    return_controller = ReturnController("fixed_v1", s.time_s, released,
+                        phase=phase, record=return_record)
                 event("orbit_not_reached", "ascent reserve/time limit; no state projection to target orbit", orbit=orbit)
                 continue
         elif phase == "orbital_coast":
+            if restored_runtime is not None and restored_runtime.closed:
+                termination = "restored_deployment_handoff"
+                event(termination, "actual inventory already closed; same actual coast state retained", state_reset=False)
+                break
+            if restored_runtime is not None and s.time_s >= return_time:
+                termination = "restored_deployment_unclosed"
+                event(termination, "no closed inventory before nominal return; prefix cannot dispatch return")
+                break
+            if restored_runtime is not None and restored_runtime.final_visual_observer is not None:
+                visual_action = restored_runtime.observe_visual(s, v, satellites,
+                    release_ready=bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
+                        and o["dynamic_pressure_pa"] < 1
+                        and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]))
+                if visual_action == "withhold_deployment":
+                    deployment_withheld = True
+                    sequencer_state, next_release = "skipped", None
+                    event("restored_visual_deployment_withheld",
+                        "bounded observation ended further releases; existing rigid inventory retained",
+                        payload_released_count=released, inventory_assigned=False, state_reset=False)
+            if visual_runtime is not None:
+                visual_runtime.observe_plant(s, v, satellites, phase, sequencer_state)
             if return_observation_started is not None and s.time_s >= return_observation_started+30.:
                 termination = "return_inhibited_unresolved"
                 event(termination, "30 seconds of real integration; no return or recovery claimed")
@@ -583,17 +915,70 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         witness = _sample(s, v, phase)
                         witness["return_execution_observation"] = row
                         samples.append(witness)
+                if visual_runtime is not None:
+                    visual_row = director_observation()
+                    visual_command = visual_runtime.step(visual_row)
+                    if visual_command is not None:
+                        visual_action = visual_command["action"]
+                        # An anomaly hold may only pause a running sequence;
+                        # neither vision nor Rules can overwrite an interlock.
+                        if visual_action == "hold":
+                            if sequencer_state in ("inhibited", "skipped", "held"):
+                                raise ValueError("visual_hold_cannot_override_sequence")
+                            sequencer_state = "held"
+                        elif visual_action == "continue":
+                            if sequencer_state != "held" or not visual_runtime.release_conditions_met(visual_row):
+                                raise ValueError("visual_resume_current_conditions_not_met")
+                            sequencer_state = "running"
+                            next_release = max(next_release or s.time_s, s.time_s)
+                        elif visual_action == "stop_deployment":
+                            sequencer_state, next_release = "skipped", None
+                        else:
+                            raise ValueError("visual_executor_action_outside_scope")
+                        mission_director.visual_command(visual_command, visual_row)
+                        event("visual_mission_command", "bounded visual episode operation; origin recorded separately",
+                              **{k: visual_command[k] for k in ("episode_id", "action", "origin", "reason", "authority_sha256")})
             if mission_case is not None and mission_director is None and s.propellant_kg < p["ship"]["return_reserve_kg"]:
                 sequencer_state, next_release = "skipped", None
             # Coast dynamics continue while the first decision is pending;
             # the timeline cannot release a payload before that decision.
             deployment_started = mission_director is None or "deployment_start" in mission_director.finished
+            # An ordinary continue/hold response cannot clear the ascent latch.
+            if deployment_withheld:
+                sequencer_state, next_release = "skipped", None
+                deployment_hold_until, reassessment_due = None, None
             if development is not None and released >= development["release_limit"]:
                 next_release = None
-            if deployment_started and next_release is not None and s.time_s >= next_release and sequencer_state not in ("inhibited", "skipped", "held"):
+            if (restored_runtime is not None and next_release is not None and s.time_s >= next_release
+                    and restored_runtime.needs_decision(released)):
+                samples.append(_sample(s, v, phase))
+                action = restored_runtime.decide(s, released,
+                    release_ready=bool(bound_orbit_above(orbit, g["target_perigee_m"]-1000)
+                        and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]),
+                    sequencer_state=sequencer_state)
+                from .starship_restored_prefix import RestoredDeploymentPending
+                if type(action) is RestoredDeploymentPending:
+                    # Polling never releases; the same actual coast/clock keeps
+                    # advancing while the host owns its single pending request.
+                    deployment_started = False
+                else:
+                    event("restored_deployment_decision", "bounded external choice; not model or approval proof",
+                        action=action, payload_released_count=released)
+                if action == "withhold_deployment":
+                    deployment_withheld = True
+                    sequencer_state, next_release = "skipped", None
+            if restored_runtime is not None and restored_runtime.closed:
+                termination = "restored_deployment_handoff"
+                event(termination, "actual inventory closed; same state retained before nominal return", state_reset=False)
+                break
+            if (deployment_started and next_release is not None and s.time_s >= next_release
+                    and sequencer_state not in ("inhibited", "skipped", "held")
+                    and (visual_runtime is None or visual_runtime.release_allowed(s.time_s))
+                    and (restored_runtime is None or restored_runtime.visual_release_allowed(s.time_s))):
                 # Independent composition/impulse verifier checks conservation.
                 if bound_orbit_above(orbit, g["target_perigee_m"]-1000) and o["dynamic_pressure_pa"] < 1 and env.norm(s.omega_body_rad_s) < g["release_max_rate_rad_s"]:
-                    if scenario == "deployment_no_effect" and release_attempts == 0 or mission_case == "release_fault":
+                    if ((scenario == "deployment_no_effect" and release_attempts == 0) or mission_case == "release_fault"
+                            or _trouble_engine is not None and _trouble_engine.payload_blocked(s.time_s)):
                         release_attempts, release_acknowledged, sequencer_state = release_attempts+1, True, "inhibited"
                         event("payload_release_attempt_acknowledged", "synthetic accepted release command without physical separation; not a SpaceX fault model",
                               release_attempt_count=release_attempts, payload_released_count=released)
@@ -614,8 +999,15 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                             release_attempts, release_acknowledged = release_attempts+1, True
                         samples.append(_sample(s, v, phase))
                         satellites.append({"id": f"satellite_{released:02d}", "release_state": asdict(child), "vehicle": asdict(child_vehicle), "receipt": receipt})
+                        if restored_runtime is not None:
+                            restored_runtime.released(receipt)
                         event("payload_released", f"finite rigid payload {released}; +J / -J with angular reaction", receipt=receipt)
                         next_release = s.time_s+p["payload"]["interval_s"] if remaining else None
+                    if visual_runtime is not None:
+                        attempt = visual_runtime.on_attempt(s.time_s, released, release_acknowledged,
+                                                            interlocked=sequencer_state == "inhibited")
+                        event("visual_release_attempt_observed", "attempt-scoped synthetic acknowledgement; not separation proof",
+                              **attempt)
                 else:
                     event("deployment_held", "perigee / dynamic pressure / measured angular rate gate")
                     next_release = s.time_s+p["payload"]["interval_s"]
@@ -637,7 +1029,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                     sequencer_state, next_release = "skipped", None
                     event("deployment_skip_command", "bounded supervisor command disables remaining deployment sequence; later observations required",
                           **supervision_command)
-            if s.time_s >= return_time and return_observation_started is None and return_halt_started is None:
+            if s.time_s >= return_time and return_observation_started is None and return_halt_started is None and not trouble_return_inhibited:
                 if mission_director is not None or registered_return:
                     from .starship_return_feasibility import evaluate
                     from .starship_mission_director import fuel_sensor, check_action, fallback_action
@@ -684,11 +1076,25 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             if step.transition_only:
                 continue
             target, throttle, count = step.target, step.throttle, step.count
+        if _trouble_engine is not None:
+            s, v = _trouble_engine.before_step(s, v, "ship", phase)
+            if return_controller is not None:
+                step = replace(step, state=s)
         if return_controller is not None:
             command, diagnostics = return_controller.command(step, v, p, altitude)
         else:
-            command, diagnostics = control(s, v, target, throttle, count, p,
-                control_interval_s=control_interval(p, throttle, altitude))
+            if ascent_control_runtime is not None:
+                command, diagnostics = ascent_control_runtime.command(s, v, target, throttle, count,
+                    phase=phase, control_interval_s=control_interval(p, throttle, altitude),
+                    control_fn=control, advancing=env.norm(s.omega_body_rad_s) <= 5,
+                    terminal_reason="angular_rate_envelope_exceeded")
+            else:
+                command, diagnostics = control(s, v, target, throttle, count, p,
+                    control_interval_s=control_interval(p, throttle, altitude))
+            if ascent_controller.coast_orbit_mode and phase == "ship_ascent" and ascent_request.guidance_diagnostic is not None:
+                diagnostics["ascent_orbit_reference"] = ascent_request.guidance_diagnostic
+            if ascent_controller.state_insertion_mode and phase in ("suborbital_coast", "orbit_insertion", "ascent_screen_shutdown"):
+                diagnostics["state_insertion_reference"] = ascent_request.guidance_diagnostic
         if scenario in ("gimbal_step", "flap_asymmetry", "entry_perturbation"):
             # Open-loop physical response tests. No attitude stabilization hides
             # cross-axis response or torque from offset geometry.
@@ -701,6 +1107,9 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 flap_commands[6] = math.radians(initial["flap_step_deg"][1])
             command = dyn.Command6DOF(tuple(commands), tuple(flap_commands))
             diagnostics = {"controller": "open_loop_perturbation", "initial_body_rates_nonzero": True}
+        if _trouble_engine is not None:
+            command = _trouble_engine.command(command, s, v, "ship")
+            diagnostics["component_health"] = _trouble_engine.observation(s, v, "ship")
         next_sample = record_sample(s, v, phase, command, diagnostics, samples, next_sample, p)
         max_altitude = max(max_altitude, altitude)
         max_rate = max(max_rate, env.norm(s.omega_body_rad_s))
@@ -711,9 +1120,18 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             break
         dt = p["integration"]["powered_dt_s"] if throttle > 0 or altitude < 100000 else p["integration"]["coast_dt_s"]
         dt = min(limit-s.time_s, dt*dt_scale)
+        if not ascent_handoff_completed:
+            dt = ascent_controller.limit_step(s.time_s, dt)
+        if experimental_state_mission and phase == "ascent_screen_shutdown" and insertion_shutdown_until_s is not None:
+            dt = min(dt, insertion_shutdown_until_s-s.time_s)
+        if _trouble_engine is not None:
+            dt = _trouble_engine.limit_step(s.time_s, dt, "ship", phase)
         length = p["geometry"]["ship_length_m"]+(p["geometry"]["booster_length_m"] if phase == "stack_ascent" else 0)
         try:
+            ascent_plant_input = s
             s, receipt = advance_plant(s, v, command, dt, length, p["geometry"]["radius_m"], altitude, o["air_speed_mps"])
+            if ascent_control_runtime is not None:
+                ascent_control_runtime.record_step(steps, ascent_plant_input, s, dt)
             if receipt is not None and receipt["contact"]:
                 contact_receipt = receipt
                 termination = "surface_impact" if receipt["surface_relative_speed_mps"] > 5 else "low_speed_surface_contact"
@@ -722,10 +1140,18 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                 break
         except (ValueError, OverflowError, FloatingPointError) as exc:
             termination = "numerical_failure"
+            if ascent_control_runtime is not None:
+                ascent_control_runtime.record_failed_step(termination)
             event(termination, f"{type(exc).__name__}: {exc}; last finite state retained")
             break
         steps += 1
+    if ascent_transition_witnesses and ascent_transition_witnesses[-1]["state_after"] is None:
+        ascent_transition_witnesses[-1]["state_after"] = asdict(s)
+        ascent_transition_witnesses[-1]["state_after_origin"] = "final_retained_state"
     final = _sample(s, v, phase)
+    if visual_runtime is not None and phase == "orbital_coast":
+        visual_runtime.observe_plant(s, v, satellites, phase, sequencer_state)
+        mission_director.confirm("ship", director_observation())
     if supervision is not None:
         final["flight_supervision"] = {"release_attempt_count": release_attempts, "release_acknowledged": release_acknowledged,
                                       "sequencer_state": sequencer_state, "payload_released_count": released}
@@ -733,6 +1159,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
     samples.append(final)
     if termination == "time_limit":
         event("time_limit", "run ended at requested integration horizon; no terminal success inferred")
+        if _ascent_screen is not None and phase == "ascent_screen_shutdown":
+            termination = "insertion_gate_reached"
     # Each released body coasts from its own measured separation state. This is
     # orbit propagation, not commissioning or operational Starlink service.
     for satellite in satellites:
@@ -753,7 +1181,7 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         satellite["samples"], satellite["final_orbit"] = child_samples, env.orbital_elements(point_state(child))
         satellite["orbital_propagation_only"] = True
     booster_run, catch_run = None, None
-    if stage_state:
+    if stage_state and not _defer_booster:
         if booster_policy == "predictive_return_v1":
             from .starship_booster_recovery import simulate_recovery
             booster_run = simulate_recovery(p, stage_state, catch_config)
@@ -771,7 +1199,8 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
         else:
             from .starship_sixdof_booster import simulate_booster
             booster_run = simulate_booster(p, stage_state, mission_director=mission_director,
-                return_sites=return_sites, tower_ready=mission_case != "tower_unavailable", splashdown_goal=splashdown_goal)
+                return_sites=return_sites, tower_ready=mission_case != "tower_unavailable", splashdown_goal=splashdown_goal,
+                _trouble_engine=_trouble_engine)
     result = {"scenario": scenario, "samples": samples, "events": events, "booster_separation_state": stage_state, "satellites": satellites, "booster_run": booster_run,
             "retained_return": return_record,
             "outcome": {"termination": termination, "phase": phase, "duration_s": s.time_s, "integration_steps": steps,
@@ -784,8 +1213,79 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
                         "terminal_qualification_violated": return_record.get("terminal_feasibility", {}).get("passed") is False,
                         "six_dof_integrated": True, "attitude_prescribed": False},
             "initial_state": samples[0], "final_state": asdict(s), "final_vehicle": asdict(v)}
-    if mission_director is not None:
+    if restored_runtime is not None and restored_runtime.final_prefix_supervision is not None:
+        result["final_supervision_actual_witnesses"] = final_supervision_actual_witnesses
+    if continuation_origin is not None:
+        result["scenario"] = "experimental_ascent_continuation"
+        result["experimental_ascent_continuation"] = {"origin": continuation_origin,
+            "initial_retained_count": 26, "final_retained_count": 26-released,
+            "requested_elapsed_duration_s": limit-continuation_origin["state"]["time_s"],
+            "source_clock_preserved": True, "state_reset": False, "controller_phase_transition_only": True,
+            "shared_production_deployment_and_return_loop": True, "qualified_return": False,
+            "mission_authority_granted": False, "physical_execution": False}
+        result["outcome"].update(start_time_s=continuation_origin["state"]["time_s"], end_time_s=s.time_s,
+            duration_s=s.time_s-continuation_origin["state"]["time_s"])
+    if deployment_permission is not None:
+        result["deployment_permission"] = {"withheld": deployment_withheld, "sequencer_state": sequencer_state,
+            "payload_released_count": released, "observed_time_s": s.time_s,
+            "scope": "release_sequence_only_no_propulsion_or_attitude_authority"}
+    if _ascent_screen is not None:
+        result["ascent_screen"] = {"schema": "missionos.starship_ascent_screen.v1",
+            "settings": _ascent_screen.record(), "separation_time_s": ascent_controller.separation_time_s,
+            "transition_witnesses": ascent_transition_witnesses,
+            "mission_dispatch": False, "return_qualified": False, "payload_release_authorized": False,
+            "physical_execution": False, "propulsion_reference_connected": False,
+            "insertion_gate_reached": orbit_time is not None,
+            "cutoff_measurement": ascent_cutoff_measurement,
+            "final_orbit": env.orbital_elements(point_state(s))}
+        if ascent_controller.guidance_outcome_mode:
+            result["ascent_screen"].update(policy=_ascent_screen.policy,
+                shutdown_schedule=[asdict(row) for row in _ascent_screen.shutdowns],
+                shutdown_receipts=ascent_controller.shutdown_receipts,
+                first_cutoff_measurement=ascent_first_cutoff_measurement)
+        if ascent_controller.phase_objectives_mode:
+            result["ascent_screen"].update(phase_objectives=asdict(_ascent_screen.objectives),
+                final_mission_perigee_gate_m=g["target_perigee_m"],
+                phase_objectives_are_registered_engineering_inputs=True,
+                legacy_v3_verification_scope=False)
+        if ascent_controller.state_insertion_mode:
+            result["ascent_screen"].update(insertion_restart_time_s=ascent_controller.insertion_start_time_s,
+                insertion_shutdown_until_s=insertion_shutdown_until_s,
+                registered_duration_s=registered_ascent_limit)
+    if ascent_control_runtime is not None:
+        result["ascent_control_trace"] = ascent_control_runtime.record()
+    elif ascent_trace_record is not None:
+        result["ascent_control_trace"] = ascent_trace_record
+    if _experimental_mission_ascent is not None:
+        result["scenario"] = "experimental_physical_mission"
+        result["experimental_mission_ascent"] = {
+            "schema": ("missionos.experimental_state_mission_ascent.v1" if experimental_state_mission
+                       else "missionos.experimental_mission_ascent.v1"),
+            "settings": _experimental_mission_ascent.record(),
+            "separation_time_s": ascent_controller.separation_time_s,
+            "transition_witnesses": ascent_transition_witnesses,
+            "shutdown_schedule": [asdict(row) for row in ascent_settings.shutdowns],
+            "shutdown_receipts": ascent_controller.shutdown_receipts,
+            "first_cutoff_measurement": ascent_first_cutoff_measurement,
+            "cutoff_measurement": ascent_cutoff_measurement,
+            "insertion_vehicle": experimental_insertion_vehicle,
+            "schedule": experimental_schedule, "requested_absolute_duration_s": limit,
+            "final_mission_perigee_gate_m": g["target_perigee_m"],
+            "engineering_objectives_not_real_flight_identification": True,
+            "shared_production_deployment_and_return_loop": True,
+            "qualified_return": False, "mission_authority_granted": False,
+            "physical_execution": False, "state_reset": False,
+            "all_features_completed": False, "native_model_calls": 0}
+        if experimental_state_mission:
+            result["experimental_mission_ascent"].update(
+                insertion_restart_time_s=ascent_controller.insertion_start_time_s,
+                insertion_shutdown_until_s=insertion_shutdown_until_s,
+                settled_measurement=experimental_settled_measurement,
+                ascent_trace_steps=len(result["ascent_control_trace"]["rows"]))
+    if mission_director is not None and not _defer_director_finish:
         result["mission_director"] = mission_director.finish()
+    if visual_runtime is not None:
+        result["visual_observation"] = visual_runtime.finish()
     if development is not None:
         result["development_return_qualification"] = dict(development)
     if registered_return:
@@ -805,4 +1305,209 @@ def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, super
             "catch_invoked": catch_run is not None, "state_reset": False,
             "launch_connected_catch_supported": bool(catch_run and catch_run["outcome"]["simulated_catch_supported"]),
             "physical_execution": False, "real_hardware_validated": False}
+    return result
+
+
+def ascent_screen_steps(profile, *, stack_pitch_offset_deg=0., ship_pitch_offset_deg=0.,
+                        duration_s=1537., finite_mode=True, policy="fixed_schedule_v2", shutdowns=(),
+                        objectives: AscentObjectives | AscentCoastOrbitObjectives | None = None,
+                        control_options: AscentControlOptions | None = None,
+                        insertion_options: StateInsertionOptions | None = None):
+    """Prepare the shared generator; iteration is opt-in simulator integration.
+
+    ``finite_mode=False`` is the unmodified default B0 execution with deferred
+    booster postprocessing, zero offsets and its registered492-second horizon.
+    The returned generator yields the existing PhysicsTick witnesses and returns
+    the ordinary execution record via StopIteration.value. Merely preparing it
+    performs validation only and grants no authority to advance the simulated plant.
+    """
+    settings = AscentScreenSettings(stack_pitch_offset_deg, ship_pitch_offset_deg, finite_mode,
+                                   policy, shutdowns, objectives, control_options, insertion_options)
+    AscentController(settings).validate_profile(profile)
+    expected_duration = 4100. if policy == "state_insertion_v7" else 1537. if finite_mode else 492.
+    if type(duration_s) not in (int, float) or not math.isfinite(duration_s) or duration_s != expected_duration:
+        raise ValueError("ascent_screen_requires_registered_duration")
+    return _simulate_steps(profile, duration_s=duration_s, _defer_booster=True,
+        _ascent_screen=settings if finite_mode else None)
+
+
+def simulate_ascent_screen(profile, **settings):
+    """Drain the physical-only screen; requires prior cohort authorization."""
+    from .starship_concurrent import drain
+    return drain(ascent_screen_steps(profile, **settings))
+
+
+def simulate(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
+             _development_return_qualification=None, deployment_permission=None, trouble_manifest=None, visual_runtime=None):
+    """Legacy synchronous API, retaining sequential booster postprocessing."""
+    if trouble_manifest is not None:
+        # Cross-body diagnostics require a shared clock. Postprocessing Booster
+        # after Ship would expose stale tower health at later Ship timestamps.
+        raise ValueError("trouble_trials_require_concurrent_api")
+    from .starship_concurrent import drain
+    return drain(_simulate_steps(profile, scenario=scenario, duration_s=duration_s, dt_scale=dt_scale,
+        supervision=supervision, return_policy=return_policy, booster_policy=booster_policy,
+        catch_config=catch_config, mission_director=mission_director, mission_case=mission_case,
+        return_sites=return_sites, splashdown_goal=splashdown_goal,
+        _development_return_qualification=_development_return_qualification, deployment_permission=deployment_permission,
+        visual_runtime=visual_runtime))
+
+
+def simulate_concurrent(profile, *, scenario="launch", duration_s=None, dt_scale=1.0, supervision=None, return_policy="fixed_v1",
+             booster_policy="fixed_v1", catch_config=None, mission_director=None, mission_case=None, return_sites=None, splashdown_goal=None,
+             _development_return_qualification=None, development_booster_coast_control="fixed_v1", on_tick=None, deployment_permission=None, trouble_manifest=None, trouble_control=None,
+             visual_runtime=None, experimental_ascent=None, booster_outage_control=None,
+             booster_energy_control=None, booster_terminal_recovery=None, restored_runtime=None):
+    """Opt-in shared-clock integration; existing simulate() remains sequential.
+
+    on_tick receives an immutable internal PhysicsTick before pace/observation/
+    command processing. Its state is simulator truth for numerical observers;
+    it must not be exposed directly as model-visible sensor information.
+    deployment_permission() returns a strict bool. False irreversibly withholds
+    later payload releases; later True cannot resume. Subsequent PhysicsTicks
+    and the final permission receipt expose the sequencer effect.
+    """
+    from .starship_concurrent import coordinate
+    from .starship_sixdof_booster import _configuration, _simulate_booster_steps
+    if scenario != "launch" or booster_policy != "fixed_v1" or dt_scale != 1.0:
+        raise ValueError("concurrent_control_requires_launch_fixed_booster_and_time_scale")
+    if development_booster_coast_control not in ("fixed_v1", "stopping_distance_v1"):
+        raise ValueError("unknown_development_coast_controller")
+    if restored_runtime is not None:
+        from .starship_restored_prefix import RestoredPrefixRuntime
+        if (type(restored_runtime) is not RestoredPrefixRuntime
+                or return_policy != TRIMMED_POLICY_ID or development_booster_coast_control != "fixed_v1"
+                or booster_outage_control is not None or booster_energy_control is not None
+                or any(value is not None for value in (supervision, catch_config, mission_director, mission_case,
+                    deployment_permission, trouble_manifest, trouble_control, visual_runtime))):
+            raise ValueError("restored_prefix_cannot_borrow_execution_scopes")
+        restored_runtime.validate_scope(profile, experimental_ascent, booster_terminal_recovery, duration_s)
+    if booster_terminal_recovery is not None:
+        from .starship_state_mission import ExperimentalStateMissionAscentSettings
+        from .starship_booster_terminal_control import validate_terminal_scope
+        if (type(experimental_ascent) is not ExperimentalStateMissionAscentSettings
+                or return_policy != TRIMMED_POLICY_ID or development_booster_coast_control != "fixed_v1"
+                or booster_outage_control is not None or booster_energy_control is not None
+                or any(value is not None for value in (supervision, catch_config, mission_director,
+                    mission_case, deployment_permission, trouble_manifest, trouble_control, visual_runtime))):
+            raise ValueError("terminal_recovery_requires_isolated_state_mission")
+        validate_terminal_scope(profile, booster_terminal_recovery, return_sites, splashdown_goal)
+    if booster_energy_control is not None:
+        from .starship_state_mission import ExperimentalStateMissionAscentSettings
+        from .starship_booster_energy_control import validate_energy_scope
+        if (type(experimental_ascent) is not ExperimentalStateMissionAscentSettings
+                or return_policy != TRIMMED_POLICY_ID or development_booster_coast_control != "fixed_v1"
+                or booster_outage_control is not None
+                or any(value is not None for value in (supervision, catch_config, mission_director,
+                    mission_case, deployment_permission, trouble_manifest, trouble_control, visual_runtime))):
+            raise ValueError("energy_control_requires_isolated_state_mission")
+        validate_energy_scope(profile, booster_energy_control, return_sites, splashdown_goal)
+    if booster_outage_control is not None:
+        from .starship_state_mission import ExperimentalStateMissionAscentSettings
+        from .starship_booster_outage_control import validate_outage_scope
+        if (type(experimental_ascent) is not ExperimentalStateMissionAscentSettings
+                or return_policy != TRIMMED_POLICY_ID or development_booster_coast_control != "fixed_v1"
+                or any(value is not None for value in (supervision, catch_config, mission_director,
+                    mission_case, deployment_permission, trouble_manifest, trouble_control, visual_runtime))):
+            raise ValueError("outage_control_requires_isolated_state_mission")
+        validate_outage_scope(profile, booster_outage_control, return_sites, splashdown_goal)
+    if experimental_ascent is not None:
+        from .starship_experimental_mission import validate_physical_mission
+        from .starship_state_mission import ExperimentalStateMissionAscentSettings, validate_state_physical_mission
+        from .starship_experimental_continuation import development_settings
+        if (return_policy != TRIMMED_POLICY_ID or development_booster_coast_control != "fixed_v1"
+                or _development_return_qualification != development_settings()
+                or any(value is not None for value in (supervision, catch_config, mission_director,
+                    mission_case, deployment_permission, trouble_manifest, trouble_control, visual_runtime))):
+            raise ValueError("experimental_physical_mission_cannot_borrow_execution_scopes")
+        validator = (validate_state_physical_mission if type(experimental_ascent) is ExperimentalStateMissionAscentSettings
+                     else validate_physical_mission)
+        validator(profile, experimental_ascent, duration_s, return_sites, splashdown_goal)
+    trouble = None
+    if trouble_manifest is not None:
+        from .starship_trouble_engine import TroubleEngine
+        trouble = TroubleEngine(trouble_manifest)
+    if trouble is not None and development_booster_coast_control != "fixed_v1":
+        raise ValueError("trouble_trial_cannot_mix_development_booster_controller")
+    common_deadline = profile["integration"]["max_duration_s"] if duration_s is None else duration_s
+    if type(common_deadline) not in (int, float) or not math.isfinite(common_deadline) or common_deadline <= 0:
+        raise ValueError("invalid_concurrent_absolute_deadline")
+    if trouble_control is not None:
+        from .starship_trouble_control import TroubleControl
+        if type(trouble_control) is not TroubleControl or trouble is None:
+            raise ValueError("experimental_trouble_control_requires_bound_fault_plant")
+        trouble_control.admit(profile, trouble_manifest, common_deadline)
+    ship = _simulate_steps(profile, scenario=scenario, duration_s=duration_s, dt_scale=dt_scale,
+        supervision=supervision, return_policy=return_policy, booster_policy=booster_policy,
+        catch_config=catch_config, mission_director=mission_director, mission_case=mission_case,
+        return_sites=None if experimental_ascent is not None else return_sites,
+        splashdown_goal=None if experimental_ascent is not None else splashdown_goal,
+        _development_return_qualification=_development_return_qualification,
+        _defer_booster=True, _defer_director_finish=True, deployment_permission=deployment_permission,
+        _trouble_engine=trouble, _trouble_control=trouble_control, visual_runtime=visual_runtime,
+        **({"_experimental_mission_ascent": experimental_ascent} if experimental_ascent is not None else {}),
+        **({"restored_runtime": restored_runtime} if restored_runtime is not None else {}))
+    def separated_booster(state):
+        remaining = common_deadline-state.time_s
+        if remaining <= 0:
+            raise ValueError("separation_at_or_after_concurrent_deadline")
+        # No body may advance beyond the shared checkpoint before Ship resumes.
+        duration = min(remaining, _configuration(profile)["max_duration_s"])
+        outage_arguments = {}
+        if booster_outage_control is not None:
+            from .starship_booster_outage_control import POLICY_ID
+            outage_arguments = {"guidance_policy": POLICY_ID, "outage_control_settings": booster_outage_control}
+        if booster_energy_control is not None:
+            from .starship_booster_energy_control import POLICY_ID
+            outage_arguments = {"guidance_policy": POLICY_ID, "energy_control_settings": booster_energy_control}
+        if booster_terminal_recovery is not None:
+            from .starship_booster_terminal_control import POLICY_ID
+            outage_arguments = {"guidance_policy": POLICY_ID, "terminal_recovery_settings": booster_terminal_recovery}
+        return _simulate_booster_steps(profile, asdict(state), duration_s=duration, mission_director=mission_director,
+            return_sites=return_sites, tower_ready=mission_case != "tower_unavailable", splashdown_goal=splashdown_goal,
+            development_coast_control=development_booster_coast_control,
+            development_coast_from_separation=development_booster_coast_control != "fixed_v1",
+            _trouble_engine=trouble, _trouble_control=trouble_control,
+            **({"final_prefix_supervision": restored_runtime.final_prefix_supervision}
+                if restored_runtime is not None and restored_runtime.final_prefix_supervision is not None else {}),
+            **outage_arguments)
+    result = coordinate(ship, separated_booster,
+        maximum_tick_s=max(profile["integration"]["powered_dt_s"], profile["integration"]["coast_dt_s"]), on_tick=on_tick)
+    if mission_director is not None:
+        result["mission_director"] = mission_director.finish()
+    if trouble is not None:
+        result["trouble"] = trouble.audit()
+    if trouble_control is not None:
+        result["trouble_control"] = trouble_control.finish()
+    result["concurrent_execution"]["absolute_deadline_s"] = common_deadline
+    if experimental_ascent is not None:
+        result["experimental_mission_ascent"].update(
+            concurrent_actual_separation=True, booster_policy="fixed_v1",
+            booster_splashdown_goal=splashdown_goal.to_dict(),
+            booster_return_sites=return_sites.to_dict())
+        if booster_outage_control is not None:
+            from .starship_booster_outage_control import POLICY_ID
+            result["experimental_mission_ascent"].update(booster_policy=POLICY_ID,
+                booster_outage_control=booster_outage_control.record())
+        if booster_energy_control is not None:
+            from .starship_booster_energy_control import POLICY_ID
+            result["experimental_mission_ascent"].update(booster_policy=POLICY_ID,
+                booster_energy_control=booster_energy_control.record())
+        if booster_terminal_recovery is not None:
+            from .starship_booster_terminal_control import POLICY_ID
+            result["experimental_mission_ascent"].update(booster_policy=POLICY_ID,
+                booster_terminal_recovery=booster_terminal_recovery.record())
+    if result["booster_run"] is not None:
+        result["booster_run"]["shared_clock_checkpoint"] = {
+            "absolute_deadline_s": common_deadline,
+            "unfinished": result["booster_run"]["outcome"]["termination"] == "time_limit",
+            "state_reset": False,
+        }
+    if restored_runtime is not None:
+        if restored_runtime.final_prefix_supervision is not None:
+            result["final_prefix_supervision"] = restored_runtime.final_prefix_supervision.record()
+        if restored_runtime.final_visual_observer is not None:
+            result["final_visual_observation"] = restored_runtime.final_visual_observer.record()
+        result["restored_prefix"] = restored_runtime.finish(result)
     return result

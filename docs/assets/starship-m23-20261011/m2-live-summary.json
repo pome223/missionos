@@ -1,0 +1,194 @@
+{
+  "schema": "missionos.m2_live_readonly_audit.v1",
+  "status": "terminal_records_audited",
+  "complete": true,
+  "case": "operations_notice",
+  "mode": "live",
+  "record_verification_passed": false,
+  "case_accepted": false,
+  "verification_issues": [
+    "search_trial_binding"
+  ],
+  "case_issues": [],
+  "hash_and_attempt_accounting_checks_passed": true,
+  "audit_issues": [],
+  "source": {
+    "source_sha256": {
+      "file_count": 83,
+      "map_sha256": "1724d1220c224c749d361930bff6b0413b5b6484684a70a37482000fd997a301",
+      "inputs_match_study": true,
+      "snapshot_mismatches": []
+    },
+    "return_source_sha256": {
+      "file_count": 73,
+      "map_sha256": "10a2568b286b9af93d3b7bfdac08a201f72c63e255aec2e9a7d1ed0290ec8d0b",
+      "inputs_match_study": true,
+      "snapshot_mismatches": []
+    }
+  },
+  "budgets": {
+    "model_attempted": 11,
+    "maximum_model_calls": 24,
+    "forecast_submitted": 15,
+    "maximum_forecasts": 20,
+    "forecast_files_saved": 11,
+    "forecast_submitted_without_saved_result": 4,
+    "forecast_without_saved_result_reason": "four interim forecasts interrupted by observed notice generation change; counted as submitted, not successful"
+  },
+  "inventory": {
+    "released": 0,
+    "retained": 26
+  },
+  "return": {
+    "dispatch": {
+      "candidate_id": "next_orbit",
+      "revision": 1,
+      "time_s": 7674.950000000041
+    },
+    "plan_revisions": [
+      {
+        "revision": 1,
+        "time_s": 1713.9500000000407,
+        "candidate_id": "next_orbit",
+        "candidate_sha256": "07420974060880c73384041599f898cd5ccce876d234ed7c3a092b32fd1bbc5c",
+        "basis": "ai",
+        "decision_request_id": "4b7a11a14c0442f3a293aa52ca2b108c-return-3"
+      }
+    ],
+    "termination": "low_speed_surface_contact",
+    "contact": {
+      "time_s": 10373.239445588357,
+      "speed_mps": 3.4636481237709518,
+      "tilt_deg": 0.4166155674525754,
+      "body_rate_rad_s": 0.003566686925886341,
+      "reserve_kg": 45202.685425199736,
+      "latitude_deg": 5.62022033553164,
+      "longitude_deg": 143.55713438381005
+    },
+    "final_propellant_kg": 45202.685425199736,
+    "minimum_reserve_kg": 28000.0,
+    "outcome": "unresolved",
+    "observed_scalar_criteria": {
+      "speed_met": true,
+      "tilt_met": true,
+      "body_rate_met": true,
+      "reserve_met": true,
+      "west_center_distance_m": 92630.2837397658,
+      "west_radius_m": 125000.0,
+      "west_geometry_met": true,
+      "not_a_whole_record_verification": true,
+      "west_available_from_s": 10000.0,
+      "west_available_until_s": 11000.0,
+      "west_contact_time_window_met": true,
+      "dispatch_admission_accepted": true
+    }
+  },
+  "optional_search": {
+    "start_time_s": 1162.2000000000407,
+    "forecast_count_before": 4,
+    "suggestion": {
+      "return_time_s": 7674.9399598282225,
+      "screen_target_area": "west",
+      "method": "quadratic_distance_screen_not_admission"
+    },
+    "accepted_for_trial": true,
+    "reason": "screen_complete_requires_admission",
+    "clock_debt_s": 0.0,
+    "clock_budget_exhausted": false,
+    "end_time_s": 1372.7000000000407,
+    "wall_time_s": 210.4648295410443,
+    "forecast_count_after": 7
+  },
+  "verification_failure_diagnosis": {
+    "reason": "exact_float_time_equality_in_search_trial_binding",
+    "stored_center_s": 7731.350289048427,
+    "recomputed_center_s": 7731.350289048426,
+    "center_difference_s": 9.094947017729282e-13,
+    "trials_origin_exact_match": true,
+    "trials_integration_scale_exact_match": true,
+    "trial_time_differences_s": [
+      9.094947017729282e-13,
+      9.094947017729282e-13,
+      9.094947017729282e-13
+    ],
+    "original_verification_preserved": true,
+    "corrected_verification_not_run_by_this_audit": false
+  },
+  "model_decision_adopted": {
+    "deployment": 1,
+    "return": 10,
+    "return_fallbacks": 0,
+    "deepseek": 0
+  },
+  "http_runtime": {
+    "transcript_sha256": "ee21211547784294edd03afae8a240cf763372872dc7e92bde87dcef33ba42a4",
+    "request_count": 752,
+    "routes": {
+      "plan": 1,
+      "execute": 3,
+      "clarification_required": 1,
+      "approve": 2,
+      "status": 745
+    },
+    "guardrail_bypass_observed": false,
+    "final_status": "failed",
+    "worker_process_exit_code": 2,
+    "worker_receipt_verified": true,
+    "worker_provider_credentials_present": false,
+    "overall_runtime_pass_claimed": false
+  },
+  "limits": [
+    "Saved record audit only; no new model inference or flight.",
+    "Original record verification failed and remains unchanged.",
+    "Host attempt ledger is request-bound but not signed or protected from same-user worker writes.",
+    "Contact and area are synthetic numerical criteria, not spacecraft recovery or real ocean clearance.",
+    "M2 uses deployment and return continuation; this is not M3 concurrent whole-flight evidence."
+  ],
+  "evidence_sha256": {
+    "study.json": "6510133a9649988fde122a08580c168a1384d7dddef886d2b91f4bb34f4c889d",
+    "verification.json": "553da34900a60dc666e995957101802cc6a48b04f7f45c3e83f2fa5abc2d2adb",
+    "summary.json": "4c4ab0db921847951b10a42c35ebc47ec4fc5a444357e82d5d52f1175602f46b",
+    "manifest.json": "957e0bbba1b26b37817d467092bbca9a98fb754d0164fdb1c7139b074f815c14",
+    "inputs.json": "2ae31742007de05ae02cd22e40bcb1cb81f5fbe4bb3972a0b3de8bacf5533fb3"
+  },
+  "models": {
+    "deployment": {
+      "attempted": 1,
+      "provider_counts": {
+        "typesafe": 1
+      },
+      "status_counts": {
+        "succeeded": 1
+      },
+      "completed": 1,
+      "host_valid": 1,
+      "host_published": 1
+    },
+    "return": {
+      "attempted": 10,
+      "provider_counts": {
+        "typesafe": 10
+      },
+      "status_counts": {
+        "succeeded": 10
+      },
+      "completed": 10,
+      "host_valid": 10,
+      "host_published": 10
+    }
+  },
+  "model_ledger_integrity_scope": "request hashes and actor receipts matched; same-user writable host ledger is not cryptographic isolation evidence",
+  "later_saved_record_revalidation": {
+    "scope": "executed_source_verifier_with_only_scalar_timestamp_comparison_corrected",
+    "passed": true,
+    "case_accepted": true,
+    "issues": [],
+    "outcome": "contact_and_recovery_area_met",
+    "new_flights": 0,
+    "new_model_calls": 0,
+    "original_failed_verdict_preserved": true,
+    "revalidation_sha256": "830f3d66b33adc195c758e6f2dba2953c1e1234f33b47e81ff00025b1bea276e",
+    "current_checkout_revalidation_issue": "deployment_request_choices"
+  },
+  "source_comparison_scope": "Saved source maps match snapshots; current checkout has since changed and did not execute this flight."
+}

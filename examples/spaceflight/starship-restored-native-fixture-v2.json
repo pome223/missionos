@@ -1,0 +1,253 @@
+{
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "H0",
+      "expected_candidate_id": "nominal",
+      "expected_retained_count": 0,
+      "explicit_delegation": false,
+      "id": "H0_normal"
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "expected_candidate_id": "nominal",
+      "expected_retained_count": 13,
+      "explicit_delegation": false,
+      "id": "O0_deployment_change"
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "expected_candidate_id": "next_orbit",
+      "expected_retained_count": 0,
+      "explicit_delegation": true,
+      "id": "O0_scope_amendment"
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "expected_candidate_id": "next_orbit",
+      "expected_retained_count": 13,
+      "explicit_delegation": true,
+      "id": "O0_combined"
+    }
+  ],
+  "cohort_revision": 2,
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "fixture_plan": "docs/assets/starship-system-repair-20261018/restored-fixture-v3-plan.json",
+  "fixture_plan_sha256": "082380927cb9fc1833806d4814df06738ca8d7e735d88a11f18db591d23beeec",
+  "fixture_result": "docs/assets/starship-system-repair-20261018/restored-fixture-v3-result.json",
+  "fixture_saved_review": "docs/assets/starship-system-repair-20261018/restored-fixture-v3-saved-review.json",
+  "fixture_source_commit": "c6b85788469d0d1316180a940572a58bbd0ebf1f",
+  "host_poll_interval_s": 0.01,
+  "initialization": "fresh_ground_no_forecast_state_installation",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "positive_to_nonpositive_unsupported_zero_to_zero_allowed",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v1",
+    "subdivisions": 2
+  },
+  "interpretation": "Four new development flights with fixed synthetic judgments and explicit scripted HTTP operator. Calibrated 125 km areas are operational Ship areas only, not held-out validation or changes to physical Ship/Booster envelopes. Both candidates are forecast and independently checked for admission; only an admitted selected candidate may dispatch; no live AI or real human review is claimed.",
+  "limits": {
+    "cohort_wall_s": 8000.0,
+    "hosted_model_calls": 0,
+    "maximum_concurrent_copy_forecasts": 2,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 4,
+    "minimum_free_bytes": 10737418240,
+    "per_trial_wall_s": 1800.0,
+    "prefix_horizon_s": 7500.0,
+    "total_horizon_s": 16000.0,
+    "workers": 1
+  },
+  "mission_authority_granted": false,
+  "mode": "fixture",
+  "operator": "explicit_scripted_http_fixture_principal",
+  "output": "output/starship-restored-ai-20261020/native-fixture-v2",
+  "prior_startup": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v1-startup-plan.json",
+        "sha256": "c2be98269b7517686a1c26717729191faaa012888cf966dd0c6e58884689b590"
+      },
+      "review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v1-startup-review.json",
+        "sha256": "2d140d483478bfcffbabbe136505268791bc92374d161f805512fbb708fb1fec"
+      },
+      "stop": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v1-startup-stop.json",
+        "sha256": "2130eef278a4dd76af0a0a0b92baab4936b6361fc6224f6d6b5ad4a2022db600"
+      }
+    },
+    "old_cohort_remains_stopped": true,
+    "plan_sha256": "fa52e38b7926f9e3a9e494b74730694ad21bd94f05fa345286371806150aa401",
+    "source_commit": "3a9ea96913e101566e877e945d5c0e061038821b"
+  },
+  "qualification_refreshed": false,
+  "resource_accounting": {
+    "epoch": "closed_origin",
+    "initial_energy_kwh": 22.0,
+    "initial_modeled_propellant_loss_kg": 0.0,
+    "initial_temperature_k": 295.0,
+    "modeled_loss_kg_per_s": 0.02,
+    "power_kw": 6.0,
+    "warming_k_per_s": 0.001
+  },
+  "resource_monitor_interval_s": 1.0,
+  "reviewed_source_exclusions": {
+    "src/runtime/starship_restored_forecast_pool.py": "copy_forecast_worker_Darwin_startup_environment_view_only;not_exercised_by_seven_fixture",
+    "src/runtime/starship_restored_native.py": "native_only_operations_late_binding_and_negative_preservation;not_exercised_by_seven_fixture",
+    "src/runtime/starship_restored_native_verifier.py": "native_only_saved_operations_verification;not_exercised_by_seven_fixture"
+  },
+  "schema": "missionos.starship_restored_native_fixture_registration.v1",
+  "startup_change": "Only validated current-user Darwin runtime encoding metadata is removed from detached worker environment views before unchanged exact-key guards. Physics, decisions, operations, acceptance and budgets remain unchanged. This is a new one-use cohort; the failed startup plan remains stopped and is never retried or resumed.",
+  "synthetic_area_radius_m": 125000.0
+}

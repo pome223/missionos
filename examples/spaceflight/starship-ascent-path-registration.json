@@ -1,0 +1,280 @@
+{
+  "schema": "missionos.starship_ascent_path_registration.v1",
+  "experiment_id": "starship-ascent-path-20261018",
+  "registered_on": "2026-10-18",
+  "status": "design_registered_no_runner_no_execution_approval",
+  "base_commit": "61b4cc686e6ff089de88efbc5a3e6fa043d4b7f4",
+  "authority": {
+    "this_change": "registration and static input checks only",
+    "sixdof_runs_authorized": false,
+    "hosted_model_calls_authorized": false,
+    "physical_execution_authorized": false,
+    "normal_certificate_revalidated": false,
+    "public_push_authorized": false
+  },
+  "scope": "Bounded ascent-guidance calibration; not vehicle identification, AI evaluation, full mission readiness, catch development, or qualification renewal.",
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "docs/assets/starship-flight14-telemetry-20261017/README.md": "e209a58cd220bc08e172180dee6cfddcd787923afe0393288873eec2b6c7ca06",
+    "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+    "docs/assets/starship-flight14-telemetry-20261017/booster_return.csv": "c0ad296231c5e7a6c4677d705b258adf23fd51669a797290cace34952eeafb45",
+    "docs/assets/starship-flight14-telemetry-20261017/ship_reentry_landing.csv": "7daff51380372f20ee2a38dc79f9c7609430e1771e20c1267924e6effb3fcfd8",
+    "docs/agents/starship-flight14-research.json": "db18f14d2248e29e76e60f6952db8f33cadb3c6db13a56e585cde1fb876a20bb",
+    "docs/agents/starship-sim-reality-audit.md": "4fd1e6e9ed178aedf9d08a014d0ed53534597d26b24e68857ab68c8f1b210617"
+  },
+  "baseline_source_sha256": {
+    "src/runtime/starship_sixdof_mission.py": "8c4f4939be945f56249391b58764f9667d00bc805f9112bed9a02af1163f2008",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_sixdof_booster.py": "c9724ba3b3b2fa29b83af17919e2b6f7efb1212bd1d19495f784dc2931156511",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f"
+  },
+  "evidence_classes": {
+    "planned_schedule": {
+      "file": "docs/agents/starship-flight14-research.json",
+      "json_pointer": "/published_approximate_schedule",
+      "kind": "published_approximate_plan_not_observed_times",
+      "used_as_fit_data": false
+    },
+    "display_readings": {
+      "file": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+      "kind": "OCR_screen_readings_not_operator_telemetry",
+      "time_offset_s": 2150.5,
+      "offset_is_search_parameter": false,
+      "altitude_datum": "unknown_broadcast_datum",
+      "speed_frame": "Earth_relative_working_assumption_not_operator_confirmed",
+      "sensor_accuracy_known": false,
+      "original_frames_retained": false
+    },
+    "derived_checks": {
+      "booster_apex_altitude_m_approx": 99000.0,
+      "booster_contact_elapsed_s_approx": [
+        415.0,
+        420.0
+      ],
+      "kind": "previously_seen_audit_estimates_not_raw_ground_truth",
+      "source": "docs/agents/starship-sim-reality-audit.md",
+      "unseen_or_blinded_holdout": false,
+      "used_for_parameter_or_candidate_selection": false
+    }
+  },
+  "fit_data": {
+    "file": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+    "body": "stack_then_ship",
+    "elapsed_s_inclusive": [
+      0.0,
+      491.0
+    ],
+    "rows_in_window": 474,
+    "finite_nonblank_speed_rows": 442,
+    "finite_nonblank_altitude_rows": 156,
+    "series_are_masked_separately": true,
+    "missing_values": "exclude only blank or nonfinite values; no imputation, manual OCR edits, extra smoothing, row removal based on candidate residual, or extrapolation",
+    "metric_sample": "every finite value in the frozen file/window; no baseline-dependent masks",
+    "interpolation": "linear simulation interpolation at each observed time, with bracketing sample gap <=2.1 s and no extrapolation; missing simulated coverage makes a candidate inadmissible",
+    "simulation_fields": {
+      "altitude": "samples[].altitude_m",
+      "speed": "samples[].ground_speed_mps"
+    },
+    "unit_conversion": {
+      "altitude_km_to_m": 1000.0,
+      "speed_kmh_to_mps": "divide by 3.6"
+    },
+    "frame_policy": "use existing geodetic altitude and Earth-relative speed; do not fit datum, time shift or frame conversion to improve residuals"
+  },
+  "controls": {
+    "baseline": "Unmodified frozen sixdof profile and production ascent guidance, including original cutoff; never substitute the earlier V11-calibrated profile.",
+    "change_allowlist": [
+      "stack attitude-reference pitch schedule",
+      "ship attitude-reference pitch offset",
+      "experimental ship cutoff event/zero-main-thrust coast transition"
+    ],
+    "stack_pitch_rule": "Keep knot times and initial 90-degree knots at 0 and 10 seconds. Add registered stack offset to the existing pitch values at 40,100,156.66666666666666 seconds; preserve linear interpolation. Azimuth unchanged.",
+    "ship_pitch_rule": "Compute the original feedback direction without changing its gains or altitude/velocity targets. Add registered ship offset to its elevation angle atan2(radial_fraction,sqrt(1-radial_fraction^2)); clamp within original elevation bounds asin(-0.25)..asin(0.95). Ramp offset linearly from zero to full over the first 10 seconds after actual separation; command actual attitude actuators normally.",
+    "ship_cutoff_rule": "Keep existing bound-orbit cutoff, fuel reserve stop and hard ascent-time stop. Add t>=491 s zero-main-thrust cutoff if no earlier stop; retain actuator spool evolution and integrate the actual coast. A cutoff below the orbit gate is suborbital_coast, never orbital_coast; no deployment, orbit receipt, state projection, forced circularization or synthetic orbit handoff.",
+    "cutoff_491_basis": "Fixed engineering screen using the published approximate cutoff anchor and fit-window endpoint; not an independently observed exact cutoff.",
+    "frozen": [
+      "thrust, Isp, altitude dependence and engine availability",
+      "all dry/payload/propellant masses, geometry, inertia and center of mass",
+      "fuel reserves and depletion handling",
+      "aerodynamics, atmosphere, gravity, wind and launch initial state",
+      "actuator limits, lag, attitude-control gains and force allocation",
+      "max-Q throttle logic and staging reserve/instantaneous separation implementation",
+      "ascent target altitude, perigee and feedback gains",
+      "booster return controller/goal/fuel thresholds, return/catch/arm/contact rules",
+      "integration time steps, contact solver and output cadence",
+      "fault schedule, deployment and all AI/approval/checker policies"
+    ],
+    "faults": "No new faults. Flight-14 reported engine shutdowns are an unmatched real-flight condition, not a hidden parameter or justification to change thrust during this screen."
+  },
+  "candidate_grid": [
+    {
+      "id": "A01",
+      "stack_pitch_offset_deg": -5.0,
+      "ship_pitch_offset_deg": 0.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A02",
+      "stack_pitch_offset_deg": -5.0,
+      "ship_pitch_offset_deg": -5.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A03",
+      "stack_pitch_offset_deg": -5.0,
+      "ship_pitch_offset_deg": -10.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A04",
+      "stack_pitch_offset_deg": -10.0,
+      "ship_pitch_offset_deg": 0.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A05",
+      "stack_pitch_offset_deg": -10.0,
+      "ship_pitch_offset_deg": -5.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A06",
+      "stack_pitch_offset_deg": -10.0,
+      "ship_pitch_offset_deg": -10.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A07",
+      "stack_pitch_offset_deg": -15.0,
+      "ship_pitch_offset_deg": 0.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A08",
+      "stack_pitch_offset_deg": -15.0,
+      "ship_pitch_offset_deg": -5.0,
+      "ship_cutoff_elapsed_s": 491.0
+    },
+    {
+      "id": "A09",
+      "stack_pitch_offset_deg": -15.0,
+      "ship_pitch_offset_deg": -10.0,
+      "ship_cutoff_elapsed_s": 491.0
+    }
+  ],
+  "execution_order": {
+    "ascent": [
+      "B0",
+      "A01",
+      "A02",
+      "A03",
+      "A04",
+      "A05",
+      "A06",
+      "A07",
+      "A08",
+      "A09"
+    ],
+    "order_is_adaptive": false,
+    "ascent_duration_s": 492.0,
+    "booster_deferred_during_fitting": true,
+    "automatic_or_result_dependent_retries": false,
+    "baseline_reuse": "No prior flight substitutes for this baseline: exact new baseline record and sampled interpolation coverage required."
+  },
+  "metrics": {
+    "series_rmse": "Partition observed elapsed times into fixed half-open five-second bins [5k,5k+5). Compute mean squared residual within each nonempty bin, then square root of the equally weighted bin means; altitude and speed have independent frozen masks.",
+    "bin_origin_s": 0.0,
+    "bin_width_s": 5.0,
+    "score": "0.5*(altitude_rmse/baseline_altitude_rmse + speed_rmse/baseline_speed_rmse)",
+    "calibration_gate": {
+      "maximum_altitude_rmse_fraction_of_baseline": 0.8,
+      "maximum_speed_rmse_fraction_of_baseline": 0.8,
+      "qualification": "20% improvements are engineering screening targets, not sensor uncertainties, statistical significance or real-vehicle accuracy tolerances"
+    },
+    "admissibility": "Complete finite physical record covering both observed series, valid separation/momentum record, unchanged physical limits, no contact before 491 s, no negative fuel, no state reset or hidden parameter edits. Every valid original observation must be scored. Numerical/coverage errors are invalid runs, not physical failures.",
+    "selection": "After all nine candidates, take the lowest score among admissible candidates passing BOTH improvement gates. Exact ties use earlier registered ID. If none pass, save a negative result and stop. Do not use booster outcome, tank reserve, attitude or unregistered flight points to rank candidates.",
+    "report_all": "Per candidate: both RMSEs, both baseline ratios, score, admissibility and rejection category, cutoff time/state, fuel and observed/simulated coverage. Also report fixed 0..140 and 140..491 residual subsets without using them to re-rank."
+  },
+  "non_fitted_booster_check": {
+    "unlock": "Freeze chosen ID/profile/source/metrics hashes in a selection receipt before scoring booster CSV values or computing booster return outcomes. Static file/hash/coverage inspection is allowed. Disclose that audit estimates were seen before registration.",
+    "runs": [
+      "B0_separation_booster",
+      "selected_separation_booster"
+    ],
+    "initialization": "Use each corresponding actual recorded separation state (position, velocity, attitude, angular rate, fuel, engine/actuator state); never initialize at the apex or translate it onto a desired trajectory.",
+    "controller": "Unmodified starship_sixdof_booster.simulate_booster, guidance_policy=fixed_v1, same frozen profile and recovery goal. No catch or booster tuning.",
+    "maximum_suffix_sim_s": 1200.0,
+    "observations": "Compare complete native curves and actual contact time to frozen booster_return.csv only where observed coverage exists. Report apex as a numerical maximum with saved-sample bracket; an OCR maximum is only the maximum observed display, not a precisely measured physical apex.",
+    "reports": [
+      "apex altitude/time with resolution limits",
+      "actual contact time or unresolved status",
+      "signed/distance-to-interval residual to approximately 99 km and [415,420] s",
+      "same residuals for B0",
+      "full contact speed, tilt, rates, reserves and preexisting acceptance flags"
+    ],
+    "interpretation": "Both non-fitted discrepancies must decrease versus B0 to claim broader agreement. Individual agreement/disagreement is preserved separately from ascent calibration. A crash, unresolved return or worse discrepancy cannot count as successful recovery even if timing agrees. These previously seen checks are not blinded or independent validation.",
+    "no_feedback": "No alternate candidate, new grid, parameter revision or repeat after seeing booster results; report and stop."
+  },
+  "budgets": {
+    "maximum_ascent_rollouts": 10,
+    "maximum_booster_suffix_rollouts": 2,
+    "maximum_total_rollouts": 12,
+    "maximum_parallel_workers": 1,
+    "maximum_case_wall_s": 300,
+    "maximum_cohort_wall_s": 3600,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_space_bytes": 10737418240,
+    "maximum_hosted_model_calls": 0,
+    "verification": "Static input/schema/link checks do not authorize physics; any future physics preflight counts within these limits."
+  },
+  "stop_rules": [
+    "Before any physics: runner, protected-profile diff validator, serialization verifier and source/environment manifest must be reviewed and committed; explicit execution approval required.",
+    "Stop all runs on source/input/environment mutation, invariant breach, numerical/record error, resource exhaustion or timeout; retain partial result and do not expand budget.",
+    "A valid physical candidate failure is recorded and the remaining preregistered grid may continue; do not tune it.",
+    "A baseline with invalid coverage or zero/nonfinite baseline RMSE invalidates this screen; do not edit data to rescue it.",
+    "Stop after the registered grid and optional two booster checks; no full Ship return, 39-case qualification, AI calls, new failure families or automatic mission promotion."
+  ],
+  "outcome_rules": [
+    {
+      "when": "no admissible candidate passes both RMSE improvement gates",
+      "then": "negative calibration result; stop without booster trials and propose separately scoped dynamics/propulsion research if justified"
+    },
+    {
+      "when": "candidate passes ascent gates but non-fitted booster discrepancies do not both improve, or physical return fails",
+      "then": "report ascent-only fit and failed/mixed downstream check; do not refit or promote to mission"
+    },
+    {
+      "when": "candidate passes ascent gates and both non-fitted checks improve without contradicting physical return acceptance",
+      "then": "report bounded guidance improvement with disclosed public-data limits; register later exact-state mission-continuation testing separately"
+    },
+    {
+      "when": "invalidity, timeout or budget stop",
+      "then": "preserve invalid/partial records; stop; no automatic rerun or enlarged allowance"
+    }
+  ],
+  "retention": {
+    "output_directory": "output/starship-ascent-path-20261018",
+    "fresh_output_required": true,
+    "preserve": [
+      "registration and exact-source/environment snapshots",
+      "all full/partial sixdof records compressed with SHA256",
+      "candidate order and elapsed/storage budget ledger",
+      "all observed/predicted fit points and masks",
+      "selection receipt written before non-fitted booster evaluation",
+      "separation handoff hashes and booster continuation records"
+    ],
+    "cleanup": "Keep unique records and unpushed history. Remove only owned regenerable temporary files after verified archive/restore; no Docker or other worktree cleanup."
+  },
+  "implementation_gate": "No runner added by this registration. Implementation must prove baseline-equivalent defaults and reject changes outside the allowlist before execution approval. Any change to grid/data/gates after registration requires a separate version with old plan and results preserved.",
+  "claim_boundaries": [
+    "fit data do not identify true engine, mass or aerodynamic parameters",
+    "public plans, OCR display readings and derived estimates remain separate",
+    "prior-seen booster checks are excluded from tuning but are not unknown held-out data",
+    "no claim that physical hardware flew or real SpaceX recovery was validated",
+    "normal qualification remains source-mismatched and unchanged; renew only after final target source/backend and domain are frozen",
+    "full downstream launch-to-return continuity and AI roles are separately registered work"
+  ]
+}

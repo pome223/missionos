@@ -1,0 +1,178 @@
+{
+  "actual_thrust_factors": [
+    1.0,
+    0.8,
+    0.6
+  ],
+  "assumed_thrust_factors": [
+    1.0,
+    0.8,
+    0.6
+  ],
+  "base_commit": "770afbe6d210d160283caeabfa635f2a45abab73",
+  "budgets": {
+    "maximum_case_wall_s": 180,
+    "maximum_cohort_wall_s": 1800,
+    "maximum_model_calls": 0,
+    "maximum_output_bytes": 268435456,
+    "maximum_parallel_workers": 1,
+    "maximum_return_rollouts": 9,
+    "maximum_simulated_suffix_s": 3600,
+    "minimum_free_space_bytes": 5368709120,
+    "verification_smoke_maximum_steps": 16
+  },
+  "candidate": "available_capacity_return_v1_with_separate_assumed_vehicle",
+  "candidate_contract": {
+    "actual_plant_vehicle": "nominal vehicle with first three main-engine max_thrust_n multiplied by actual_thrust_factor; only this vehicle advances the plant",
+    "assumed_capability_used_for": [
+      "terminal fuel budget",
+      "engine count and throttle demand",
+      "thrust-vector control allocation"
+    ],
+    "limits": "low-level state, mass, inertia and aerodynamic feedback remains idealized as in step 1; this is not a realistic sensor-estimation experiment",
+    "no_model_output_in_independent_check": true,
+    "observed_feedback": "same state feedback as step 1; actual kinematics and actuator states are available, actual max_thrust_n is withheld from planning and command generation",
+    "planning_and_control_vehicle": "nominal vehicle with first three main-engine max_thrust_n multiplied by assumed_thrust_factor",
+    "shared_implementation": "reuse existing AvailableCapacityController and shared ReturnController without changing their guidance or threshold logic",
+    "unchanged": [
+      "origin",
+      "deorbit time",
+      "engine availability",
+      "mass and inertia",
+      "aerodynamic model",
+      "throttle and gimbal limits",
+      "actuator slew and lag",
+      "integrator",
+      "contact limits"
+    ]
+  },
+  "comparison": "same-condition original-plan records from step 1 are context; do not compare against scenario-encoded Rules scores or count them as new flights",
+  "contact_limits": {
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0,
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0
+  },
+  "experiment_id": "ship-fault-assumed-actual-step1-5-20261014",
+  "interpretation": "offline fixed-state capability-mismatch engineering screen; no AI success, continuous robustness, certified landing, sea clearance, water survival or real physical execution is established",
+  "matrix": [
+    {
+      "actual_thrust_factor": 1.0,
+      "assumed_thrust_factor": 1.0,
+      "id": "assumed_100pct_actual_100pct"
+    },
+    {
+      "actual_thrust_factor": 0.8,
+      "assumed_thrust_factor": 1.0,
+      "id": "assumed_100pct_actual_80pct"
+    },
+    {
+      "actual_thrust_factor": 0.6,
+      "assumed_thrust_factor": 1.0,
+      "id": "assumed_100pct_actual_60pct"
+    },
+    {
+      "actual_thrust_factor": 1.0,
+      "assumed_thrust_factor": 0.8,
+      "id": "assumed_80pct_actual_100pct"
+    },
+    {
+      "actual_thrust_factor": 0.8,
+      "assumed_thrust_factor": 0.8,
+      "id": "assumed_80pct_actual_80pct"
+    },
+    {
+      "actual_thrust_factor": 0.6,
+      "assumed_thrust_factor": 0.8,
+      "id": "assumed_80pct_actual_60pct"
+    },
+    {
+      "actual_thrust_factor": 1.0,
+      "assumed_thrust_factor": 0.6,
+      "id": "assumed_60pct_actual_100pct"
+    },
+    {
+      "actual_thrust_factor": 0.8,
+      "assumed_thrust_factor": 0.6,
+      "id": "assumed_60pct_actual_80pct"
+    },
+    {
+      "actual_thrust_factor": 0.6,
+      "assumed_thrust_factor": 0.6,
+      "id": "assumed_60pct_actual_60pct"
+    }
+  ],
+  "order": "assumed factors outer loop 100/80/60, actual factors inner loop 100/80/60; no result-dependent tuning, retry or extra cases",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "origin_file_sha256": "a5b95b17ce46c27689c4db45a80dd7fb5f41cae6efc765fbab0e600610cff621",
+  "preserve_selected_stage2_fault": {
+    "engine_index": null,
+    "id": "all_landing_thrust_80pct",
+    "kind": "landing_engine_derate",
+    "thrust_factor": 0.8
+  },
+  "prior_registration_file": "examples/spaceflight/starship-ship-fault-step1-registration.json",
+  "prior_registration_sha256": "16744e51b7bbe41ba426900d9d897b0c08227426caab8f4a788f2873acbfe69a",
+  "qualification": {
+    "fault_domain_status": "unverified",
+    "no_fault_39_case_certificate_used_for_fault_admission": false,
+    "physical_recovery_certified": false,
+    "runtime_admission": false
+  },
+  "random_draws_used": false,
+  "result_actions_ordered": [
+    {
+      "next": "retain every completed/partial record, report incomplete and stop; do not treat missing results as physical failure or begin AI trials",
+      "when": "budget, input/source mismatch, numerical error or invalid record prevents a complete matrix"
+    },
+    {
+      "next": "report the contradiction and diagnose saved records; do not retune or begin AI trials",
+      "when": "matched 80/80 or 60/60 cannot reproduce the prior candidate contact gate"
+    },
+    {
+      "next": "propose the capability-aware executor as a standard-procedure candidate for this tested grid; compare fuel/time tradeoffs before adoption, require separate broader qualification, and do not invent an AI switch for this fault",
+      "when": "all nine cells have valid contact records meeting every unchanged limit"
+    },
+    {
+      "next": "report discrete sensitivity to capability error; preregister a future symptom/uncertainty experiment where numerical estimates inform AI observation/procedure/resource decisions; do not infer a continuous uncertainty interval from these three factors",
+      "when": "matched 80/80 and 60/60 pass but at least one off-diagonal cell has a valid contact-limit failure"
+    },
+    {
+      "next": "report the full matrix as mixed evidence and stop; any additional strengths, estimator experiment or controller change requires a new protocol",
+      "when": "complete valid results fall outside the preceding cases"
+    }
+  ],
+  "retention": {
+    "cleanup": "no Docker, unrelated files or unique prior flight records removed",
+    "raw_record_directory": "output/ship-fault-assumed-actual-step1-5-20261014",
+    "records": "gzip JSON, SHA256, restore verification, frozen source/input/backend, execution claim and budgets; retain all outcomes"
+  },
+  "reuse": {
+    "decision_before_execution": "freeze reuse evidence and requested rows in the execution plan before any new propagation; if complete equivalence cannot be established, execute all nine rows within the same cap",
+    "eligible_diagonal_factors": [
+      0.8,
+      0.6
+    ],
+    "expected_new_rollouts_if_both_reusable": 7,
+    "maximum_new_rollouts_if_not_reusable": 9,
+    "new_diagonal_reproduction_consumes_rollout_budget": true,
+    "nominal_original_plan_is_not_nominal_candidate": true,
+    "required_bindings": [
+      "unchanged origin and deorbit time",
+      "unchanged shared physics/controller sources and backend",
+      "saved record SHA256 and gzip restore checks",
+      "all assumed-model vehicle/profile values exactly equal their former actual-capability inputs on the diagonal"
+    ],
+    "requirement": "bitwise equivalence of the complete controller/plant calculation after separating assumed and actual capability; matching final scalars or sparse saved samples alone is insufficient"
+  },
+  "schema": "missionos.ship_fault_step1_5_registration.v1",
+  "stage": "1.5",
+  "stage_2_started": false,
+  "status": "protocol_registered_execution_not_started",
+  "stop_rules": [
+    "no new propagation before user authorizes the additional stage",
+    "freeze protocol and executable source/backend/row/reuse plan before propagation",
+    "no threshold changes, automatic retries or new fault strengths",
+    "after stage 1.5 report, stop before stage 2"
+  ]
+}

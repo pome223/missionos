@@ -1,0 +1,137 @@
+{
+  "schema": "missionos.starship_m3_sensor_registration.v1",
+  "base_case": "orbital_update",
+  "cases": [
+    {
+      "case_id": "normal",
+      "physical_factor": 1.0,
+      "accelerometer_gain": 1.0
+    },
+    {
+      "case_id": "propulsion_80",
+      "physical_factor": 0.8,
+      "accelerometer_gain": 1.0
+    },
+    {
+      "case_id": "sensor_gain_80",
+      "physical_factor": 1.0,
+      "accelerometer_gain": 0.8
+    }
+  ],
+  "sensor_config": {
+    "application_delay_s": 600.0,
+    "tracking_delay_s": 30.0,
+    "forecast_timeout_s": 180.0,
+    "forecast_batch_timeout_s": 240.0,
+    "maximum_forecasts": 6,
+    "maximum_forecast_workers": 2,
+    "guard_timeout_s": 45.0,
+    "minimum_apply_reserve_s": 2.0,
+    "contact_limits": {
+      "speed_mps": 5.0,
+      "tilt_deg": 5.0,
+      "body_rate_rad_s": 0.02,
+      "reserve_kg": 28000.0
+    }
+  },
+  "maximum_attempts_per_case": 1,
+  "maximum_wall_time_s": 1800,
+  "maximum_output_bytes": 1073741824,
+  "minimum_free_bytes": 5368709120,
+  "source_files": [
+    "src/runtime/starship_m3_sensor_executor.py",
+    "src/runtime/starship_m3_sensor_mission.py",
+    "scripts/run_starship_m3_sensor.py",
+    "src/runtime/starship_ship_online_prediction.py",
+    "src/runtime/starship_ship_online_guard.py",
+    "src/runtime/starship_ship_sensor_observation.py",
+    "src/runtime/starship_ship_sensor_control.py",
+    "src/runtime/starship_ship_capability_observation.py",
+    "src/runtime/starship_ship_capability_control.py",
+    "src/runtime/starship_ship_capability_guard.py",
+    "src/runtime/starship_ship_capability_matrix.py",
+    "src/runtime/starship_ship_fault_screen.py",
+    "src/intelligence/starship_ship_sensor_agent.py",
+    "src/gateway/starship_ship_sensor_chat.py",
+    "scripts/run_starship_ship_sensor_diagnosis.py"
+  ],
+  "question": "Can the previously separated sensor-disambiguation work operate in a new continuous M3 flight with current-snapshot numerical previews?",
+  "fault_trigger": "After accepted orbital return dispatch, before deorbit burn; all three landing-engine maximum thrusts share one persistent factor. Launch, booster and deployment remain nominal.",
+  "initial_state": "New canonical M3 launch prefix, exact handoff and complete ReturnController history. No saved return origin is installed.",
+  "noise_policy": "One fixed synthetic noise stream (factor_index=0, seed=0) for all three new cases; no case-selected sensor noise.",
+  "preflight": {
+    "cases": [
+      "normal",
+      "propulsion_80",
+      "sensor_gain_80"
+    ],
+    "model_calls": 0,
+    "transport": "actual loopback HTTP Gateway, credential-free worker and checker processes",
+    "response_policy": "fixed observation request then observation-derived proposal; no fixture flight is counted as AI judgment"
+  },
+  "live": {
+    "status": "not_authorized",
+    "requires": "exact frozen plan and successful three-case preflight plus new explicit user approval",
+    "cases": [
+      "normal",
+      "propulsion_80",
+      "sensor_gain_80"
+    ],
+    "attempts_per_case": 1,
+    "provider_policy": "Jev chooses, DeepSeek only on explicit delegation; existing M3 policies retained",
+    "persistent_deepseek_call_cap": null
+  },
+  "budgets": {
+    "maximum_preflight_flights": 3,
+    "maximum_new_sensor_forecasts_per_fault_flight": 6,
+    "maximum_sensor_forecasts_per_stage": 12,
+    "orbital_forecasts": "Existing unchanged M3 authority, separately counted; not included in the 6 sensor forecasts.",
+    "maximum_stage_wall_time_s": 5400,
+    "maximum_stage_output_bytes": 3221225472,
+    "automatic_retry": false
+  },
+  "decision_protocol": {
+    "trigger": "complete deorbit burn telemetry including two-second observation window",
+    "tracking": "AI may request independent historical velocity tracking; delivery is 30 simulated seconds after request",
+    "before_tracking": "Physical proposals lack corroboration and are rejected. At most one reconsideration; preapproved fallback may request tracking.",
+    "after_tracking": "Both actions are forecast at low/point/high of tracking band from current captured state and complete controller history; adopted factor is numeric accelerometer estimate, never an AI number.",
+    "guard": "Credential-free separate process; immutable host captures bind prediction and request snapshots. Recompute sensor estimates and all six record/contact predicates. Both actions use the same admission path.",
+    "reconsideration": "At most one per stage, within original deadline. A rejected AI choice remains recorded.",
+    "fallback": "On absent/invalid/repeatedly rejected judgment, attempt continue then adopt through identical guard. If neither is admitted or time is exhausted, continue recording unresolved; no safety claim.",
+    "application": "One-use receipt at the fixed complete-burn time plus600s. No plant state replacement.",
+    "clock": "Every transport, forecast, capture and checker wait advances the execution plant; no forecast state is installed.",
+    "integration_boundary": "Both choices, both forecasts and execution clip at the same reserved application boundary; ordinary control intervals and the historical propagate default are unchanged."
+  },
+  "acceptance": {
+    "normal": "No sensor false alarm, no sensor assumption change, original M3 return verification passes and exact prefix lineage is retained.",
+    "fault_cases": "New same-flight prefix, independent observation/request provenance, all-step controller/plant separation, correct one-use timing, valid separate-process guard, unchanged four contact limits. Existing nominal return verdict is preserved separately and never relabeled.",
+    "live_ai": "Actual observation request and model judgment, valid receipt and one-use execution, contact verification; fallback safety is reported separately.",
+    "limits": "One scenario, one launch profile, one noise seed and three discrete prediction points per action. Neither continuous uncertainty certification nor real Starship validation."
+  },
+  "interpretation": [
+    {
+      "if": "Any source/backend mismatch, runtime failure, invalid record, deadline/disk/output limit, missing capture or failed preflight",
+      "then": "Stop the cohort, preserve all completed/failed outputs; do not run remaining cases or paid models. Diagnose saved records. Any new flight requires a new preregistration/approval, not a silent rerun."
+    },
+    {
+      "if": "All three preflights pass",
+      "then": "Report zero-model integration evidence and ask for exact-plan three-flight live approval; do not claim new AI/M3 completion."
+    },
+    {
+      "if": "Live model choice valid but unsuccessful or no model answer",
+      "then": "Preserve it and distinguish model outcome, checked fallback and physical outcome; never retry for success."
+    },
+    {
+      "if": "All three live cases pass",
+      "then": "Claim only the registered continuous M3 scenario and observed model roles; historical M3 campaigns and new scope remain separate."
+    }
+  ],
+  "retention": {
+    "experiment_id": "starship-m3-sensor-integration-20261015",
+    "durable_output": "output/starship-m3-sensor-integration-20261015-v1 (git-ignored, no /tmp-only evidence)",
+    "retain": "Frozen plan/source/backend, attempt ledger, all runtime/HTTP receipts, raw six-DOF and forecast records, failures and verifier results.",
+    "git": "Code, registration and concise sanitized results only; review artifacts before adding.",
+    "cleanup": "No deletion in this task. Any later archive must be content-verified and independently restorable before authorized removal."
+  },
+  "comparison": "Measure the operational work (observe, request, decide, constrain, execute, verify). No scoring against Rules/fallback and no causal outcome comparison to old saved-origin flights."
+}

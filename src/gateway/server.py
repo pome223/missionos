@@ -6388,9 +6388,10 @@ class GatewayServer:
             path = request.url.path
             origin = str(request.headers.get("Origin") or "").strip()
             if origin:
+                from src.gateway.starship_inflight_approval import same_origin_inflight_operator
                 starship_console = _starship_operator_same_origin(
                     request, self.settings.gateway_host, self.settings.gateway_port,
-                )
+                ) or same_origin_inflight_operator(request, self.settings.gateway_host, self.settings.gateway_port)
                 if origin not in allowed_cors_origins and not starship_console:
                     return JSONResponse(
                         {"detail": "Browser origin is not allowed"},
@@ -8751,6 +8752,9 @@ class GatewayServer:
     # ------------------------------------------------------------------
 
     def _setup_routes(self):
+        from src.gateway.starship_inflight_approval import build_inflight_approval_router
+        self.app.include_router(build_inflight_approval_router())
+
         # --- health / root / protocol ---
         from src.gateway.go2_delivery_routes import build_go2_delivery_router
         self.app.include_router(build_go2_delivery_router())

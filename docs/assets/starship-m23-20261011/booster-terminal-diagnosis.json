@@ -1,0 +1,110 @@
+{
+  "schema": "missionos.booster_terminal_static_diagnosis.v1",
+  "source_map_sha256": "b63842b3abbfd2b88131063e6498b1dce507e4670a7b79e51b848716240f2bc3",
+  "additional_simulations": 0,
+  "additional_models": 0,
+  "method": "saved_samples_and_pure_scalar_arithmetic_only",
+  "cases": [
+    {
+      "case": "nominal",
+      "diagnostic_basis": "last_saved_coast_sample_not_exact_phase_transition",
+      "sample_time_s": 461.69999999999675,
+      "altitude_m": 86386.08778996672,
+      "downward_speed_mps": 1458.419616857123,
+      "gravity_mps2": 9.550218876176077,
+      "mass_kg": 335347.1476171699,
+      "fuel_kg": 85347.14761716992,
+      "thrust_n": 7354987.5,
+      "net_deceleration_constant_mass_mps2": 12.382239927369215,
+      "stopping_height_m": 85888.65146007498,
+      "ignition_threshold_m": 86188.65146007498,
+      "stop_time_constant_mass_s": 117.78318183235085,
+      "full_thrust_fuel_flow_kg_s": 2272.727272727273,
+      "constant_mass_stop_fuel_kg": 267689.0496189792,
+      "ideal_thrust_dv_to_zero_fuel_mps": 950.4876025573401,
+      "ideal_thrust_dv_to_10t_reserve_mps": 823.5617463646133,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_kg": 142336.44303024787,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_preserving_10t_kg": 158029.9007514578,
+      "full_thrust_fuel_duration_s": 37.55274495155476,
+      "phase_transition_time_s": 461.79999999999677,
+      "phase_transition_sample_time_bracket_s": [
+        461.69999999999675,
+        463.6999999999972
+      ],
+      "phase_transition_altitude_sample_bracket_m": [
+        83477.11848256085,
+        86386.08778996672
+      ],
+      "first_sampled_terminal_alignment_cosine": 0.9958972481238728
+    },
+    {
+      "case": "minus_1t",
+      "diagnostic_basis": "last_saved_coast_sample_not_exact_phase_transition",
+      "sample_time_s": 461.6499999999968,
+      "altitude_m": 86454.26914667152,
+      "downward_speed_mps": 1458.0051697254253,
+      "gravity_mps2": 9.550017312119987,
+      "mass_kg": 334642.940287685,
+      "fuel_kg": 84642.94028768502,
+      "thrust_n": 7354987.5,
+      "net_deceleration_constant_mass_mps2": 12.428595156671623,
+      "stopping_height_m": 85519.68457211177,
+      "ignition_threshold_m": 85819.68457211177,
+      "stop_time_constant_mass_s": 117.31053681821582,
+      "full_thrust_fuel_flow_kg_s": 2272.727272727273,
+      "constant_mass_stop_fuel_kg": 266614.856405036,
+      "ideal_thrust_dv_to_zero_fuel_mps": 943.6846579559044,
+      "ideal_thrust_dv_to_10t_reserve_mps": 816.7588017631774,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_kg": 142286.20121012148,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_preserving_10t_kg": 157977.64925852633,
+      "full_thrust_fuel_duration_s": 37.24289372658141,
+      "phase_transition_time_s": 461.94999999999686,
+      "phase_transition_sample_time_bracket_s": [
+        461.6499999999968,
+        463.64999999999725
+      ],
+      "phase_transition_altitude_sample_bracket_m": [
+        83539.89300343674,
+        86454.26914667152
+      ],
+      "first_sampled_terminal_alignment_cosine": 0.9963226680215717
+    },
+    {
+      "case": "plus_1t",
+      "diagnostic_basis": "last_saved_coast_sample_not_exact_phase_transition",
+      "sample_time_s": 461.6499999999967,
+      "altitude_m": 86563.13045143429,
+      "downward_speed_mps": 1457.5233125150662,
+      "gravity_mps2": 9.549695484438626,
+      "mass_kg": 335973.6129858475,
+      "fuel_kg": 85973.61298584752,
+      "thrust_n": 7354987.5,
+      "net_deceleration_constant_mass_mps2": 12.341867470863523,
+      "stopping_height_m": 86063.72623673358,
+      "ignition_threshold_m": 86363.72623673358,
+      "stop_time_constant_mass_s": 118.09584861901679,
+      "full_thrust_fuel_flow_kg_s": 2272.727272727273,
+      "constant_mass_stop_fuel_kg": 268399.6559523109,
+      "ideal_thrust_dv_to_zero_fuel_mps": 956.5275300794124,
+      "ideal_thrust_dv_to_10t_reserve_mps": 829.6016738866861,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_kg": 142227.79561594295,
+      "ideal_zero_gravity_zero_drag_fuel_to_stop_preserving_10t_kg": 157916.90744058066,
+      "full_thrust_fuel_duration_s": 37.82838971377291,
+      "phase_transition_time_s": 461.7499999999967,
+      "phase_transition_sample_time_bracket_s": [
+        461.6499999999967,
+        463.64999999999714
+      ],
+      "phase_transition_altitude_sample_bracket_m": [
+        83655.90389393363,
+        86563.13045143429
+      ],
+      "first_sampled_terminal_alignment_cosine": 0.9958820319303635
+    }
+  ],
+  "fuel_arithmetic_limit": "No-gravity/no-drag ideal-rocket and constant-mass arithmetic are diagnostic comparisons, not a six-DOF feasibility proof or a lower bound with atmospheric drag.",
+  "existing_fixed_v1_feasibility_flag": "feasible=True unconditionally; drag-aware preview is disabled under fixed_v1",
+  "entry_and_landing_burn_separated": false,
+  "concurrent_default_controller": "fixed_v1",
+  "coast_candidate_operationally_approved": false
+}

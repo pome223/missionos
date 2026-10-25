@@ -1,0 +1,114 @@
+{
+  "schema": "missionos.m23_reachability_screen.v1",
+  "forecasts_requested": 8,
+  "model_calls": 0,
+  "errors": {},
+  "return_admission_granted": false,
+  "scope": "original two opportunity times only; not exhaustive reachability",
+  "candidates": {
+    "nominal": {
+      "check": {
+        "accepted": false,
+        "reasons": [
+          "area_or_availability"
+        ],
+        "areas": [],
+        "time_s": 1000.7000000000407,
+        "candidate_sha256": "6fb4642fdb4cae625c2177e0d5c766d3b149d093ac96c1e7c69912a953a832c7",
+        "observation_sha256": "6e51e94be7216caff287317109847adf67ed212688133c6565a8f288e9206ef7",
+        "notice_sha256": "3ff00fc79bbde0feb0145522304ee7201ae491d733a92cac155c61e7a7b90d05",
+        "envelope_sha256": "780cef41cbb048fb62caf60ef6fb4283ab6dda344941eff80b244e041d61e85a"
+      },
+      "metrics": [
+        {
+          "time_s": 4953.478837767379,
+          "speed_mps": 3.514204005309687,
+          "tilt_deg": 0.5014851114028926,
+          "body_rate_rad_s": 0.0035211595535369297,
+          "reserve_kg": 45812.41933866879,
+          "latitude_deg": 5.895869379504164,
+          "longitude_deg": 167.41493741717616
+        },
+        {
+          "time_s": 4952.803014615312,
+          "speed_mps": 3.512434701062887,
+          "tilt_deg": 0.4930280403360828,
+          "body_rate_rad_s": 0.003533289538826568,
+          "reserve_kg": 45720.680451716966,
+          "latitude_deg": 5.876926455896778,
+          "longitude_deg": 167.37459149879035
+        },
+        {
+          "time_s": 4954.189107987425,
+          "speed_mps": 3.514892025605217,
+          "tilt_deg": 0.4896957534894884,
+          "body_rate_rad_s": 0.0035404501298757283,
+          "reserve_kg": 45822.9136183623,
+          "latitude_deg": 5.914716553180031,
+          "longitude_deg": 167.45503642480284
+        },
+        {
+          "time_s": 4966.213794491063,
+          "speed_mps": 3.487983215659631,
+          "tilt_deg": 0.48347133094655964,
+          "body_rate_rad_s": 0.0035007613465809734,
+          "reserve_kg": 45831.50500608859,
+          "latitude_deg": 6.263947440234233,
+          "longitude_deg": 168.15332813924053
+        }
+      ]
+    },
+    "next_orbit": {
+      "check": {
+        "accepted": false,
+        "reasons": [
+          "area_or_availability"
+        ],
+        "areas": [],
+        "time_s": 1000.7000000000407,
+        "candidate_sha256": "cf13a5990591c86299c85a577e77b589e12445fad2dba1c3f8c30255fc692123",
+        "observation_sha256": "6e51e94be7216caff287317109847adf67ed212688133c6565a8f288e9206ef7",
+        "notice_sha256": "3ff00fc79bbde0feb0145522304ee7201ae491d733a92cac155c61e7a7b90d05",
+        "envelope_sha256": "780cef41cbb048fb62caf60ef6fb4283ab6dda344941eff80b244e041d61e85a"
+      },
+      "metrics": [
+        {
+          "time_s": 10402.260175648684,
+          "speed_mps": 3.511720527791787,
+          "tilt_deg": 0.4907945008558404,
+          "body_rate_rad_s": 0.0035361126896209186,
+          "reserve_kg": 45791.606514100604,
+          "latitude_deg": 6.349403785612797,
+          "longitude_deg": 145.14324487056984
+        },
+        {
+          "time_s": 10401.58053853249,
+          "speed_mps": 3.5108695725878323,
+          "tilt_deg": 0.48399853048973335,
+          "body_rate_rad_s": 0.003545249137757358,
+          "reserve_kg": 45702.6493585536,
+          "latitude_deg": 6.330682282621167,
+          "longitude_deg": 145.1031452437508
+        },
+        {
+          "time_s": 10402.973780820128,
+          "speed_mps": 3.5123943744353805,
+          "tilt_deg": 0.47797616019830763,
+          "body_rate_rad_s": 0.0035566898065293668,
+          "reserve_kg": 45799.41544888142,
+          "latitude_deg": 6.368029982540058,
+          "longitude_deg": 145.18309502654148
+        },
+        {
+          "time_s": 10414.977954100395,
+          "speed_mps": 3.4922786704694397,
+          "tilt_deg": 0.4831716374519084,
+          "body_rate_rad_s": 0.003501769774637363,
+          "reserve_kg": 45834.77795300368,
+          "latitude_deg": 6.715757935158406,
+          "longitude_deg": 145.88280090226596
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,687 @@
+{
+  "schema": "missionos.starship_public_fault_control_report.v1",
+  "scenario": {
+    "seed": 20261014,
+    "allowed_families": [
+      "ascent_engine_out",
+      "booster_restart_failure",
+      "payload_jam",
+      "rcs_channel_loss",
+      "ship_engine_out",
+      "tower_unavailable"
+    ],
+    "maximum_events": 2,
+    "nominal_probability": 0.2,
+    "duration_s": 800,
+    "attempts": 1,
+    "automatic_retry": false,
+    "model_decision_forced": false,
+    "initial_configuration_frozen_before_execution": true
+  },
+  "source_sha256": {
+    "src/runtime/starship_3d_report.py": "becb6263d63965b5a8852a22c1c4e581b7302cb5b7b2145c8cda8f1a07edaf5c",
+    "src/runtime/starship_actual_forecast_corpus.py": "c8b279539dcc943f9fef991b4140f797e7a975492b1001d396e58eec02cc8aa0",
+    "src/runtime/starship_actual_recovery_planning_verifier.py": "e355b57bd5ceb786606f921c2b2c85973a22d9b67bd0e3e42376a747745e5cec",
+    "src/runtime/starship_actual_recovery_shooting.py": "767981c84084351b8814c553d77cc6d2a99b60f0fc5150e897ef39c578102d4a",
+    "src/runtime/starship_artifacts.py": "1b00779f7b7cdab28ac7ee35e21405c722b2583b88e996538a8683a5bb3a2d95",
+    "src/runtime/starship_ascent_supervisor.py": "309d8430bc9c574a00b69f05a8a5bba282cad1bb90cb5cf0d53cd95f81d1b44a",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_boostback_shooting.py": "d7b5825000449aa76de7fd52af9bd9067e300a326ec88674e46cfd288a430f69",
+    "src/runtime/starship_booster_catch.py": "0cd11961ff28725dfa4963f1f4a415e2afa958042a38a0e15f3543235e4306c3",
+    "src/runtime/starship_booster_catch_verifier.py": "915f92136e247904a268b0aecb8b7d32d80a6f5dc81163e8503a1a5752ae1490",
+    "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+    "src/runtime/starship_booster_control.py": "abde531ec46d5c45325511e35bd15c60a7cf9f81067be4266f01a3933be22cf4",
+    "src/runtime/starship_booster_recovery.py": "c8d8d5f4935525d649668f8b8bb5fe501ebc945e5fa45b02ef9cf29553286575",
+    "src/runtime/starship_booster_recovery_verifier.py": "959ed34bcff82f957ec7d9373778e428ca2ab3359d5f779f3b77f8f0f83336c5",
+    "src/runtime/starship_call_limits.py": "060c31fc14d6efe72a1c56fd6e2d6f26f875cbb00001ea484ce4fc96f6d69d43",
+    "src/runtime/starship_capture_diagnostic_report.py": "54186db93fb48d5bbeb10dea3ae7b918683cbcd290b1d13d6f9bd6fd54eaf2ca",
+    "src/runtime/starship_capture_diagnostics.py": "b30e263f9c946004038b9260d014db1f862d8f6ccb0c34e5278a95bd21f476e8",
+    "src/runtime/starship_completion_report.py": "a2444f74807aa01f260807acc4061fc46f70ee8fa100a42327723dbefd3eb222",
+    "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+    "src/runtime/starship_constrained_guidance.py": "355a52445f39f3b9af2fe345a734c597c96f011e15d02f6ac412e990f47f095c",
+    "src/runtime/starship_constrained_recovery.py": "94dd88b0df70115125dab737ee92f7320eb44cd9a9bd04c004459eee38039a64",
+    "src/runtime/starship_constrained_recovery_verifier.py": "2c42b26bf77fad2c32ada6f759dac195c4fe6bb6f485e90c36fff12f9f1ce234",
+    "src/runtime/starship_coupled_pin_landing.py": "2c19c539a183d2abcb1ef272becc31f770b697a7a1b66ca6ff478a19f15cdf99",
+    "src/runtime/starship_coupled_pin_landing_verifier.py": "4e513602bbb3b93c0140c13c5b6aa26ba381dcbc0c8b2fb9dfef5ac2c5f68fae",
+    "src/runtime/starship_coupled_terminal_reference.py": "c1ceeb2ce069d52bf94d01a2e20593bd7b104b6cf4c3276af127cf74cf88bcf5",
+    "src/runtime/starship_coupled_terminal_reference_verifier.py": "5a8be510ace205788883848a5debeac0b0ba7b910b19e2a37230068ddcf411a6",
+    "src/runtime/starship_decision_evidence.py": "f5ab134ed68d81ac6687d609720e9a83f0dbddce5fce04186bb2a5c7b1e13f56",
+    "src/runtime/starship_deployment_forecast.py": "4f4bb16ceeba9195ef205b3596c5115a6f8598c02e1a3228a2fd2ddfccc8c847",
+    "src/runtime/starship_deployment_handoff.py": "36c31578e9ee572314726e66ec9207ca217b73fe39651ca47e3cd59b95fab92a",
+    "src/runtime/starship_deployment_handoff_verifier.py": "4dbfe2641ec12d1382c81555416f709f0afd28aff4a6646dad406923b24beb73",
+    "src/runtime/starship_dispenser_experiment.py": "b802a87fa5e109cdd9f16527c7937e982fd3256586246633ee680b2bb504c031",
+    "src/runtime/starship_dispenser_report.py": "a0ba23dc10746e8d603c200a98caf21644f1ff2d6a2f15bb1c77d16e16a33d69",
+    "src/runtime/starship_dispenser_verifier.py": "87a1eff29fed995f9c02f03be91a434f3c9fd33f281fb04e1f0b50eb98ed517a",
+    "src/runtime/starship_entry_diagnostics.py": "6b93a6898191dd956a9d6ca49ca80e8981a5fbddd3af7edb116cbd88b7a6c2f8",
+    "src/runtime/starship_entry_pretrim.py": "2cb6ff8019790f952a4915268eaf2a5e44224abd12be8809a10e10d68e51bb9b",
+    "src/runtime/starship_entry_pretrim_verifier.py": "e8855aec0c2366a8717bbd14549d95ba1bb50f9099a81b4bf8d7eadc8b306503",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_fin_report.py": "f07e5fa31a9b55df294892879433e07912f476269a1297f99452b6e42b59ab56",
+    "src/runtime/starship_fixed_terminal_reference.py": "d0d227c3ef091066f1ad9932a7ac5d0c1c2f0b0a4ff44f2bd2fa395522a6bfa3",
+    "src/runtime/starship_fixed_terminal_reference_verifier.py": "05291a7665a4782f22eab23aa7650a1b52d2e1552b4046e833295c10ede81644",
+    "src/runtime/starship_flight.py": "3f12eb6f2d3fcb72c4fea50e877c5b5f4467ef4b97a0cd37c9f9a4c1c12c9620",
+    "src/runtime/starship_flight_broker.py": "791e343b9ccdf1aabacadbeba9b7c9175f7cf8fe73f64611002a46afb68c88ce",
+    "src/runtime/starship_flight_supervision.py": "6087ec0e7a6a050d044e52abff997bdc7efb310aadc61182adc91e7d9bc0fccc",
+    "src/runtime/starship_flight_supervision_verifier.py": "1e11fef51574eb4d7c927934fd3d5618c53ef6784b4d250e064633533f4ae42d",
+    "src/runtime/starship_inflight_approval.py": "ccc9986d1ed7488dacbfb85f94b2ad3d519c5182bfd4ff7a1d6657df80042f23",
+    "src/runtime/starship_inflight_executor.py": "5d0478b78afd679a02cfccd4c03840ff235fd8e53bd380c614c7e0b449b2dccd",
+    "src/runtime/starship_inflight_runtime.py": "3942d0300f4cd2aa61e0b06eb77b6d1ca814fcb7a5ff260307a4ad2f197d88ed",
+    "src/runtime/starship_jev_shadow.py": "37a11dfe14e7b93851c4a1b95dc97ef4de869d2c9f761c1545af88dfece1377b",
+    "src/runtime/starship_jev_shadow_report.py": "8332c8e806b2a3f0deeccec01a7daa2889541e9e90b2f9b4d6803f009794f48a",
+    "src/runtime/starship_jev_shadow_verifier.py": "bf547cbb95813b0e1097b7cf61c50bd7081bd270e3312379c655173765f59f48",
+    "src/runtime/starship_landing_context.py": "2ba967f103f828bf06fd0403b8f7c23a44eef268f8e357bf9e945a481bc62e07",
+    "src/runtime/starship_landing_decision.py": "32bb61b776ff601ce8741424f27fc9ea85bffadf4d0abb147f3782cb0343007e",
+    "src/runtime/starship_landing_decision_verifier.py": "a3992551890eafc0b330077c81b02b68ddeaeac60c75637cf49e74c1746afb76",
+    "src/runtime/starship_landing_forecast.py": "cc2b41002362048b37c1263b1f52fed67d940f346b1c50bab3125b94fa89765c",
+    "src/runtime/starship_landing_forecast_report.py": "e387f67f1433c505059ae7e5850e5590850ef6c2685344ce888cb4699372dd38",
+    "src/runtime/starship_landing_forecast_verifier.py": "e4e4c90edc3efa5fdb1530618a9c34effd4fd4cc80cfba686075736a84f86765",
+    "src/runtime/starship_m2_attempts.py": "29c07539b10c35af9555928c2d96dd4ccc32ab59c8870e9b234411650593f0e7",
+    "src/runtime/starship_m2_contract.py": "307312389cdea462144d70637b11e362880c194c573e7d468d3cee2392dc30e2",
+    "src/runtime/starship_m2_control.py": "41f2abba1a1ed2ff6956793ba08d9d30f9c9e3c3ce0b2a9d8e5a451d7ab57e71",
+    "src/runtime/starship_m2_decision_verifier.py": "b5f0124220895a4ed03484bbbeed011048d6bebc3141ec3eec4044f6389f474a",
+    "src/runtime/starship_m2_runner.py": "c26ffae4ed53e4441117cf0d8aae8e6a1957ad692963de7af76ccfef8b7216a7",
+    "src/runtime/starship_m2_verifier.py": "bc8550feab460088bf6bfffa514d5285a98964c69bc6a96b2d4f678eadd9b8f9",
+    "src/runtime/starship_m3_completion.py": "64bef486e19160ced54cab3aa829264c28a17ccbbd47254a4d85575b787c11d3",
+    "src/runtime/starship_m3_directors.py": "f4a483ea2d836ebb6fb062e076155a0143f8beb9425a31280e11fe1ab8cc7a43",
+    "src/runtime/starship_m3_fixture.py": "91ee4671ffa63f1a32f7fa4f462bfe8cb26187815c9c5c6fecad3be245c69a10",
+    "src/runtime/starship_m3_inflight.py": "47056d8231af6b6048d0351c62be51f55df76e44ece84875cdecafa31809cbf9",
+    "src/runtime/starship_m3_live.py": "1e29e37d490c68f915b7fa529af91c1a90037c1d1f19b54de758c17ce8a231d5",
+    "src/runtime/starship_m3_prefix.py": "5fa66bb32c6a13f3b8e0b305d1b81138a2bd9320f44f5b2b57cb5261e03d996d",
+    "src/runtime/starship_m3_prefix_verifier.py": "6d589c1da6fb5171a563e872f6705aa0c2eda831010679a2f061459497dfe65e",
+    "src/runtime/starship_mission_control.py": "9551cf63663fbad2f900eda5cb845bdaaf61e900f803bdf5ece59a9e9d73a4c8",
+    "src/runtime/starship_mission_director.py": "bcb10e4216a8b0fd44f88b399556d1adc0ed1ebf4cc7d2e704d4ee50137c950e",
+    "src/runtime/starship_mission_director_verifier.py": "152ca7ec650dcfd0c1f9c2f9636a54c9c7ead5cd20129ced8262d54a3b3ac2a9",
+    "src/runtime/starship_model_diagnostics.py": "4e16ec6fbccc4cbbb326491f113ca9d4789497a4b77f05870b728cd0d9ff3b07",
+    "src/runtime/starship_operational_trials.py": "9731a3cbc36199d2450a182e8eccf80d1b6b4d9ea8174deeb328165095c978dc",
+    "src/runtime/starship_operator_resolution.py": "9cfce545bb03b2972b50aa4dadfc4f3be3decdeca98db68e09c587b28377f111",
+    "src/runtime/starship_orbital_window.py": "ba492475f6c61f91ebaeb73313e039d16db4d49e059349854220c249c2781154",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_recovery_reports.py": "49ed21de8949d2db3b10f785c921488c056840659a016b777b1de8871534738c",
+    "src/runtime/starship_reference_ids.py": "6099b670859dae468d54a3525623c1e27c8641076ad1eb6a0377553005dd8675",
+    "src/runtime/starship_reference_tracking.py": "726bfe4b37707d92a68e61ed20ce1e48ee6d0ece99ba3433425e19d756b530da",
+    "src/runtime/starship_reference_tracking_verifier.py": "cae08a63cc06e47aac6bca4ea2abad797a111084b2f8bb8e119819c3ad553bb6",
+    "src/runtime/starship_replanning.py": "e0b65f59d1fe435ae7dda503a93696f8b0e2f59f355f773e7bbfd14c54cc5163",
+    "src/runtime/starship_replanning_comparison.py": "d1797a17ce455ab696c780cf9783c0c4e0025670d1a52286527ecfb949b13f51",
+    "src/runtime/starship_replanning_events.py": "031d43f3e5b8b4e9f8ffc702db84322535d8be1aad49e4088125d04647ec1dd8",
+    "src/runtime/starship_replanning_executor.py": "a53eea27cc6ebc16f175fcaa1ac6950aaf1739e53bf628f4436662beb61d6689",
+    "src/runtime/starship_replanning_verifier.py": "5741a24d04c011eb8cf77fe62ee5c3cfeb45859943a5051bf25e6b587750e20c",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+    "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+    "src/runtime/starship_return_prediction.py": "71d40fc95e8391aba93ce4dfe6e347703996cafd0cace7335dda7ba02b5b49b5",
+    "src/runtime/starship_return_prediction_verifier.py": "04f914e5466ab72a0a225c2814e253cac3b2d33dd0eee05e5d4ebfadcd14144e",
+    "src/runtime/starship_return_sites.py": "cf9e057825f523840b5027522c1f71a7093c88d4f1d904e5feaebc60e6991a60",
+    "src/runtime/starship_return_sites_verifier.py": "d27bb52fb25f6f8034c180854540fef016642426d08a28265bb56666fd7a245c",
+    "src/runtime/starship_return_time_search.py": "979b76262183265274d2d44a824d0d58825de1a76f06962c6efd47e783e6c0e7",
+    "src/runtime/starship_runtime_budget.py": "c31daebc1ff2fb4e17c4a2ab33513e6ddd9248f1f4b55d0e707e251dd0794853",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_sixdof_booster.py": "c9724ba3b3b2fa29b83af17919e2b6f7efb1212bd1d19495f784dc2931156511",
+    "src/runtime/starship_sixdof_catalog.py": "cc0e6bb708a7986645fed6411fce0d7ee1ac42c7742eeb742b8838138bedba45",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_sixdof_mission.py": "1cf9188ffe7e0f1a32293dac928f2018b61c2e68e75c832aabf264fbcf820de9",
+    "src/runtime/starship_sixdof_report.py": "dddf2677c97034ef608771c43b3cf3fac2fcbe7e33b39756809fdfce38e26f61",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_validation.py": "19ad244cae8353244cffd1c43e4319b7e091c232edf48a51375798c0a038f36c",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_splashdown.py": "f0ce00f69d86e30551c547c43f179275475435e45bd32eb931bd18bb0394f2ed",
+    "src/runtime/starship_splashdown_verifier.py": "d29586e935169a63a095d78b45e60f93f85137bd1a6b3dc633232d56e568444b",
+    "src/runtime/starship_static_artifacts.py": "91cc117fbd57f8c563321eff5d217d49dbf3830959090a39543c986335dcd1ad",
+    "src/runtime/starship_study.py": "879373a4f538fa4a3eb24222c70563b44b18184d705ca81806aca87c5782d782",
+    "src/runtime/starship_terminal_guidance.py": "735b2a4b5aa6a9af95e5e5eaae36eb101c39ebc66d6acc95016d6a6707037dad",
+    "src/runtime/starship_terminal_reference_screen.py": "29d865645e0efd1b2c90cbd6e3b01061f29c3369083e87eb66ddfaa6ea2136d5",
+    "src/runtime/starship_terminal_reference_screen_verifier.py": "363da8fcd715ea944c88e670f31db004268adacba06ba2230c54e44f6cbd8829",
+    "src/runtime/starship_terminal_wrench.py": "a0d03182194ad9a69179d04ca272e16c51556c88a1a2a760b5c698de18cae5fa",
+    "src/runtime/starship_terminal_wrench_verifier.py": "96fc32bf0b04046a706850fda045ad9f3470f54a1652162138a85805e08c4050",
+    "src/runtime/starship_tower_actor.py": "fd36b18c3af97653dceacf16d09eab310069daa4952a35eb31fb72c17f8eae1e",
+    "src/runtime/starship_tower_broker.py": "d3ff440eb482dd88d79d7780dba34ffb18e2f65f2df2310e3662cfb5881c4a25",
+    "src/runtime/starship_tower_preburn_gate.py": "a4227bf5f7af70aaad441946f88ab9831c752827dffdc668c48f6062b815d502",
+    "src/runtime/starship_tower_runtime.py": "26292405e58a48228fb62eef98f365dbaf6f49cd26f5bd34df7a0e76fb9af748",
+    "src/runtime/starship_tower_supervision.py": "e4fa539ab940d23caee683c2f28d719ffb6ba6900538267cd6f2680ce1e4aa16",
+    "src/runtime/starship_tower_supervision_verifier.py": "ab14ef1c8c28824ce7e8274593022ea42cb518cea6cdd05bb903e4cc693ae13a",
+    "src/runtime/starship_trouble_control.py": "7625c8c504d73c43d12d7bf272aaa70149855e62150a09118feb5c90624d71c2",
+    "src/runtime/starship_trouble_control_verifier.py": "b4e3d1b9b28f2d69151a1ed887b5718b1264097cf8259cf108b946bee241924d",
+    "src/runtime/starship_trouble_engine.py": "7dcf5eaa714dabae87fdcecd01bf611ff523003d3d1a09c6be8077ad16d93e40",
+    "src/runtime/starship_trouble_verifier.py": "09ec0893eb653aa90d4c4eeefdabe05317b398e00a98d3aa74c8b6e3104842a1",
+    "src/runtime/starship_upstream_report.py": "30949f37f2cca3710cb9a5118fd27f39a5a6ad648e6a5cb2b1a638411a063daa",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_wind_verifier.py": "cdf7203c8980eaf1afb99de5c68f30ed223a84e865ebc76a2d8f4c88debc7412",
+    "src/intelligence/starship_booster_recovery_evidence.py": "4f3da6bcff077a9019712733493053404ccb4e3799c9ab3e617b17d3e175d2b8",
+    "src/intelligence/starship_flight_supervisor.py": "f94293483ab4200b241ab1f7d726f6e113cba2b78b96d75bf0a2c72752fa5106",
+    "src/intelligence/starship_jev_router.py": "40a8af3225d38e2a9a61bda3097ac086bb7bb1cb1e2203a8bb25eec22c679241",
+    "src/intelligence/starship_m2_broker.py": "6c3902fc972fc76422d2a129666f9ee955ccac9916f5b7042afe7aa7e3d1b5a5",
+    "src/intelligence/starship_m3_broker.py": "2fbe0e080dae71bbb453fbb88d2bc7bfb6a612c92eaca7fbbe21429a05d14ed0",
+    "src/intelligence/starship_mission_director.py": "675a799951c9a82efc49e23e8bae72a5d9faccfc6053d1f933a9ceb118c46d67",
+    "src/intelligence/starship_mission_planner.py": "dc4d3825428b7ad44e156397eb63101022449ad2ef2439745d02dbc51b54f497",
+    "src/intelligence/starship_orbital_protocol_campaign.py": "c2f3aa4071017c8dfec70693af74e518c01b0a445e1d7999de8e3e856ad6d085",
+    "src/intelligence/starship_protocol_campaign.py": "92c6c5dd5d26031f1301b61f5c9f1dd7c7c9f76a4ba6109a45abeef10801028b",
+    "src/intelligence/starship_protocol_probe.py": "5c0fb6cd92a6bdccfb53c17610e8231d24b60aed267b546431a82451fefb8b88",
+    "src/intelligence/starship_reference_protocol.py": "453e303f028bb132900a1855f92e5a14a1eebf7c671bdcc4853bedb0067a4a59",
+    "src/intelligence/starship_replanning.py": "1d907650511a5cffdcdf055b8f9bf31fc2dabd1abad36d621bc024520499abe1",
+    "src/intelligence/starship_trouble_agent.py": "4bc0949242bd3efe540618191a222f1af5869070ccb7e84ca76d60e490ec3a24",
+    "src/intelligence/space_ops_investigator.py": "1ab2ceb2381c3f0d33674ebb2424e7653e7c3d700120dd9b18e89c65a686f485",
+    "src/agents/model_config.py": "cfcd0f82873cedaa2e67fe6b991a207b4ba4365cdbe63c98795afddaeaf965f9",
+    "src/config/settings.py": "773651773a2b7edc4655aa17b0c586fed3d2ad97aed8290b08214994f842581a",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "scripts/run_starship_trouble_control.py": "3f3d7820bb7d0523f92b168e63bf8edc2dacf5af42cd651f4a47e29be8bd6d5d"
+  },
+  "artifacts_sha256": {
+    "study.json": "e4498601bf596998766b430cd4f1561eb0f7faaeabbc9ef866261babe196d2fd",
+    "verification.json": "4888786cc29e4a6836e130ce969350eda68f587363f0b0a722984253e4d3f5f8",
+    "summary.json": "0402f0db765299180026aa8db86ca5310b01975474f2fb780cc9a1fdaeff5b21",
+    "plan.json": "ac8c5323ce383c9e357f1f38716f371e3c59826516c76b54f64622904c8f855f",
+    "protocol.json": "87af199fa8ac992456758d245df1bc2b8c4c26652c99a78ff9d86fb7c9520021",
+    "host-execution.json": "a913ed3ba6483c84fd51b397564cfab3fb579ef288c61867e47914913900c31a"
+  },
+  "verification": {
+    "physics_record_passed": true,
+    "fault_record_passed": true,
+    "control_record_passed": true,
+    "control_completion_accepted": true,
+    "all_requested_diagnostics_completed": true,
+    "source_unchanged": true,
+    "case_scope": "bounded observations, checked actions and later observations; not mission recovery"
+  },
+  "providers": {
+    "jev": {
+      "attempts": 18,
+      "valid": 18
+    },
+    "deepseek": {
+      "attempts": 1,
+      "valid": 1
+    }
+  },
+  "accepted_model_choices": 18,
+  "executed_action_counts": {
+    "continue_mission": 13,
+    "withhold_deployment": 2,
+    "collect_status": 3
+  },
+  "fallback_count": 0,
+  "faults": [
+    {
+      "family": "ascent_engine_out",
+      "body": "ship",
+      "at_s": 71.832123,
+      "phase": "stack_ascent"
+    },
+    {
+      "family": "payload_jam",
+      "body": "ship",
+      "at_s": 490.6038580000411,
+      "phase": "orbital_coast"
+    }
+  ],
+  "decisions": [
+    {
+      "observed_at_s": 0.0,
+      "executed_at_s": 0.30000000000000004,
+      "body": "ship",
+      "triggers": [
+        "initial_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 0.4,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 71.832123,
+      "executed_at_s": 72.13212299999998,
+      "body": "ship",
+      "triggers": [
+        "health_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 72.23212299999997,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 137.63212299999626,
+      "executed_at_s": 137.83212299999624,
+      "body": "booster",
+      "triggers": [
+        "initial_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 137.93212299999624,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 137.63212299999626,
+      "executed_at_s": 137.83212299999624,
+      "body": "ship",
+      "triggers": [
+        "health_changed",
+        "phase_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 137.93212299999624,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 153.63212299999535,
+      "executed_at_s": 153.83212299999533,
+      "body": "booster",
+      "triggers": [
+        "phase_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 153.93212299999533,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 174.2821229999942,
+      "executed_at_s": 174.5321229999942,
+      "body": "booster",
+      "triggers": [
+        "phase_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 174.7821229999942,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 257.73212299998994,
+      "executed_at_s": 258.03212299999,
+      "body": "ship",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 258.13212299999003,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 294.53212299999416,
+      "executed_at_s": 294.78212299999416,
+      "body": "booster",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 295.03212299999416,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 377.7321230000172,
+      "executed_at_s": 377.93212300001727,
+      "body": "ship",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 378.0321230000173,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 414.53212299999416,
+      "executed_at_s": 414.78212299999416,
+      "body": "booster",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 415.03212299999416,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 460.38212299999714,
+      "executed_at_s": 460.5821229999972,
+      "body": "booster",
+      "triggers": [
+        "phase_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 460.6821229999972,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 482.7321230000411,
+      "executed_at_s": 482.9821230000411,
+      "body": "ship",
+      "triggers": [
+        "phase_changed"
+      ],
+      "provider": "typesafe",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 483.2321230000411,
+      "later_deployment_withheld": false,
+      "later_released_count": 0,
+      "later_sequencer_state": null,
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 490.6038580000411,
+      "executed_at_s": 490.8538580000411,
+      "body": "ship",
+      "triggers": [
+        "health_changed"
+      ],
+      "provider": "typesafe",
+      "action": "withhold_deployment",
+      "accepted": "withhold_deployment",
+      "fallback": false,
+      "observed_later_at_s": 491.1038580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 610.6038580000411,
+      "executed_at_s": 628.1038580000411,
+      "body": "ship",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "deepseek",
+      "action": "continue_mission",
+      "accepted": "continue_mission",
+      "fallback": false,
+      "observed_later_at_s": 628.3538580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      },
+      "external_summary": "Periodic monitor at T+610.6 s shows nominal orbital coast: altitude 283.3 km, speed 7758 m/s, body rate 0.00116 rad/s, fuel 110800 kg, all sampled engines/RCS available, no flap jams. Payload mechanism remains blocked and released_count=0; deployment already withheld. Continue existing timeline; no basis to inhibit return.",
+      "evidence_ids": [
+        "altitude_m",
+        "body_rate_rad_s",
+        "fuel_kg",
+        "payload_mechanism",
+        "released_count",
+        "speed_mps",
+        "tower_ready",
+        "ship_main_0.available",
+        "rcs_0_-1_-1.available",
+        "flap_forward_1.jammed"
+      ],
+      "decision_time_evidence_values": {
+        "altitude_m": 283312.62432169635,
+        "body_rate_rad_s": 0.0011642971502794442,
+        "fuel_kg": 110800.0,
+        "payload_mechanism": "blocked",
+        "released_count": 0,
+        "speed_mps": 7758.350531400035,
+        "tower_ready": true,
+        "ship_main_0.available": true,
+        "rcs_0_-1_-1.available": true,
+        "flap_forward_1.jammed": false
+      },
+      "free_text_summary_verified": false
+    },
+    {
+      "observed_at_s": 730.6038580000411,
+      "executed_at_s": 730.8538580000411,
+      "body": "ship",
+      "triggers": [
+        "periodic_monitor"
+      ],
+      "provider": "typesafe",
+      "action": "collect_status",
+      "accepted": "collect_status",
+      "fallback": false,
+      "observed_later_at_s": 731.1038580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "completed",
+        "time_s": 732.8538580000411,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 732.8538580000411,
+      "executed_at_s": 733.1038580000411,
+      "body": "ship",
+      "triggers": [
+        "diagnostic_ready"
+      ],
+      "provider": "typesafe",
+      "action": "collect_status",
+      "accepted": "collect_status",
+      "fallback": false,
+      "observed_later_at_s": 733.3538580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "completed",
+        "time_s": 735.1038580000411,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 735.1038580000411,
+      "executed_at_s": 735.3538580000411,
+      "body": "ship",
+      "triggers": [
+        "diagnostic_ready"
+      ],
+      "provider": "typesafe",
+      "action": "collect_status",
+      "accepted": "collect_status",
+      "fallback": false,
+      "observed_later_at_s": 735.6038580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "completed",
+        "time_s": 737.3538580000411,
+        "reason": null
+      }
+    },
+    {
+      "observed_at_s": 737.3538580000411,
+      "executed_at_s": 737.6038580000411,
+      "body": "ship",
+      "triggers": [
+        "diagnostic_ready"
+      ],
+      "provider": "typesafe",
+      "action": "withhold_deployment",
+      "accepted": "withhold_deployment",
+      "fallback": false,
+      "observed_later_at_s": 737.8538580000411,
+      "later_deployment_withheld": true,
+      "later_released_count": 0,
+      "later_sequencer_state": "skipped",
+      "diagnostic_completed": {
+        "status": "not_requested",
+        "time_s": null,
+        "reason": null
+      }
+    }
+  ],
+  "outcome": {
+    "ship": {
+      "termination": "time_limit",
+      "phase": "orbital_coast",
+      "end_time_s": 800.0,
+      "released_count": 0,
+      "return_resolved": false
+    },
+    "booster": {
+      "termination": "surface_contact",
+      "contact_point_speed_mps": 154.4315364617349,
+      "cg_speed_mps": 154.1682104436672,
+      "recovery_envelope_met": false,
+      "catch_verified": false
+    }
+  },
+  "authority": {
+    "boundary": "MissionOS CLI -> one-use plan approval -> host Jev/conditional DeepSeek -> credential-free concurrent 6DOF worker -> independent action check -> later observation -> verification",
+    "existing_M3_Gateway_connected": false,
+    "maximum_llm_calls": null,
+    "scope": [
+      "continue_mission",
+      "collect_status",
+      "withhold_deployment",
+      "inhibit_return"
+    ],
+    "fault_return_qualified": false,
+    "physical_execution": false,
+    "test_operator_authenticated": false
+  },
+  "limits": [
+    "One preselected-seed engineering trial, not a population reliability estimate.",
+    "Synthetic component-health diagnostics, ideal kinematics and noisy quantized fuel proxy.",
+    "The three later diagnostics sampled the same synthetic channel; not independent sensors.",
+    "Only evidence ID/value binding is verified, not every assertion in the external prose.",
+    "Ship remains unresolved in orbit at the bounded horizon; Booster impact failed recovery.",
+    "This fault-control execution is separate from the saved no-random-fault recovery-choice video.",
+    "Past failed/revised 20261013 trials remain retained separately."
+  ],
+  "post_run_integration_changes": {
+    "paths": [
+      "src/intelligence/starship_mission_director.py"
+    ],
+    "scope": "Import the existing legacy standalone-director recovery-history whitelist and retired-alias compatibility. The randomized trouble actor and physical sources used by this trial are unchanged; no extra live trial is claimed."
+  },
+  "normal_fixture_runtime_smoke": {
+    "duration_s": 180,
+    "mode": "fixture",
+    "model_calls": 0,
+    "applied_faults": 0,
+    "record_checks_passed": true,
+    "control_completion_accepted": true,
+    "action_counts": {
+      "continue_mission": 6
+    },
+    "private_artifact_sha256": {
+      "study.json": "7ad63dfbadbba3e64c38889fd544a3751a5859dd8454c44c84baede3c03fe3ff",
+      "verification.json": "40f671dc7859aa7465886ea0c5d2a00f08b9f0d0d3d3863c7f85e0629aa3d295",
+      "summary.json": "35da5d39d3336f939b7df1c8368f246b82dae4579f0fb9bd1cc230a2cad3bb94"
+    },
+    "scope": "Short no-fault CLI/worker boundary; no live normal flight or recovery claim."
+  }
+}

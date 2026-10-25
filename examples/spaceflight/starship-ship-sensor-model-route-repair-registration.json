@@ -1,0 +1,156 @@
+{
+  "schema": "missionos.ship_sensor_diagnosis_registration.v1",
+  "experiment_id": "ship-sensor-diagnosis-model-route-repair-20261015",
+  "status": "registered_repair_awaiting_additional_one_flight_user_approval",
+  "base_commit": "dfb0a6ff92a7d0c735a7029c33a327c4768db17e",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "cases": [
+    {
+      "case_id": "trial-1",
+      "physical_factor": 0.8,
+      "accelerometer_gain": 1.0
+    },
+    {
+      "case_id": "trial-2",
+      "physical_factor": 1.0,
+      "accelerometer_gain": 0.8
+    }
+  ],
+  "blind_payload": "Case labels, actual capability, sensor gain and fault identity are excluded from all AI requests. Two counterfactual hypothesis tables are shown identically, as discrete experimental evidence not live true-state forecasts.",
+  "sensing": {
+    "accelerometer": "Existing step2 noise/bias/gauge/latency, seed0, with registered gain on specific-force signal; no plant maximum enters estimator.",
+    "tracking": {
+      "velocity_frame": "ECI",
+      "velocity_noise_sigma_mps": 0.01,
+      "position_noise_sigma_m": 10.0,
+      "explicit_request_latency_s": 30.0,
+      "model_allowance": 0.01,
+      "basis": "Synthetic engineering trial assumptions, not actual Starship specifications. Velocity differences and modeled gravity, independent of accelerometer stream; nominal telemetry only."
+    },
+    "offline_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ]
+  },
+  "switch": {
+    "time": "complete deorbit-burn request +600s, first scheduled control step",
+    "factor": "only numeric accelerometer point estimate; model never supplies a number",
+    "physical_plant_repaired": false,
+    "minimum_work_reserve_s": 47.0,
+    "measured_wall_plus_acquisition_latency_limit_s": 598.0
+  },
+  "physics_screen": {
+    "new_runs": 0,
+    "reuse": "Exact original four records and calibration, bound by prior evidence SHA and unchanged numeric/physics/observation/guard sources."
+  },
+  "calibration_gate": "From saved screen telemetry, 20 seeds for each actual case plus healthy gain1 control: independent tracking band contains physical value, detects thrust deficit, and disagrees with biased accelerometer only in sensor-fault case. This is offline verification, no new propagation.",
+  "counterfactual_evidence": "Exact source/record hashes and discrete point assumptions frozen after screens, before AI. Not nominal39-case fault qualification, continuous guarantee or independent physical model.",
+  "decision_policy": {
+    "first": "Jev chooses continue, adopt, request_independent_tracking, or explicit request_deep_reasoning. No forced tracking and no confidence-based replacement.",
+    "after_tracking": "Jev or explicitly delegated DeepSeek chooses continue or adopt using genuinely newly delivered tracking observation. Valid choices are respected; no success-directed replacement.",
+    "missing": "Preapproved safety net requests independent tracking if absent, then guard checks numeric compatibility before a physical choice. Fallback is never AI completion; reject conflicting accelerometer-only adoption. No universal safe-return claim."
+  },
+  "independent_check": "Separate credential-free process recomputes accelerometer and tracking estimates, causal acquisition/arrival, observation/authority/source/backend hashes, evidence and single-use application. Adoption needs independent corroboration; valid continuation remains respected.",
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "model_configuration": {
+    "jev_model": "jev-1.13.0",
+    "jev_transport_s": 30.0,
+    "jev_decision_s": 35.0,
+    "deepseek_model": "deepseek-flash",
+    "deepseek_transport_s": 120.0,
+    "deepseek_decision_s": 150.0,
+    "thinking_enabled": true,
+    "reasoning_effort": "low",
+    "maximum_output_tokens": 16384,
+    "maximum_model_calls": null,
+    "retries": 0,
+    "raw_reasoning_recorded": false
+  },
+  "preflight": {
+    "new_flights": 0,
+    "reuse": "Two original sourcefb0b01e5 fixture flights; not described as new-source flights. Repair-specific zero-model actualGateway/productionSensorAgent/mock-provider/decode/worker acceptance boundary must pass before execution."
+  },
+  "live": {
+    "flights": 1,
+    "case_id": "trial-1",
+    "retries": 0,
+    "completion": "Same frozen propulsion-loss scenario, source changed only for model route/configuration; actual tracking request and valid final AIchoice+guard+oneuse+contact. Preserve original failed attempt; no success-rate pooling or held-out claim."
+  },
+  "budgets": {
+    "maximum_new_physics_runs": 1,
+    "maximum_screen_wall_s": 180.0,
+    "maximum_preflight_case_wall_s": 300.0,
+    "maximum_live_case_wall_s": 600.0,
+    "maximum_active_execution_wall_s": 1200.0,
+    "maximum_output_bytes": 268435456,
+    "minimum_free_bytes": 5368709120,
+    "new_online_forecasts": 0
+  },
+  "authorization": {
+    "user_request": "Additional approval not yet obtained",
+    "scope": "One additional registered propulsion-loss flight only after explicit user approval of this prepared plan; no retries or other new flights."
+  },
+  "interpretation": [
+    "Invalid record, budgets exhausted, source/input mutation during a cohort: stop and preserve.",
+    "If physics directional gate fails: report bounded negative result, no AI flight.",
+    "If independent channel calibration fails: stop; do not tune on same registered cases.",
+    "If preflight boundary fails: stop before hosted calls, diagnose from saved artifacts.",
+    "If live AI skips acquisition, makes valid continuation/adoption, times out or fails: keep actual choice and outcome; never rerun to obtain pass.",
+    "If this one repair flight completes, combine its scoped result with preserved original trial-2 AI success. This is a source-repair confirmation on the same scenario, not a fresh two-case cohort, held-out success rate, fault robustness or hardware certification."
+  ],
+  "retention": {
+    "durable_output": "output/ship-sensor-diagnosis-model-route-repair-20261015",
+    "raw_private": true,
+    "portable_summary_in_git": true,
+    "compress_and_restore_hash_verify": true,
+    "delete_originals": false
+  },
+  "reuse_evidence_directory": "output/ship-sensor-diagnosis-20261015",
+  "prior_evidence_file": "docs/assets/starship-ship-sensor-diagnosis-20261015/saved-record-verification.json",
+  "prior_evidence_sha256": "5e87757bd23f42d6866fb974b8c704985a13ad4830c27fec58145fb613b6fdc5",
+  "host_only_changed_source_files": [
+    "src/intelligence/starship_ship_sensor_agent.py",
+    "scripts/run_starship_ship_sensor_diagnosis.py",
+    "tests/contract/test_starship_ship_sensor_control.py"
+  ],
+  "additional_execution_requires_user_approval": true,
+  "live_case_ids": [
+    "trial-1"
+  ],
+  "additional_source_files": [
+    "scripts/smoke_starship_ship_sensor_model_route.py",
+    "tests/contract/test_starship_ship_sensor_repair.py"
+  ],
+  "prior_summary_files_sha256": {
+    "screen-summary.json": "7ed2cc6e6ce88acdaea6a244dcdfb14ecdf1379a1dcc8c1fe2d532da5bbb1a2b",
+    "preflight-summary.json": "c1a65375efe6fc03b23e516bcc92a817dce2cfd73f0fe7bdc412768f545feeac",
+    "calibration.json": "9f65181f62cc1c93c2b78a56c828f69131905b6792c39e67fd7ddeb4df3ab667"
+  },
+  "model_route_smoke": {
+    "file": "docs/assets/starship-ship-sensor-diagnosis-20261015/model-route-smoke.json",
+    "sha256": "56505784d718e15ef3da33a5d1ed4eb4bc7e15ebea8462064b56e107bbf8367f"
+  }
+}

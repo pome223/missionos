@@ -1,0 +1,227 @@
+{
+  "schema": "missionos.starship_visual_native_evaluation_registration.v1",
+  "scope": "offline_image_transport_and_current_m3_admission_probes_no_flight",
+  "model": "jev-1.14.0",
+  "provider": "typesafe",
+  "cases": [
+    {
+      "id": "case-1",
+      "image": "docs/assets/starship-visual-native-evaluation-20261016/frame-1.png",
+      "sha256": "d92f65ef641f1991f8c50955d414b99eeb16216dd04c72beb5187b61fa2857be",
+      "component_fixture": "attached_proxy",
+      "interpretation": "Controlled static target at its attachment.",
+      "scene": {
+        "attachment_body_m": [
+          0.0,
+          0.0,
+          39.0
+        ],
+        "payload_center_body_m": [
+          0.0,
+          0.0,
+          39.0
+        ],
+        "payload_rotation_columns": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "payload_dimensions_m": [
+          5.0,
+          3.0,
+          0.3
+        ]
+      },
+      "camera": {
+        "camera_id": "deployment_port_primary",
+        "width": 640,
+        "height": 360,
+        "horizontal_fov_deg": 75.0,
+        "near_m": 0.05,
+        "far_m": 120.0,
+        "eye_offset_m": [
+          -2.0,
+          -4.0,
+          2.8
+        ],
+        "look_offset_m": [
+          3.0,
+          0.0,
+          0.0
+        ],
+        "up_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "lens_covered": false
+      }
+    },
+    {
+      "id": "case-2",
+      "image": "docs/assets/starship-visual-native-evaluation-20261016/frame-2.png",
+      "sha256": "dfe607939bc1b62904df1b779c9c9b9dec78b94f6f1e4ac27fb9c0ac6b055d11",
+      "component_fixture": "separated_proxy",
+      "interpretation": "Controlled static target displaced by 3m longitudinally and 1m vertically; not a release simulation.",
+      "scene": {
+        "attachment_body_m": [
+          0.0,
+          0.0,
+          39.0
+        ],
+        "payload_center_body_m": [
+          3.0,
+          0.0,
+          40.0
+        ],
+        "payload_rotation_columns": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "payload_dimensions_m": [
+          5.0,
+          3.0,
+          0.3
+        ]
+      },
+      "camera": {
+        "camera_id": "deployment_port_primary",
+        "width": 640,
+        "height": 360,
+        "horizontal_fov_deg": 75.0,
+        "near_m": 0.05,
+        "far_m": 120.0,
+        "eye_offset_m": [
+          -2.0,
+          -4.0,
+          2.8
+        ],
+        "look_offset_m": [
+          3.0,
+          0.0,
+          0.0
+        ],
+        "up_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "lens_covered": false
+      }
+    },
+    {
+      "id": "case-3",
+      "image": "docs/assets/starship-visual-native-evaluation-20261016/frame-3.png",
+      "sha256": "ff3f2cdc5c2cef2d754dd30066a4b0b8d2d6f6e253224b04f47ac7d0d0e9ea72",
+      "component_fixture": "covered_primary",
+      "interpretation": "Opaque cover in front of the primary camera; static target remains at its attachment.",
+      "scene": {
+        "attachment_body_m": [
+          0.0,
+          0.0,
+          39.0
+        ],
+        "payload_center_body_m": [
+          0.0,
+          0.0,
+          39.0
+        ],
+        "payload_rotation_columns": [
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0
+          ]
+        ],
+        "payload_dimensions_m": [
+          5.0,
+          3.0,
+          0.3
+        ]
+      },
+      "camera": {
+        "camera_id": "deployment_port_primary",
+        "width": 640,
+        "height": 360,
+        "horizontal_fov_deg": 75.0,
+        "near_m": 0.05,
+        "far_m": 120.0,
+        "eye_offset_m": [
+          -2.0,
+          -4.0,
+          2.8
+        ],
+        "look_offset_m": [
+          3.0,
+          0.0,
+          0.0
+        ],
+        "up_body": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "lens_covered": true
+      }
+    }
+  ],
+  "maximum_attempts_per_case": 1,
+  "maximum_model_calls": 3,
+  "maximum_provider_s": 8.0,
+  "maximum_wall_time_s": 60.0,
+  "automatic_retry": false,
+  "physics_runs": 0,
+  "dispatch_authorized": false,
+  "physical_execution_authorized": false,
+  "inputs": "Controlled static synthetic component scenes rendered by the production renderer; identical synthetic telemetry and protocol clocks. Not flight images or replayed flight requests.",
+  "evaluation_rules": {
+    "typed_response": "Use existing production VisualAgent and VisualTransport decoder unchanged.",
+    "covered_primary": "Record whether visibility is occluded/ambiguous; a visible-separation claim is unsupported.",
+    "attached_and_separated": "Report classifications, references and uncertainty; a single proxy image cannot independently prove release or clearance.",
+    "m3_admission": "Probe three current entry guards; patch plant initialization to fail before any physical step. Rejection is an unmet integration prerequisite, not successful combined operation.",
+    "invalid_response": "Preserve once, never change prompt or repeat to obtain success; remaining registered cases still run once unless total deadline or binding check fails."
+  },
+  "limitations": [
+    "No live flight or M3 command dispatch",
+    "No statistical accuracy estimate",
+    "Images were inspected during development, not held-out",
+    "Unknown inventory is common synthetic telemetry, not actual scene truth",
+    "Action constraints are prefiltered and do not measure independent safety judgment",
+    "Static scene and protocol timestamps are synthetic; no parent/child trajectory, sensor arrival or physical release is evaluated."
+  ]
+}

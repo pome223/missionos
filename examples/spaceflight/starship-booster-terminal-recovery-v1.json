@@ -1,0 +1,165 @@
+{
+  "acceptance": {
+    "booster": "unchanged_pinned_splashdown_goal;actual_separation_and_concurrent_clock_required",
+    "settled_insertion": {
+      "bound": true,
+      "maximum_apogee_m": 600000.0,
+      "maximum_body_rate_rad_s": 5.0,
+      "minimum_perigee_m": 220000.0,
+      "minimum_propellant_kg": 75000.0,
+      "shutdown_settle_s": 5.0
+    },
+    "ship": {
+      "maximum_body_rate_rad_s": 0.02,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_tilt_deg": 5.0,
+      "minimum_propellant_kg": 28000.0,
+      "nonoverlapping_descending_contact": true,
+      "release_count": 26
+    }
+  },
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "H0",
+      "parent": {
+        "gzip_sha256": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+        "raw_sha256": "ca52b1bde4ec0214087aac82cf07a3e8e19a57ab192e154d5b2dd62e4eef27fe",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz"
+      }
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "O0",
+      "parent": {
+        "gzip_sha256": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244",
+        "raw_sha256": "49609b8c43bddeca41f9697096cd6ece0e1f56580b272ebbe0b36849f95c5019",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz"
+      }
+    }
+  ],
+  "control_contract": {
+    "faulty": "Preserve actual unavailable engine identities and all finite actuators. Use measured-current TVC allocation; enable the existing physical first-three-main minimum-throttle terminal attitude slew only when legacy alignment prevents braking. No direct torque, healed engine, phase/time/fuel/state projection, forecast or hosted model.",
+    "healthy": "Legacy fixed_v1 command arithmetic and all legacy guidance flags remain unchanged. New metadata alone is not physical restoration.",
+    "policy_id": "availability_terminal_recovery_v1",
+    "scope": "This is a known-condition repair of the two registered original separation states. Do not report robustness, real engine-restart qualification or AI work."
+  },
+  "control_settings": {
+    "policy_id": "availability_terminal_recovery_v1",
+    "schema": "missionos.booster_terminal_recovery_settings.v1"
+  },
+  "design": "terminal-v3",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "initialization": "exact_original_fullrecord_booster_separation_only",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json": "266e48a70404d7c84a3e7f421da4c3e20451e76f422f8e8c3996c15685e39bce",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json": "2d71dcfbf4a96246583671a259ccae9c88bf4b842a6a5b66bd6aa199e36dc59e",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json": "ac3afec3dd186c9766a3467b5d11ca61a2e54107161cab39f50ade427c8c962a",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+    "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244"
+  },
+  "interpretation": {
+    "gate": "Only two accepted saved-separation repair results from this same source/environment/profile/settings open a separate fresh-ground whole stage.",
+    "invalid_or_budget": "Stop entire stage on source/profile/site/goal/environment changes, invalid record, numerical or serialization/save/restore errors, output/disk/wall breach; no retry/resume.",
+    "new_design": "Diagnose preserved artifacts, then register a new sourcebound design if needed. Trial caps do not close the restoration project.",
+    "valid_negative": "Preserve unchanged negative and finish other registered case; do not tune or rerun within this design.",
+    "whole_success": "Report Ship, Booster, deployment and whole physical success separately. No AI/allfeatures/qualification claims."
+  },
+  "limits": {
+    "cohort_wall_s": 1500.0,
+    "duration_s": 1200.0,
+    "hosted_model_calls": 0,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 2,
+    "minimum_free_bytes": 10737418240,
+    "nested_sixdof_forecasts": 0,
+    "per_trial_wall_s": 600.0,
+    "workers": 1
+  },
+  "output": "output/starship-system-repair-20261018/booster-terminal-recovery-v1",
+  "producer": {
+    "plan": "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json",
+    "result": "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json",
+    "source_commit": "a8b2d8db3bf674c7df6fc919d45894e158b3232c",
+    "verification": "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json"
+  },
+  "purpose": "Exactly one new typed terminal-recovery continuation from each original whole-flight H0/O0 actual rigid Booster separation. Preserve legacy boostback/coast/landing guidance and healthy command arithmetic; faulty availability selects measured-current TVC allocation, with the missing finite three-centre minimum-throttle attitude-slew fallback only when legacy terminal alignment blocks braking. This is a prospective bounded physical repair, not a claimed rescue.",
+  "registered_on": "2026-10-19",
+  "retention": "Keep source plans/claims/logs, original H0/O0 successes/negatives and all new outputs; archive/hash/readback/representative restore before later separately authorized cleanup. No public push, merge, Docker or worktree cleanup.",
+  "schema": "missionos.starship_booster_outage_repair_registration.v1",
+  "scope_limits": [
+    "AI/image/symptom diagnosis/inflight approval/tower catch/arbitrary faults/qualification/develop/video are not included.",
+    "A valid original O0 negative is an admissible separation source; it is not required to have succeeded physically.",
+    "Contact is model geometry and controlled water-entry envelope only, not water response/postcontact support/real SpaceX qualification."
+  ],
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "stage": "separation",
+  "unchanged": [
+    "Original physics/profile, mass/fuel, thrust/Isp, engine layout, RCS/flaps/gimbal authority, integration timesteps and reserve/contact/water limits.",
+    "Legacy fixed_v1 default, original v5/v7 admission and original state-mission-v1 records/registrations stay strict and unchanged.",
+    "New typed availability_terminal_recovery_v1 changes availability-aware finite control/allocation only; no new boostback/coast energy law, ideal torque, oracle state, healed engine or favorable later checkpoint.",
+    "Each stage has its own immutable plan and exclusive one-use parent/private-worker claims. No retry or resumed consumed cohort."
+  ]
+}

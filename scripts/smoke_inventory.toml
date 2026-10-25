@@ -48,6 +48,7 @@ files = [
   "smoke_safe_stop_exercise_receipt.py",
   "smoke_ship_delivery.py",
   "smoke_ship_urban_loop.py",
+  "smoke_starship_inflight_gateway.py",
   "smoke_virtual_to_real_promotion_receipt.py",
 ]
 
@@ -98,6 +99,8 @@ files = [
   "smoke_gz_sim_telemetry.py",
   "smoke_go2_delivery_chat.py",
   "smoke_starship_chat_gateway.py",
+  "smoke_starship_m3_http_flight.py",
+  "smoke_starship_m3_operator.py",
   "smoke_groot_policy_client_loopback.py",
   "smoke_groot_governed_robocasa_e2e.py",
   "smoke_groot_robocasa_arm_controller.py",
@@ -140,4 +143,17 @@ files = [
   "smoke_source_backed_weather.py",
   "smoke_source_backed_world_bound_sitl_e2e.py",
   "smoke_turtlebot3_live_perception_binding.py",
+]
+
+[categories.starship_final_public_opt_in]
+action = "Run explicitly documented Starship fixed-response HTTP/pipe boundary smokes only; never infer a flight, paid model judgment, approval or qualification."
+files = [
+  "smoke_starship_final_protocol.py",
+  "smoke_starship_final_runtime.py",
+  "smoke_starship_final_timing.py",
+  "smoke_starship_restored_approval.py",
+  "smoke_starship_restored_decision_pipe.py",
+  "smoke_starship_restored_native_host.py",
+  "smoke_starship_restored_outer.py",
+  "smoke_starship_restored_process_owner.py",
 ]

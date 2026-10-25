@@ -1,0 +1,66 @@
+{
+  "schema": "missionos.propulsion_reference_fixture.v1",
+  "classification": "synthetic_steady_state_fixture_not_Raptor_parameters",
+  "points": [
+    {
+      "id": "sea_level_full",
+      "variant": "sea_level_fixture",
+      "operating_setting": "full_fixture",
+      "reference_thrust_n": 20000.0,
+      "reference_isp_s": 250.0,
+      "reference_pressure_pa": 101325.0,
+      "nozzle_exit_area_m2": 0.02,
+      "minimum_ambient_pressure_pa": 0.0,
+      "maximum_ambient_pressure_pa": 101325.0
+    },
+    {
+      "id": "sea_level_partial",
+      "variant": "sea_level_fixture",
+      "operating_setting": "partial_fixture",
+      "reference_thrust_n": 10000.0,
+      "reference_isp_s": 250.0,
+      "reference_pressure_pa": 101325.0,
+      "nozzle_exit_area_m2": 0.02,
+      "minimum_ambient_pressure_pa": 0.0,
+      "maximum_ambient_pressure_pa": 101325.0
+    },
+    {
+      "id": "vacuum_full",
+      "variant": "vacuum_fixture",
+      "operating_setting": "full_fixture",
+      "reference_thrust_n": 25000.0,
+      "reference_isp_s": 330.0,
+      "reference_pressure_pa": 0.0,
+      "nozzle_exit_area_m2": 0.05,
+      "minimum_ambient_pressure_pa": 0.0,
+      "maximum_ambient_pressure_pa": 101325.0
+    },
+    {
+      "id": "vacuum_partial",
+      "variant": "vacuum_fixture",
+      "operating_setting": "partial_fixture",
+      "reference_thrust_n": 12500.0,
+      "reference_isp_s": 330.0,
+      "reference_pressure_pa": 0.0,
+      "nozzle_exit_area_m2": 0.05,
+      "minimum_ambient_pressure_pa": 0.0,
+      "maximum_ambient_pressure_pa": 101325.0
+    }
+  ],
+  "ambient_pressures_pa": [
+    0.0,
+    50000.0,
+    101325.0
+  ],
+  "fixed_nozzle_pairs": [
+    [
+      "sea_level_full",
+      "sea_level_partial"
+    ],
+    [
+      "vacuum_full",
+      "vacuum_partial"
+    ]
+  ],
+  "limits": "No extrapolation, automatic throttle scaling or sixdof integration; each supplied operating point has independently explicit thrust/Isp/pressure."
+}

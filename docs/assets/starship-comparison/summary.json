@@ -1,0 +1,552 @@
+{
+  "schema": "missionos.starship_comparison_campaign_summary.v1",
+  "campaign_config_sha256": "c6fc4a64791d628405f5c8ed8ba09072d84986f4cf236be883d0f8f841ad5f68",
+  "evaluation_basis": "Observed mission supervision duties; no Rules/fallback score or required plan change.",
+  "cases": [
+    {
+      "case": "comparison_normal",
+      "execution_source_commit": "58cde1f7",
+      "source_map_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a",
+      "envelope_sha256": "50822a187ad3ae7d60929668bce6ad926c8e15902b5e7b3bac5ff3a223101bce",
+      "artifact_sha256": {
+        "study.json": "846183f0687b22c24a98b9b28a87fcee6b6e4b205470b7af299c434623124b4c",
+        "verification.json": "81031dd5d2c45507e7c0da960ae0253788bf565e64924691083fc8401d00393c",
+        "chat-receipt.json": "8262e59be6744e9269dc3dc357fa3fe0641f9a435552a68caedfaadd2748f74b"
+      },
+      "record_passed": true,
+      "case_accepted": true,
+      "record_issues": [],
+      "case_issues": [],
+      "outcome": "contact_and_recovery_area_met",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "payload_released_count": 26,
+      "forecast_count": 4,
+      "preparations": [
+        {
+          "initial": true,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1151.2000000000407,
+          "reused_candidate_ids": [],
+          "requested_candidate_ids": [
+            "nominal"
+          ],
+          "remaining_candidate_ids": []
+        }
+      ],
+      "decisions": [
+        {
+          "time_s": 1151.2000000000407,
+          "stage": "normal_monitoring",
+          "accepted_action": "select_nominal",
+          "fallback": false,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "86389e211abf86c964dc751918a32da6c4bb73e64a9897eb2fa758dce6f186b6"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": "jev-1.13.0",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 230.029,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 6583,
+              "request_sha256": "c02d3ac353278ab6f277f88e1a689824e058b59d5d9dac624fd0963bbdf7e607",
+              "response_sha256": "e9cd110b6399cc06728b73342f6798ab48c24819704450dcb25e077e72b5ff05"
+            }
+          },
+          "available_candidates": [
+            "nominal"
+          ]
+        },
+        {
+          "time_s": 1350.2000000000407,
+          "stage": "orbital_event",
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "86389e211abf86c964dc751918a32da6c4bb73e64a9897eb2fa758dce6f186b6"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": "jev-1.13.0",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 184.335,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 6410,
+              "request_sha256": "615ce8db127ebe21f406a5580787bf85f18f29d4c2caff8bc5a7dd06b0c9104d",
+              "response_sha256": "ac094fc504ee37434248b629207da861e292a26715dc7507a806700eeebcef02"
+            }
+          },
+          "available_candidates": [
+            "nominal"
+          ]
+        },
+        {
+          "time_s": 1585.7000000000407,
+          "stage": "orbital_event",
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "86389e211abf86c964dc751918a32da6c4bb73e64a9897eb2fa758dce6f186b6"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": "jev-1.13.0",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 180.197,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 6410,
+              "request_sha256": "50eb1df61fe67f38dd466f0a818590a0090877555d156eb6f29eb1f3c6fb3e4f",
+              "response_sha256": "65c860a7d5be9b69401b00996fce8efc70ffceb598770fd28ec9c1c3ae09abe4"
+            }
+          },
+          "available_candidates": [
+            "nominal"
+          ]
+        },
+        {
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "86389e211abf86c964dc751918a32da6c4bb73e64a9897eb2fa758dce6f186b6"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": "jev-1.13.0",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 201.996,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 6412,
+              "request_sha256": "51b6457f8e89fe7ee963881416af740116f8096a20867e5d2e8f6d1645a703d3",
+              "response_sha256": "ca0a562cc2f09aba731da9554f7a651bb98b2bc1c48a38f519145978a226bea7"
+            }
+          },
+          "available_candidates": [
+            "nominal"
+          ]
+        }
+      ],
+      "model_invocations": {
+        "typesafe": {
+          "attempted": 4,
+          "valid_response": 4
+        },
+        "deepseek": {
+          "attempted": 0,
+          "valid_response": 0
+        }
+      },
+      "dispatch": {
+        "candidate_id": "nominal",
+        "time_s": 2280.7000000000407,
+        "revision": 1
+      },
+      "comparison_quality": {
+        "schema": "missionos.m1_comparison_quality.v1",
+        "role": "posthoc_not_dispatch_or_case_gate",
+        "basis": "decision_time_observations_and_sampled_uncertain_estimates",
+        "no_scenario_or_fallback_score_comparison": true,
+        "objectives": [
+          "estimated_completion_time_s",
+          "elapsed_wait_s",
+          "energy_remaining_kwh",
+          "temperature_upper_k",
+          "reserve_after_loss_kg"
+        ],
+        "decisions": [
+          {
+            "request_id": "897b71684186457fb95ac3ab586c76b3-0",
+            "chosen_candidate_id": "nominal",
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          },
+          {
+            "request_id": "897b71684186457fb95ac3ab586c76b3-1",
+            "chosen_candidate_id": "nominal",
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          },
+          {
+            "request_id": "897b71684186457fb95ac3ab586c76b3-2",
+            "chosen_candidate_id": "nominal",
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          },
+          {
+            "request_id": "897b71684186457fb95ac3ab586c76b3-3",
+            "chosen_candidate_id": "nominal",
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          }
+        ],
+        "counts": {
+          "dominated": 0,
+          "not_demonstrably_dominated": 0,
+          "indeterminate": 4
+        }
+      },
+      "human_inflight_commands": 0,
+      "physical_execution": false,
+      "authenticated_human_identity_verified": false
+    },
+    {
+      "case": "comparison_update",
+      "execution_source_commit": "58cde1f7",
+      "source_map_sha256": "ead1d3e3f906a21b4524ca35fd2209ef69205cd602f434568c5006db88f4187a",
+      "envelope_sha256": "50822a187ad3ae7d60929668bce6ad926c8e15902b5e7b3bac5ff3a223101bce",
+      "artifact_sha256": {
+        "study.json": "fc98b4f3d6660a633b9199cfd9645727c64d113129b0c3358327d9cd06ab4ebb",
+        "verification.json": "b81f6d421ad0d496626d46783f12ee0e97e1c040de20972e0721ecac08044441",
+        "chat-receipt.json": "a065f16bdfa4d5f6da42b4b6a4c8a5c769f36c2d2491c7ff7dd84c73c48e8f9d"
+      },
+      "record_passed": true,
+      "case_accepted": true,
+      "record_issues": [],
+      "case_issues": [],
+      "outcome": "contact_and_recovery_area_met",
+      "contact": {
+        "time_s": 4929.856429758704,
+        "speed_mps": 4.608259493361677,
+        "tilt_deg": 2.374862690722787,
+        "body_rate_rad_s": 0.003031432577058173,
+        "reserve_kg": 62394.30546504836,
+        "latitude_deg": 4.882801542375486,
+        "longitude_deg": 165.2781946210071
+      },
+      "payload_released_count": 26,
+      "forecast_count": 8,
+      "preparations": [
+        {
+          "initial": true,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1000.7000000000407,
+          "end_time_s": 1150.7000000000407,
+          "reused_candidate_ids": [],
+          "requested_candidate_ids": [
+            "nominal"
+          ],
+          "remaining_candidate_ids": []
+        },
+        {
+          "initial": false,
+          "status": "completed",
+          "reason": "predictions_available",
+          "start_time_s": 1350.2000000000407,
+          "end_time_s": 1597.4500000000407,
+          "reused_candidate_ids": [
+            "nominal"
+          ],
+          "requested_candidate_ids": [
+            "nominal",
+            "next_orbit"
+          ],
+          "remaining_candidate_ids": []
+        }
+      ],
+      "decisions": [
+        {
+          "time_s": 1150.7000000000407,
+          "stage": "normal_monitoring",
+          "accepted_action": "select_nominal",
+          "fallback": false,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "86389e211abf86c964dc751918a32da6c4bb73e64a9897eb2fa758dce6f186b6"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": "jev-1.13.0",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 195.673,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 6583,
+              "request_sha256": "68b1e6013e9189a2fa10a2be478f76b6e53c890024b674ff9a04ed0195e1ff81",
+              "response_sha256": "d47879ba276c0aec934cc53a5a0de3bc9486374eb69017933b16d4ef129c24fe"
+            }
+          },
+          "available_candidates": [
+            "nominal"
+          ]
+        },
+        {
+          "time_s": 1597.4500000000407,
+          "stage": "orbital_event",
+          "accepted_action": "keep_plan",
+          "fallback": false,
+          "routing": {
+            "route": "prepared_uncertain_comparison",
+            "generation_sha256": "a5620adc6188956d17b95ff3acf4f5aca1e19adc306e95d0f54055725ad5aa87"
+          },
+          "decision_basis": {
+            "compared_candidate_ids": [
+              "nominal",
+              "next_orbit"
+            ],
+            "summary": "Compared nominal (east) and next_orbit (west). Nominal requires no added wait, retains 22 kWh, 0 kg propellant loss, 295 K, with east recovery completion estimate 11530-14840 s. next_orbit may complete earlier (11279-12489 s) but costs 5451 s wait, leaving 12.9 kWh, 109 kg loss, 300.45 K. Intervals overlap and service estimates are uncertain, not observed completion. Original admissible plan remains resource-favorable; keep plan."
+          },
+          "providers": {
+            "llm_invocation": {
+              "provider": "deepseek",
+              "requested_model_id": "deepseek-flash",
+              "model_id": "deepseek-flash",
+              "status": "succeeded",
+              "call_attempted": true,
+              "model_inference_invoked": true,
+              "latency_ms": 17203.318,
+              "finish_reason": "stop",
+              "validation_error": null,
+              "reasoning_tokens": 3526,
+              "provider_usage": {
+                "prompt_tokens": 2757,
+                "completion_tokens": 3664,
+                "total_tokens": 6421
+              },
+              "request_bytes": 9439,
+              "request_sha256": "c5bfbba75aaa2f357e6d862364db75a8986412895fb3f520cd53d46ceed4f68e",
+              "response_sha256": "2cd68e95073dd3b6077bb2ebd3d87e7838b8bbe86c42a905c70d63ab685f8536"
+            }
+          },
+          "available_candidates": [
+            "nominal",
+            "next_orbit"
+          ]
+        },
+        {
+          "time_s": 2220.7000000000407,
+          "stage": "selected_plan_monitoring",
+          "accepted_action": null,
+          "fallback": true,
+          "routing": {
+            "route": "jev",
+            "generation_sha256": "a5620adc6188956d17b95ff3acf4f5aca1e19adc306e95d0f54055725ad5aa87"
+          },
+          "decision_basis": null,
+          "providers": {
+            "jev_invocation": {
+              "provider": "typesafe",
+              "requested_model_id": "jev-1.13.0",
+              "model_id": null,
+              "status": "invalid_response",
+              "call_attempted": true,
+              "model_inference_invoked": false,
+              "latency_ms": 231.738,
+              "finish_reason": null,
+              "validation_error": null,
+              "reasoning_tokens": null,
+              "provider_usage": null,
+              "request_bytes": 9273,
+              "request_sha256": "aa43da9373d9649e954f6350b98d5cf379ed1c38c88fd894742053a72d9693ce",
+              "response_sha256": "b2cead98e0cdd4e7b681091bc4e74174074ac2548061acbd7df28b6bd88a0525"
+            }
+          },
+          "available_candidates": [
+            "nominal",
+            "next_orbit"
+          ]
+        }
+      ],
+      "model_invocations": {
+        "typesafe": {
+          "attempted": 2,
+          "valid_response": 1
+        },
+        "deepseek": {
+          "attempted": 1,
+          "valid_response": 1
+        }
+      },
+      "dispatch": {
+        "candidate_id": "nominal",
+        "time_s": 2280.7000000000407,
+        "revision": 1
+      },
+      "comparison_quality": {
+        "schema": "missionos.m1_comparison_quality.v1",
+        "role": "posthoc_not_dispatch_or_case_gate",
+        "basis": "decision_time_observations_and_sampled_uncertain_estimates",
+        "no_scenario_or_fallback_score_comparison": true,
+        "objectives": [
+          "estimated_completion_time_s",
+          "elapsed_wait_s",
+          "energy_remaining_kwh",
+          "temperature_upper_k",
+          "reserve_after_loss_kg"
+        ],
+        "decisions": [
+          {
+            "request_id": "c8f4730957ba41aaa11c2fca22a0fd73-0",
+            "chosen_candidate_id": "nominal",
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          },
+          {
+            "request_id": "c8f4730957ba41aaa11c2fca22a0fd73-1",
+            "chosen_candidate_id": "nominal",
+            "status": "not_demonstrably_dominated",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "next_orbit",
+              "nominal"
+            ],
+            "comparison_explanation_present": true,
+            "reported_compared_candidate_ids": [
+              "nominal",
+              "next_orbit"
+            ],
+            "internal_reasoning_verified": false
+          },
+          {
+            "request_id": "c8f4730957ba41aaa11c2fca22a0fd73-2",
+            "chosen_candidate_id": null,
+            "status": "indeterminate",
+            "dominating_candidate_ids": [],
+            "available_candidate_ids": [
+              "next_orbit",
+              "nominal"
+            ],
+            "comparison_explanation_present": false,
+            "reported_compared_candidate_ids": [],
+            "internal_reasoning_verified": false
+          }
+        ],
+        "counts": {
+          "dominated": 0,
+          "not_demonstrably_dominated": 1,
+          "indeterminate": 2
+        }
+      },
+      "human_inflight_commands": 0,
+      "physical_execution": false,
+      "authenticated_human_identity_verified": false
+    }
+  ],
+  "fault_harness": {
+    "command": "python -m pytest -vv 'tests/contract/test_starship_comparison_runtime.py::test_registered_comparison_cases_run_finite_actor_with_approved_bounds[comparison_late]' 'tests/contract/test_starship_comparison_runtime.py::test_registered_comparison_cases_run_finite_actor_with_approved_bounds[comparison_tool_failure]' 'tests/contract/test_starship_comparison_runtime.py::test_registered_comparison_cases_run_finite_actor_with_approved_bounds[comparison_timeout]'",
+    "cases": [
+      "comparison_late",
+      "comparison_tool_failure",
+      "comparison_timeout"
+    ],
+    "passed": 3,
+    "boundary": "Production actor loop/admission; fake plant, prediction, clock and fixture policy. Not full 6DOF flight, actual worker failure or live AI."
+  },
+  "limitations": [
+    "Fixed synthetic areas calibrated from prior forecasts; no arbitrary-site guidance.",
+    "Previous half-step displacement about 77km exceeds 20km padding; no numerical convergence claim.",
+    "Four perturbation samples do not bound all uncertainty.",
+    "Waiting and service costs are synthetic accounting assumptions; no observed servicing completion.",
+    "No physical splashdown, operational generalization or hidden-reasoning verification.",
+    "Failed/interrupted records retained; no retry-to-success or held-out claim."
+  ],
+  "later_hardening": {
+    "commit": "183ab41e",
+    "changes": [
+      "Unresolved preparation stop requires a failure ending at the current time.",
+      "Ordinary batch expiry is distinguished from cleanup accounting overrun.",
+      "Model decision summaries reject credential echoes before persistence."
+    ],
+    "live_results_rerun_after_hardening": false,
+    "reason": "Preserve the bounded live campaign; no retry to obtain a preferred model result. Final-source runtime smoke is reported separately in the PR."
+  },
+  "review": {
+    "model": "Claude Opus 5.5",
+    "effort": "high",
+    "rounds": 2,
+    "round_2_scope": "58cde1f7",
+    "r1_findings_confirmed_fixed": 7,
+    "r2_followups": [
+      "A implemented in183ab41e",
+      "B implemented in183ab41e",
+      "C implemented in183ab41e",
+      "D no automatic retry disclosed",
+      "E old records stay bound to their original verifier"
+    ],
+    "round_3_performed": false
+  }
+}

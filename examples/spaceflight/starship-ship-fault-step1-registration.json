@@ -1,0 +1,99 @@
+{
+  "schema": "missionos.ship_fault_step1_registration.v1",
+  "experiment_id": "ship-fault-return-step1-20261014",
+  "stage": 1,
+  "base_commit": "bdf95820dce250f460b4bc2148b77ab962bcf341",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "origin_file_sha256": "a5b95b17ce46c27689c4db45a80dd7fb5f41cae6efc765fbab0e600610cff621",
+  "fault_application": "once at the frozen orbital-coast origin before deorbit; persistent; both arms receive identical faulted state and engine capability",
+  "faults": [
+    {
+      "id": "engine_0_out",
+      "kind": "landing_engine_out",
+      "engine_index": 0,
+      "thrust_factor": 1.0
+    },
+    {
+      "id": "engine_1_out",
+      "kind": "landing_engine_out",
+      "engine_index": 1,
+      "thrust_factor": 1.0
+    },
+    {
+      "id": "engine_2_out",
+      "kind": "landing_engine_out",
+      "engine_index": 2,
+      "thrust_factor": 1.0
+    },
+    {
+      "id": "all_landing_thrust_80pct",
+      "kind": "landing_engine_derate",
+      "engine_index": null,
+      "thrust_factor": 0.8
+    },
+    {
+      "id": "all_landing_thrust_60pct",
+      "kind": "landing_engine_derate",
+      "engine_index": null,
+      "thrust_factor": 0.6
+    },
+    {
+      "id": "all_landing_thrust_40pct",
+      "kind": "landing_engine_derate",
+      "engine_index": null,
+      "thrust_factor": 0.4
+    }
+  ],
+  "candidates": [
+    "original_plan",
+    "available_capacity_return_v1"
+  ],
+  "candidate_contract": "shared trimmed_state_terminal_v4 phase/controller; map physical healthy landing engines to active slots; reflect actual thrust in terminal budget; rescale requested deorbit/flip total thrust and surviving-engine count within existing min/max throttle, gimbal, slew and RCS constraints; no change to pose, mass, inertia, aerodynamics, return time or contact limits",
+  "order": "nominal original_plan first, then registered fault order, original_plan before available_capacity_return_v1; no retry, no result-dependent tuning",
+  "random_seed": 20261014,
+  "random_draws_used": false,
+  "budgets": {
+    "maximum_return_rollouts": 13,
+    "maximum_case_wall_s": 180,
+    "maximum_cohort_wall_s": 1800,
+    "maximum_simulated_suffix_s": 3600,
+    "maximum_output_bytes": 268435456,
+    "minimum_free_space_bytes": 5368709120,
+    "maximum_parallel_workers": 1,
+    "verification_smoke_maximum_steps": 16,
+    "maximum_model_calls": 0
+  },
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "material_worsening_vs_nominal": {
+    "reserve_loss_kg": 10000.0,
+    "contact_delay_s": 120.0
+  },
+  "a_definition": "valid six-DOF terminal record; original-plan contact fails any unchanged contact limit, OR passes but loses >=10000 kg reserve or lands >=120 s later than the nominal original-plan control",
+  "b_definition": "candidate has a valid six-DOF contact record meeting all four unchanged contact limits",
+  "condition_selection": "first registered fault with a AND b, only after completing the frozen screen; freeze fault/origin/controller/source/record hashes before any future AI trial",
+  "stop_rules": [
+    "nominal control fails or is invalid",
+    "hard wall/output/free-space budget",
+    "source/input mutation",
+    "numerical failure or exception retained and cannot count as physical failure",
+    "after all registered rows or first execution-budget abort; no additional conditions",
+    "after stage-1 report, stop before stage 2"
+  ],
+  "qualification": {
+    "no_fault_39_case_certificate_used_for_fault_admission": false,
+    "fault_domain_status": "unverified",
+    "runtime_admission": false,
+    "physical_recovery_certified": false
+  },
+  "interpretation": "candidate-generation engineering screen, not held-out AI performance, a Rules-score contest, physical landing, water survival or completion of stages 2-4",
+  "retention": {
+    "raw_record_directory": "output/ship-fault-return-step1-20261014",
+    "records": "write each complete/partial rollout as gzip JSON and SHA256; never overwrite; copy frozen sources, input/registration and budget/verification ledgers",
+    "cleanup": "no Docker or unrelated deletion; keep unique compressed records and source snapshot"
+  }
+}

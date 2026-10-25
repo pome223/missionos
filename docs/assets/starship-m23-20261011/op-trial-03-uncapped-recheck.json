@@ -1,0 +1,13 @@
+{
+  "schema": "missionos.m123_independent_record_recheck.v1",
+  "run_id": "1cc8a9c309544565bd37ff4dd4c711c6",
+  "source_commit": "627e9647f306e1ee8961c9ba1e16200a4b231849",
+  "source_hashes_checked": 96,
+  "all_source_hashes_match_commit": true,
+  "full_verifier_reexecuted": true,
+  "identical_saved_verdict": true,
+  "record_passed": true,
+  "case_accepted": true,
+  "no_new_provider_or_physics": true,
+  "approved_authority_matches_frozen_protocol": true
+}

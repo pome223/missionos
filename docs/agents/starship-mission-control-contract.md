@@ -49,12 +49,44 @@ record is not delivery to a human, and approval is not execution.
 - Keep release completion, model entry/contact, vehicle recovery and record
   verification separate. A consistent collision record is not mission success.
 
-Fixed-timeline and scripted runs check regressions and account for outcomes.
-Beating a script is **not** an acceptance criterion for AI mission control:
-the simulator's author can encode the intended answer in that script. Numerical
-reasoning belongs in MissionOS's toolset. Report real model decisions and their
-observed effects without treating script parity as evidence against their value.
-Claims about unique AI advantage or reduced human workload need separate evidence.
+### AI evaluation basis
+
+Do not evaluate AI mission-control capability by agreement, disagreement or
+relative scores against simulator-authored Rules or fallback policies. Those
+policies may encode the scenario author's intended response. They serve as
+constraints, a preapproved contingency path and regression/outcome accounting;
+they are not the answer key for AI judgment. Numerical reasoning and automatic
+preparation of comparison material belong in MissionOS's toolset.
+
+Evaluate the observed mission-control work instead:
+
+- An observed event is detected and reaches assessment before its deadline.
+  Record deterministic detection separately from model interpretation.
+- Required observations and calculations are obtained and presented with their
+  freshness, assumptions, uncertainty and costs. Record automatic preparation
+  separately from an AI tool request; both can support an AI decision.
+- The AI uses that evidence to update the plan or deliberately retain a plan
+  that remains suitable. A change is not required merely to demonstrate agency.
+- An independent authority and feasibility check admits the actual operation;
+  the executor acts and later observations establish its effect.
+- Normal operation is preserved, and invalid/missing model responses exercise
+  the same checks on fallback. Report qualified contact/recovery, bounded hold,
+  unresolved termination and failure separately; stopping or a valid record is
+  not by itself evidence of safe recovery.
+
+Preserve candidate snapshots and information available at the decision time.
+A post-hoc quality audit may flag a selected candidate that another candidate
+clearly dominates under preregistered objectives, uncertainty and numerical
+resolution. Report inability to compare as undetermined; do not substitute
+scenario labels, hidden future truth or later observations for the information
+available then. This diagnostic neither grants authority nor blocks execution.
+Actual outcome evaluation remains separate from decision-time quality.
+
+Matching a fallback outcome does not erase an executed AI decision or plan
+change. Failure to assemble required comparison material is a workflow gap,
+not evidence of losing to Rules. Existing failed evaluations remain unchanged.
+Claims about reduced workload, operational robustness or distinctive benefits
+still require their own measured evidence.
 
 ## Current bounded return evidence and execution contract
 

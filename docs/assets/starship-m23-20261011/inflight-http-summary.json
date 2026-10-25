@@ -1,0 +1,29 @@
+{
+  "schema": "missionos.starship_inflight_gateway_smoke.v1",
+  "passed": true,
+  "checks": {
+    "operator_ui_served": true,
+    "authenticated_pending_received": true,
+    "unauthenticated_pending_rejected": true,
+    "other_mission_rejected": true,
+    "http_approval_recorded_without_dispatch": true,
+    "independent_consumption_approved": true,
+    "second_consumption_rejected": true,
+    "duplicate_http_response_rejected": true,
+    "http_rejection_recorded": true,
+    "rejection_preserves_fallback": true,
+    "late_http_response_rejected": true,
+    "no_response_preserves_fallback": true,
+    "configured_gateway_key_not_bypassed": true,
+    "gateway_key_and_operator_bearer_both_accepted": true
+  },
+  "real_gateway_http": true,
+  "fixture_worker_snapshot": true,
+  "operator_response_source": "scripted_test_operator",
+  "browser_interaction_verified": false,
+  "sso_identity_verified": false,
+  "model_calls": 0,
+  "simulator_runs": 0,
+  "executor_commands_issued": 0,
+  "physical_execution": false
+}

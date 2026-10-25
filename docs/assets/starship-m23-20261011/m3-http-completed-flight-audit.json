@@ -1,0 +1,282 @@
+{
+  "schema": "missionos.starship_m3_fixture_final_readonly_audit.v1",
+  "source_commit": "9806f8a522a165bc5e28ca61b0b981aa14fe7b4c",
+  "run_id": "m3-http-fixture-reservation-repaired",
+  "method": "read_saved_records_source_hashes_and_independent_scalar_contact_checks_no_rerun",
+  "all_audit_checks_passed": true,
+  "checks": {
+    "all_frozen_source_hashes_match_commit": true,
+    "current_source_hashes_match_frozen": true,
+    "all_worker_source_snapshots_match": true,
+    "return_source_manifest_subset": true,
+    "prefix_source_manifest_subset": true,
+    "m2_return_source_manifest_exact": true,
+    "exact_same_state_continuation": true,
+    "retained_vehicle_exact_continuation": true,
+    "booster_terminated_before_ship_checkpoint": true,
+    "source_case_and_inventory": true,
+    "booster_eight_conditions_recomputed": true,
+    "booster_authority_goal_binding": true,
+    "ship_contact_and_area_recomputed": true,
+    "timeline_chronological": true,
+    "actual_deorbit_thrust_and_fuel_drop": true,
+    "ledger_public_digests": true,
+    "candidate_bound_through_burn": true,
+    "scope_delta_only_next_orbit": true,
+    "fresh_admission_at_application_and_dispatch": true,
+    "approval_before_original_deadlines": true,
+    "http_evidence": true,
+    "final_telemetry_contact": true,
+    "forecast_records_exactly_eight": true,
+    "models_zero": true,
+    "fixed_budget": true,
+    "observed_budget_limits": true,
+    "declared_fixture_and_regression_separated": true,
+    "saved_independent_return_verification": true,
+    "all_eleven_http_process_checks_recorded": true,
+    "separate_host_and_worker_pids": true,
+    "final_serialized_output_within_budget": true,
+    "booster_goal_matches_registered_file": true
+  },
+  "source_provenance": {
+    "frozen_file_count": 96,
+    "worker_snapshot_file_count": 93,
+    "return_manifest_count": 75,
+    "frozen_manifest_sha256": "c6ad2acbdadf424a65a93d35c9727a663b5975f5aa3a28d7440373044afc43c8",
+    "commit_mismatches": [],
+    "current_mismatches": [],
+    "snapshot_mismatches": []
+  },
+  "authority_chain": {
+    "timeline_s": {
+      "m3_scope_change_requested": 1402.2000000000407,
+      "m3_return_reservation_changed": 1402.4500000000407,
+      "m3_return_reservation_observed": 1402.7000000000407,
+      "m3_return_dispatch_authority_checked": 7731.450000000041,
+      "m1_return_dispatch": 7731.450000000041,
+      "deorbit_ignition_command": 7786.950000000041,
+      "deorbit_cutoff_command": 7811.350000000059,
+      "low_speed_surface_contact": 10378.626705202787
+    },
+    "requested_scope_delta": {
+      "add_commands": [
+        "select_next_orbit"
+      ],
+      "resource_limits": {}
+    },
+    "candidate_sha256": "0004d1831aff592376e50d49298363f64809090d258607d8da855ac53aaf422e",
+    "reservation_sha256": "1f3606c228326218edf149ff4eff2d4520808c2a9915635ffd0aa15a736e279c",
+    "scope_revision": 1,
+    "later_observation_delay_s": 0.25,
+    "burn_sample_count": 4,
+    "first_sampled_deorbit_thrust_time_s": 7788.950000000048,
+    "last_sampled_deorbit_burn_time_s": 7811.350000000059,
+    "sampled_deorbit_propellant_drop_kg": 3126.065878591806,
+    "receipt_signature_independently_authenticated": false,
+    "signature_evidence": "host_owned_ledger_status_and_inherited_host_pipe; independent_audit_checks_digests_and_bindings_only",
+    "http_statuses": [
+      200,
+      401,
+      200,
+      409,
+      200
+    ],
+    "http_and_process_checks": {
+      "consumed_request_not_resolvable": true,
+      "http_approved_not_dispatched": true,
+      "http_replay_rejected": true,
+      "one_scripted_operator_response": true,
+      "operator_auth_required": true,
+      "pending_request_delivered": true,
+      "real_gateway_started": true,
+      "second_consumption_rejected": true,
+      "separate_worker_exit_zero": true,
+      "sources_unchanged": true,
+      "storage_budget_preserved": true
+    }
+  },
+  "handoff": {
+    "released_count": 26,
+    "retained_count": 0,
+    "time_s": 1000.7000000000407,
+    "generation": 28,
+    "handoff_sha256": "2ecf15bc7e3477e06011572792670d44923f332c90b12e408a340c2c5a3ad82a",
+    "same_state_continuation": true
+  },
+  "ship": {
+    "metrics": {
+      "contact_time_s": 10378.626705202787,
+      "contact_point_speed_mps": 4.613326129759819,
+      "surface_normal_speed_mps": -1.9433951896592503,
+      "surface_tangential_speed_mps": 4.184016385763085,
+      "tilt_deg": 2.396269455067583,
+      "body_rate_rad_s": 0.00302824699790695,
+      "propellant_kg": 62433.93195734164,
+      "latitude_deg": 5.340555349536351,
+      "longitude_deg": 143.00317594363955,
+      "initial_overlap": false,
+      "area_distance_m": 37912.08320798266,
+      "area_radius_m": 125000.0,
+      "area_window_s": [
+        10000.0,
+        11000.0
+      ],
+      "delay_s": 5450.651388986645,
+      "wait_loss_upper_bound_kg": 109.0130277797329,
+      "reserve_after_wait_loss_kg": 62324.91892956191,
+      "reserve_margin_after_wait_loss_kg": 34324.91892956191,
+      "com_ground_speed_mps": 4.561689630292068
+    },
+    "checks": {
+      "contact": true,
+      "speed": true,
+      "tilt": true,
+      "body_rate": true,
+      "reserve_after_loss_bound": true,
+      "area": true,
+      "area_time": true,
+      "no_initial_overlap": true
+    },
+    "outcome": "contact_and_recovery_area_met",
+    "return_record_verifier_passed": true,
+    "physical_execution": false,
+    "landing_survival_verified": false
+  },
+  "booster": {
+    "metrics": {
+      "contact_time_s": 619.6551636219351,
+      "contact_point_speed_mps": 1.8835844992407478,
+      "surface_normal_speed_mps": -1.433398760021725,
+      "surface_tangential_speed_mps": 1.2219895910146696,
+      "tilt_deg": 0.29582117992571966,
+      "body_rate_rad_s": 0.002505628255299652,
+      "propellant_kg": 11419.53848391343,
+      "latitude_deg": 26.00764006163629,
+      "longitude_deg": -96.93803834484997,
+      "initial_overlap": false,
+      "site_distance_m": 8370.115040304589,
+      "reserve_margin_kg": 1419.5384839134294,
+      "com_ground_speed_mps": 1.846707382555844
+    },
+    "checks": {
+      "area": true,
+      "speed": true,
+      "vertical": true,
+      "horizontal": true,
+      "tilt": true,
+      "rate": true,
+      "reserve": true,
+      "no_overlap": true
+    },
+    "goal": {
+      "schema": "missionos.starship_splashdown_goal.v1",
+      "goal_id": "controlled_offshore_water_entry_model_v1",
+      "reference_site_sha256": "ae084d90ff631bf7a091fa3868a73fcdb564f9939072e6e8b749f3dcd6474721",
+      "area_radius_m": 10000.0,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_downward_speed_mps": 2.0,
+      "maximum_horizontal_speed_mps": 3.0,
+      "maximum_tilt_deg": 5.0,
+      "maximum_body_rate_rad_s": 0.02,
+      "minimum_propellant_kg": 10000.0,
+      "surface": "WGS84_zero_elevation_sea_level_proxy",
+      "water_response_modeled": false,
+      "clearance_verified": false,
+      "physical_execution": false
+    },
+    "controlled_water_entry_envelope_met": true,
+    "legacy_one_km_contact_envelope_met": false,
+    "water_response_verified": false
+  },
+  "runtime": {
+    "worker_wall_time_s": 556.4036424170481,
+    "driver_to_final_storage_check_s": 578.9855803329847,
+    "driver_wall_measurement_note": "start inferred from fixed contract wall_deadline minus1200; final summary serialization occurs after last storage check",
+    "maximum_wall_time_s": 2400,
+    "forecast_count": 8,
+    "maximum_forecasts": 20,
+    "maximum_workers": 2,
+    "model_calls": 0,
+    "fixture_decision_count": 10,
+    "attempts": 1,
+    "retry_performed": false,
+    "output_bytes_at_final_storage_check": 1056206393,
+    "maximum_output_bytes": 1200000000,
+    "free_bytes_at_final_storage_check": 5485649920,
+    "minimum_free_bytes": 1073741824,
+    "output_bytes_after_final_summary": 1056231174
+  },
+  "claim_boundaries": {
+    "declared_fixture_accepted": true,
+    "m2_normal_case_accepted": false,
+    "normal_case_rejection_reason": "intentional_authorized_next_orbit_change_does_not_meet_nominal_plan_invariance",
+    "approval_verifier_physical_return_verified": false,
+    "approval_verifier_scope": "authority_reservation_and_dispatch_evidence_only",
+    "ship_contact_supported_by": "separate_m2_and_replanning_verifier_plus_actual_execution_contact_record",
+    "m3_completed": false,
+    "mission_completed": false,
+    "live_AI_inference_demonstrated": false,
+    "operator_response_source": "scripted_test_operator",
+    "SSO_identity_verified": false,
+    "human_direct_flight_commands": 0,
+    "physical_execution": false
+  },
+  "comparison_with_previous_attempt": {
+    "previous_run": "m3-http-fixture-directory-repaired",
+    "previous_end": "controlled_early_stop_before_return_burn",
+    "new_evidence": [
+      "formal_later_reservation_confirmation",
+      "fresh_dispatch_authority_and_physical_admission_checks",
+      "sampled_deorbit_thrust_and_propellant_consumption",
+      "actual_ship_contact_in_approved_area_and_time_window"
+    ],
+    "previous_failed_record_preserved": true,
+    "prefix_numerical_fields_identical": {
+      "samples": true,
+      "initial_state": true,
+      "final_state": true,
+      "booster_separation_state": true,
+      "satellites": true,
+      "final_vehicle": true,
+      "booster_run": true,
+      "concurrent_execution": true
+    }
+  },
+  "limitations": [
+    "One fixture flight; no new Jev or DeepSeek inference.",
+    "The test operator performs real HTTP approval but is scripted, not SSO-authenticated human operation.",
+    "A passing contact envelope is not landing survival, recovery operations, wave response, or real vehicle validation.",
+    "M3 mission completion remains false; this audit does not change completion gates.",
+    "Numerical contact checks do not constitute independent validation of simulator dynamics.",
+    "Storage guard final snapshot precedes final summary serialization."
+  ],
+  "evidence_sha256": {
+    "preflight.json": "8712cc1ba002a7a5b848d9adab2b2b83cf90a17f83136c302c12c92f37561d61",
+    "summary.json": "9228d42de3bd39596ec730428567c3750c18b8e94c92717f1d42b7d9540b60d3",
+    "flight/summary.json": "cc8b0b9b06fd54e70dfb2705dabd909e7153a4cc4a4804323f8423b61573d20c",
+    "flight/study.json": "fa659a5efe493dc19776c4baa924dac21655ab7094adcd353f6b962014c69fef",
+    "flight/mission/study.json": "71a650117b27992ebfda5768c45407260a72dbc1b524d23564cc631fa9b09b70",
+    "flight/mission/return-study.json": "b9f792fc51676dcb57a78835126b0f4cac8b5e9013535826805175c4217ecb66",
+    "flight/mission/handoff.json": "ed89e832590b7f94fd853c34d24f4e7679a7a029ef501a144e4e010a75073f9d",
+    "flight/mission/return/launch-checkpoint.json": "a711751b64aeeb079c27b1aa6911d78178b3560883c8523c09098d86ca7ac1a1",
+    "flight/mission/return/deployment-handoff.json": "8e854daac37e61f3ffac897204c8dc00ddb28acc9013868cad3aee8f6592217d",
+    "http-transcript.json": "bac2a304092e8186ab2a06884d13a2efb8bc7c772a914e964ea3f9bd578d2df4",
+    "host-verified-ledger.json": "f13d74bfee5f51b94fc69b3520d3364f0ebe1535932768c96bcb3e0c88de6a72",
+    "host-runtime.json": "bd2117735768611abc09aa75d13d4eea33bdcf4d36b87c1e9a422d66cebc28d8",
+    "telemetry-summary.json": "80baa370bd774ea754198e2db7a8d1567276af47403143a8141eadb9724cde7f",
+    "storage-budget.json": "dc58e6a679f24e50f909eef3e6a41851882f1b95db9ac913a1dc22a05d567679"
+  },
+  "report_consistency": {
+    "documents_checked": [
+      "starship-m23-review-notes.md",
+      "starship-m23-control.md"
+    ],
+    "report": "report.html",
+    "display": "trajectory-display.json",
+    "major_overclaims_found": false,
+    "display_raw_study_hash_verified": true,
+    "all_current_display_samples_match_saved_rows": true,
+    "report_embedded_cases_equal_display_json": true,
+    "portable_paths_and_signature_blob_scan_passed": true
+  }
+}

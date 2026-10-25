@@ -14,6 +14,16 @@ from src.runtime import starship_sixdof as dyn
 from src.runtime.starship_sixdof_mission import vehicle
 
 
+
+@pytest.fixture
+def synthetic_qualification_for_authority(monkeypatch):
+    """Only approval/receipt/UI mechanics; never qualify the public plant."""
+    from src.runtime import starship_return_feasibility as feasibility
+    profile = json.loads(Path("examples/spaceflight/starship-sixdof-profile.json").read_text())
+    assert feasibility.readiness(profile, check_backend=False)[2] == "return_qualification_source_mismatch"
+    monkeypatch.setattr(feasibility, "readiness", lambda *_a, **_k: (
+        {"synthetic_qualification_fixture_only": True}, "a" * 64, None))
+
 def example():
     p = json.loads(Path("examples/spaceflight/starship-sixdof-profile.json").read_text())
     craft = vehicle(p, payload_count=0)
@@ -172,7 +182,7 @@ def test_updated_status_is_not_revealed_in_earlier_observation():
     assert late["sequence"] > early["sequence"] and late["areas"]["west"] == [10000.0, 11000.0]
 
 
-def test_m1_approval_covers_envelope_and_source_and_is_not_automatic(tmp_path, monkeypatch):
+def test_m1_approval_covers_envelope_and_source_and_is_not_automatic(tmp_path, monkeypatch, synthetic_qualification_for_authority):
     from src.runtime.starship_mission_control import StarshipMissionService, StarshipMissionError
 
     monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE", "fixture")
@@ -258,6 +268,7 @@ def test_service_loss_persists_for_later_decisions(monkeypatch):
     actor.selected = None
     actor.mailbox = None
     actor.run_id = "outage-test"
+    actor.p = {"integration": {"coast_dt_s": 2.0}}
     actor.checks = lambda notice: {}
     actor.observation = lambda: {"state": {"time_s": actor.s.time_s}}
     actor.event = lambda *args, **kwargs: None
@@ -305,7 +316,7 @@ def test_withholding_selected_plan_reenters_planning(monkeypatch):
     actor.step = lambda: setattr(actor, "contact", True)
     actor.finish = lambda: actor.dispatch
     monkeypatch.setattr(module, "source_hashes", lambda: {})
-    monkeypatch.setattr(module, "admit", lambda *a: {"accepted": True})
+    monkeypatch.setattr(module, "admit", lambda *a, **kw: {"accepted": True})
     result = actor.run()
     assert calls == ["nominal", "next_orbit"]
     assert result["candidate_id"] == "next_orbit" and result["time_s"] == 200.0
@@ -392,6 +403,7 @@ def test_budget_exhaustion_has_own_fresh_observation_and_cannot_reuse_response()
     actor.selected = None
     actor.mailbox = None
     actor.run_id = "budget-test"
+    actor.p = {"integration": {"coast_dt_s": 2.0}}
     actor.checks = lambda notice: {}
     actor.observation = lambda: {"state": {"time_s": actor.s.time_s}}
     actor.event = lambda *args, **kwargs: None
@@ -411,7 +423,7 @@ def test_budget_exhaustion_has_own_fresh_observation_and_cannot_reuse_response()
 
 
 def test_verified_but_unresolved_receipt_remains_readable_without_success_label(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, synthetic_qualification_for_authority
 ):
     from hashlib import sha256
     from src.runtime.starship_mission_control import (
@@ -477,7 +489,7 @@ def test_refined_grid_must_also_reach_the_unchanged_area_and_contact_limits():
     assert "uncertainty_or_refinement_trials_missing" in admit(c, e, o, n, 2280.0)["reasons"]
 
 
-def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp_path, monkeypatch):
+def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp_path, monkeypatch, synthetic_qualification_for_authority):
     from src.runtime.starship_mission_control import StarshipMissionService
     from src.gateway.starship_chat import _response
 
@@ -498,3 +510,196 @@ def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp
     assert "最大6000秒" in message and "計画更新最大4回" in message
     assert "帰還時刻は変更不可" not in message and "保留は合計30秒" not in message
     assert "放出・タワーキャッチの追加権限" in message
+
+
+def test_event_forecast_survives_benign_notice_update_but_rechecks_current_clearance():
+    c, e, o, n = candidate()
+    e["event_supervision"] = {"maximum_coast_body_rate_rad_s": 0.02}
+    c["envelope_sha256"] = digest(e)
+    for trial in c["trials"]:
+        trial["origin"] = deepcopy(o)
+    n["sequence"] += 1
+    assert admit(c, e, o, n, 2280.0)["accepted"] is True
+    n["areas"] = {}
+    result = admit(c, e, o, n, 2280.0)
+    assert result["accepted"] is False
+    assert "area_or_availability" in result["reasons"]
+    assert "forecast_notice_binding" not in result["reasons"]
+
+
+def test_non_event_m1_preserves_original_forecast_notice_binding():
+    c, e, o, n = candidate()
+    n["sequence"] += 1
+    result = admit(c, e, o, n, 2280.0)
+    assert result["accepted"] is False
+    assert "forecast_notice_binding" in result["reasons"]
+
+
+def deadline_fallback_example():
+    c, e, o, n = candidate()
+    e["event_supervision"] = {
+        "maximum_coast_body_rate_rad_s": 0.02,
+        "commitment_response": "preserve_currently_admissible_booking_without_model_wait",
+    }
+    c["id"] = "nominal"
+    c["envelope_sha256"] = digest(e)
+    o["state"]["time_s"] = 2250.0
+    for trial in c["trials"]:
+        trial["origin"] = deepcopy(o)
+        trial["coast"][0]["time_s"] = o["state"]["time_s"]
+    record = {
+        "request": {
+            "time_s": 2250.0,
+            "deadline_s": 2285.0,
+            "selected": "nominal",
+            "revision": 1,
+            "notice": n,
+            "commitment_guard": {
+                "candidate_id": "nominal",
+                "candidate_sha256": digest(c),
+                "return_time_s": 2280.0,
+                "guard_horizon_s": 35.25,
+            },
+        },
+        "request_disposition": "deadline_fallback",
+        "response": None,
+        "accepted_action": None,
+        "fallback": True,
+        "interrupted_by_events": False,
+        "later_time_s": 2250.0,
+        "later_observation": o,
+    }
+    study = {
+        "profile": {"integration": {"coast_dt_s": 0.25}},
+        "scheduled_s": 2280.0,
+        "plan_revisions": [
+            {"revision": 1, "candidate_id": "nominal", "time_s": 1200.0, "candidate_snapshot": c}
+        ],
+    }
+    return record, study, e
+
+
+def test_deadline_fallback_rechecks_booked_candidate_and_does_not_charge_model_budget():
+    from src.runtime.starship_replanning_verifier import (
+        deadline_fallback_reasons,
+        decision_budget_reasons,
+    )
+
+    record, study, e = deadline_fallback_example()
+    assert deadline_fallback_reasons(record, study, e) == []
+    assert decision_budget_reasons([record] * 20, 0) == []
+
+
+@pytest.mark.parametrize(
+    "fault",
+    [
+        "scope",
+        "horizon",
+        "too_early",
+        "late",
+        "no_booking",
+        "new_candidate",
+        "candidate_hash",
+        "notice_revoked",
+        "engine_failed",
+        "response",
+        "accepted_action",
+        "stale",
+        "fallback_false",
+        "elapsed",
+        "unexpected_guard",
+    ],
+)
+def test_deadline_fallback_cannot_bypass_booking_current_state_or_clearance(fault):
+    from src.runtime.starship_replanning_verifier import deadline_fallback_reasons
+
+    record, study, e = deadline_fallback_example()
+    guard = record["request"]["commitment_guard"]
+    if fault == "scope":
+        e["event_supervision"]["commitment_response"] = "unapproved"
+    elif fault == "horizon":
+        guard["guard_horizon_s"] += 1
+    elif fault in ("too_early", "late"):
+        now = 2244.0 if fault == "too_early" else 2280.3
+        record["request"]["time_s"] = record["later_time_s"] = now
+        record["later_observation"]["state"]["time_s"] = now
+    elif fault == "no_booking":
+        study["plan_revisions"] = []
+    elif fault == "new_candidate":
+        guard["candidate_id"] = record["request"]["selected"] = "next_orbit"
+    elif fault == "candidate_hash":
+        guard["candidate_sha256"] = "a" * 64
+    elif fault == "notice_revoked":
+        record["request"]["notice"]["areas"] = {}
+    elif fault == "engine_failed":
+        record["later_observation"]["state"]["engine_states"][0]["available"] = False
+    elif fault in ("response", "accepted_action"):
+        record[fault] = {"action": "keep_plan"} if fault == "response" else "keep_plan"
+    elif fault == "stale":
+        record["interrupted_by_events"] = True
+    elif fault == "fallback_false":
+        record["fallback"] = False
+    elif fault == "elapsed":
+        record["later_time_s"] += 1
+    elif fault == "unexpected_guard":
+        record["request_disposition"] = "submitted"
+    assert deadline_fallback_reasons(record, study, e)
+
+
+def test_deadline_fallback_allows_only_one_finite_step_of_burn_overshoot():
+    from src.runtime.starship_replanning_verifier import deadline_fallback_reasons
+
+    record, study, e = deadline_fallback_example()
+    record["request"]["time_s"] = record["later_time_s"] = 2280.25
+    record["later_observation"]["state"]["time_s"] = 2280.25
+    candidate = study["plan_revisions"][0]["candidate_snapshot"]
+    for trial in candidate["trials"]:
+        trial["coast"][0]["time_s"] = 2280.25
+    record["request"]["commitment_guard"]["candidate_sha256"] = digest(candidate)
+    assert deadline_fallback_reasons(record, study, e) == []
+
+
+def preserved_outage_booking():
+    record, study, envelope = deadline_fallback_example()
+    record["request"].update(stage="orbital_event", request_id="outage-1")
+    record["request"]["notice"]["sequence"] = 2
+    record["synthetic_timeout_injected"] = True
+    study["envelope"] = envelope
+    study["dispatch"] = {"candidate_id": "nominal", "revision": 1, "time_s": 2280.0}
+    study["plan_revisions"][0].update(basis="fixture", decision_request_id="before-outage")
+    study["decisions"] = [record]
+    return study
+
+
+def test_outage_can_execute_existing_booking_without_inventing_another_revision():
+    from src.runtime.starship_replanning_verifier import case_reasons
+
+    study = preserved_outage_booking()
+    assert len(study["plan_revisions"]) == 1
+    assert study["plan_revisions"][0]["basis"] == "fixture"
+    assert case_reasons(study, "event_timeout", "contact_and_recovery_area_met") == []
+
+
+@pytest.mark.parametrize(
+    "fault", ["response", "no_injection", "stale", "no_fallback", "other_booking", "notice_revoked"]
+)
+def test_preserved_outage_booking_requires_actual_checked_fallback_evidence(fault):
+    from src.runtime.starship_replanning_verifier import case_reasons
+
+    study = preserved_outage_booking()
+    record = study["decisions"][0]
+    if fault == "response":
+        record["response"] = {"action": "keep_plan"}
+    elif fault == "no_injection":
+        record["synthetic_timeout_injected"] = False
+    elif fault == "stale":
+        record["interrupted_by_events"] = True
+    elif fault == "no_fallback":
+        record["fallback"] = False
+    elif fault == "other_booking":
+        record["request"]["selected"] = "next_orbit"
+    elif fault == "notice_revoked":
+        record["request"]["notice"]["areas"] = {}
+    assert "persistent_timeout_and_fallback_missing" in case_reasons(
+        study, "event_timeout", "contact_and_recovery_area_met"
+    )

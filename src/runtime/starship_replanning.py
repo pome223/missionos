@@ -11,18 +11,46 @@ import json
 import math
 from pathlib import Path
 
+from .starship_operational_trials import REGISTERED_CASES, is_trial, trial_manifest, delivered_notice
+
 SCENARIOS = {
+    **{f"sixdof_m1_{case}": case for case in REGISTERED_CASES},
+    "sixdof_m1_orbital_planning": "comparison_orbital_update",
     "sixdof_m1_normal": "normal",
     "sixdof_m1_replan": "recovery_update",
     "sixdof_m1_timeout": "decision_timeout",
+    "sixdof_m1_event_normal": "event_normal",
+    "sixdof_m1_event_tradeoff": "event_tradeoff",
+    "sixdof_m1_event_timeout": "event_timeout",
+    **{
+        f"sixdof_m1_comparison_{name}": f"comparison_{name}"
+        for name in ("normal", "update", "late", "tool_failure", "timeout")
+    },
 }
 SCOPE = "local_simulation_and_bounded_return_replanning"
 CONFIG = "examples/spaceflight/starship-m1-operations.json"
+COMPARISON_CONFIG = "examples/spaceflight/starship-comparison-operations.json"
+COMPARISON_CASES = frozenset(
+    f"comparison_{name}" for name in ("normal", "update", "late", "tool_failure", "timeout")
+)
 MODE_ENV = "MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE"
 ROOT = Path(__file__).resolve().parents[2]
 EXTRA_SOURCES = (
+    "src/runtime/starship_orbital_window.py", "src/runtime/starship_concurrent.py", "src/runtime/starship_booster_coast_probe.py",
+    "src/runtime/starship_reference_ids.py",
+    "src/intelligence/starship_reference_protocol.py",
+    "src/intelligence/starship_flight_supervisor.py",
+    "src/intelligence/space_ops_investigator.py",
     "src/runtime/starship_replanning.py",
+    "src/runtime/starship_call_limits.py",
+    "src/runtime/starship_operational_trials.py",
     "src/runtime/starship_replanning_executor.py",
+    "src/runtime/starship_m2_contract.py",
+    "src/runtime/starship_return_time_search.py",
+    "src/runtime/starship_replanning_events.py",
+    "src/runtime/starship_replanning_comparison.py",
+    "src/runtime/starship_decision_evidence.py",
+    "src/runtime/starship_model_diagnostics.py",
     "src/runtime/starship_replanning_verifier.py",
     "src/intelligence/starship_replanning.py",
     "src/runtime/starship_return_prediction.py",
@@ -30,8 +58,10 @@ EXTRA_SOURCES = (
     "src/runtime/starship_mission_control.py",
     "src/intelligence/starship_mission_planner.py",
     "scripts/run_starship_m1.py",
+    "scripts/summarize_starship_models.py",
     "scripts/run_starship_mission_worker.py",
     CONFIG,
+    COMPARISON_CONFIG,
 )
 
 
@@ -50,10 +80,14 @@ def source_hashes():
     }
 
 
-def contract(mode):
+def contract(mode, case=None, *, legacy_call_limits=False, authority_gap_reasoning=False):
+    if type(authority_gap_reasoning) is not bool:
+        raise ValueError("invalid_authority_gap_reasoning_optin")
+    if isinstance(case, str) and case.startswith(("op_trial_", "op_scope_")) and not is_trial(case):
+        raise ValueError("operational_trial_not_registered")
     if mode not in ("fixture", "live"):
         raise ValueError("m1_mode_not_configured")
-    return {
+    result = {
         "schema": "missionos.return_replanning_authority.v1",
         "scope": SCOPE,
         "mode": mode,
@@ -80,6 +114,60 @@ def contract(mode):
         "fallback": "first_currently_admissible_candidate_else_bounded_coast_unresolved",
         "physical_execution_authorized": False,
     }
+
+    if (
+        case in ("event_normal", "event_tradeoff", "event_timeout")
+        or case in COMPARISON_CASES
+        or case == "comparison_orbital_update" or is_trial(case)
+    ):
+        result.update(maximum_jev_calls=16, maximum_forecasts=20)
+        result["event_supervision"] = {
+            "scope": "post_deployment_orbital_coast_only",
+            "maximum_coast_body_rate_rad_s": 0.02,
+            "deadline_margin_s": 60.0,
+            "urgent_response": "inhibit_return_and_record_unresolved_stop",
+            "commitment_response": "preserve_currently_admissible_booking_without_model_wait",
+            "objective": "Compare estimated recovery-service completion time and waiting resources; preserve the original plan when an update does not change that tradeoff. Service forecasts are uncertain estimates, never area clearance.",
+        }
+    if case in COMPARISON_CASES or case == "comparison_orbital_update" or is_trial(case):
+        cfg = json.loads((ROOT / COMPARISON_CONFIG).read_text())
+        result["operations"] = cfg["operations"]
+        result["comparison_preparation"] = deepcopy(cfg["comparison_preparation"])
+        # This fault is an approved test boundary, never an observed fact or
+        # advice sent to the policy. Live tool failure is not simulated silently.
+        if case == "comparison_tool_failure":
+            if mode != "fixture":
+                raise ValueError("comparison_tool_failure_fixture_only")
+            result["comparison_preparation"]["synthetic_tool_failure"] = "cancel_on_material_update"
+    if case == "comparison_orbital_update" or is_trial(case):
+        from .starship_orbital_window import CONFIG as ORBITAL_WINDOW
+
+        result["orbital_planning_window"] = deepcopy(ORBITAL_WINDOW)
+        result["provider_budget_policy"] = "independent_provider_reservations_v1"
+        # Explicit null removes the DeepSeek count cap for new live grants.
+        # Historical and fixture grants keep their recorded finite budgets.
+        result["maximum_llm_calls"] = 1 if legacy_call_limits or mode == "fixture" else None
+        result["comparison_preparation"]["deep_reasoning"].update(
+            protocol="ids_orbital_low_16384",
+            reasoning_effort="low",
+            maximum_output_tokens=16384,
+        )
+    if is_trial(case):
+        result["operational_trial"] = {
+            "schema": "missionos.operational_trial_binding.v1",
+            "trial_id": case, "manifest_sha256": digest(trial_manifest(case)),
+            "scope": "published_recovery_notices_only",
+        }
+    if authority_gap_reasoning:
+        from .starship_orbital_window import AUTHORITY_GAP_POLICY, reserved_decision_s
+        result["authority_gap_reasoning"] = deepcopy(AUTHORITY_GAP_POLICY)
+        reserved_decision_s(result)  # Reject opt-in without the approved longer window.
+    if mode == "live" and case == "event_normal" and not legacy_call_limits:
+        # Current M2/M3 ordinary returns keep Jev-mediated decisions and their
+        # original 35-second deadline; DeepSeek escalation has no count cap.
+        result["maximum_llm_calls"] = None
+        result["deepseek_call_budget_policy"] = "unlimited_jev_escalations_v1"
+    return result
 
 
 def estimate(state):
@@ -137,6 +225,61 @@ def uncertainty_origins(origin):
 
 def notices(case, time_s):
     """Only messages already issued; no scenario or future schedule to the AI."""
+    if is_trial(case):
+        notice = delivered_notice(case, time_s)
+        if notice is None:
+            raise ValueError("operational_notice_not_yet_delivered")
+        return notice
+    if isinstance(case, str) and case.startswith(("op_trial_", "op_scope_")):
+        raise ValueError("operational_trial_not_registered")
+    if case in COMPARISON_CASES or case == "comparison_orbital_update":
+        cfg = json.loads((ROOT / COMPARISON_CONFIG).read_text())
+        # Reuse a labelled development input, never a new held-out scenario.
+        schedule = cfg["evaluation_conditions"][
+            "comparison_update" if case == "comparison_orbital_update" else case
+        ]
+        updated = time_s >= schedule["notice_update_at_s"]
+        revised = updated and schedule["material_update"]
+        forecast = cfg["observed_notice_values"]
+        return {
+            "sequence": 2 if updated else 1,
+            "issued_at_s": schedule["notice_update_at_s"] if updated else 900.0,
+            "expires_at_s": 12000.0,
+            "areas": {"east": [4500.0, 5600.0], "west": [10000.0, 11000.0]},
+            "text": (
+                "Recovery coordinator correction: both study areas retain their explicit operating clearance. The eastern post-contact service-delay estimate has increased and remains uncertain; the western estimate is unchanged. Compare estimated completion intervals and the candidate-specific waiting resource margins. These estimates neither grant clearance nor report completed servicing."
+                if revised
+                else "Recovery coordinator: both study areas retain their explicit operating clearance. Eastern and western post-contact service-delay estimates are unchanged. These estimates neither grant clearance nor report completed servicing."
+            ),
+            "recovery_service_forecast": {
+                "basis": "synthetic_uncertain_estimate_not_authority_or_observed_completion",
+                "east_delay_after_contact_s": deepcopy(
+                    forecast["revised_east_delay_after_contact_s"]
+                    if revised
+                    else forecast["initial_east_delay_after_contact_s"]
+                ),
+                "west_delay_after_contact_s": deepcopy(forecast["west_delay_after_contact_s"]),
+            },
+        }
+    if case in ("event_normal", "event_tradeoff", "event_timeout"):
+        updated = time_s >= 1450.0
+        revised = updated and case != "event_normal"
+        return {
+            "sequence": 2 if updated else 1,
+            "issued_at_s": 1450.0 if updated else 900.0,
+            "expires_at_s": 12000.0,
+            "areas": {"east": [4500.0, 5600.0], "west": [10000.0, 11000.0]},
+            "text": (
+                "Recovery coordinator correction: both study areas retain their explicit operating clearance. Eastern post-contact servicing is now forecast to resume much later, with an uncertain delay. The western service forecast is unchanged. Compare total estimated completion and the resource cost of a later return; the forecast is not a clearance or a measured outcome."
+                if revised
+                else "Recovery coordinator: both study areas are cleared for the stated windows. Eastern servicing is expected promptly after contact. This published status update does not change the operating conditions."
+            ),
+            "recovery_service_forecast": {
+                "basis": "synthetic_uncertain_estimate_not_authority_or_observed_completion",
+                "east_delay_after_contact_s": [7200.0, 14400.0] if revised else [600.0, 1200.0],
+                "west_delay_after_contact_s": [1200.0, 2400.0],
+            },
+        }
     if case == "normal":
         return {
             "sequence": 1,

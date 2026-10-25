@@ -1,0 +1,300 @@
+{
+  "artifact_sha256": {
+    "bounded-early-stop.json": "ce05441533007cef2818cc313937edbef56f4c50c92af4a3bf0977e9c6617d69",
+    "flight/mission/concurrent-prefix/summary.json": "6b97713c9b62fb6adeccfc9f3e8caf3d41ecd08369e57890c9b179412ce84711",
+    "flight/mission/concurrent-prefix/verification.json": "2a62969d672782eebef055d43343d92332d76ecf4fddef7fa4ee9c89f8c3d9bd",
+    "flight/mission/handoff.json": "ed89e832590b7f94fd853c34d24f4e7679a7a029ef501a144e4e010a75073f9d",
+    "flight/mission/inputs.json": "fe8848196b1dbd7a96db9054e5582014c471eecf8b6d139c758299605d33a302",
+    "flight/mission/return/opportunities.json": "f1b682c87bf117b212488365644caaed898d881ff548c6f4b48a7e89b16a082f",
+    "host-consumption-checkpoint.json": "62cacd724e1b32efe607232fa11c738c7115362d0ea54bef6b21d11a016b90f7",
+    "host-runtime.json": "03b687340d1c1c1c5ec3659e24e2949e553230ed2baa33ea988e46185649e338",
+    "host-verified-ledger.json": "8916802c65b48a22cc63de8539b3b171bebc7f912e3fc1205b540bf70cf334a4",
+    "http-transcript.json": "5478c68557507b81d5d1014866b453206ec3d460d765fa808b68b51dec892176",
+    "preflight.json": "ea1c8b984907f205b8d578c13a1144720895e3ded67bd7bc540887780a1ced55",
+    "runtime-check.json": "733e882be219321a9185d29c7beba9492613854e577779134047808a741c0c79",
+    "storage-budget.json": "065f537a3e60871aebf7dc2ce13a56cafc8de9f0c35b8d66b865c82d17f04c0f",
+    "summary.json": "4c63b9d6c448851c8f37fa8a37bc6f24d3a2686c0748fe2d67a1fce4e1b3fe1a",
+    "telemetry-summary.json": "c2fbb4a64feab5ba8c6b02e63164c0dfed8b272ad82d892f8eedb11f77d4078b"
+  },
+  "ascent": {
+    "deployment_withheld": false,
+    "fixture_decisions": 2,
+    "model_calls": 0
+  },
+  "audit_added_flights": 0,
+  "audit_added_forecasts": 0,
+  "audit_added_model_calls": 0,
+  "audit_method": "read_saved_records_and_recompute_hashes_and_contact_scalars_only",
+  "booster": {
+    "authority_binding_checks": {
+      "booster_authority_sha256_matches": true,
+      "decision_action": "splashdown",
+      "director_envelope_matches": true,
+      "dispatch_action": "splashdown",
+      "dispatch_rules_accepted": true,
+      "dispatch_time_s": 135.59999999999658,
+      "goal_matches_outer_authority": true,
+      "goal_matches_registered_current_file": true,
+      "later_observation_time_s": 135.69999999999658,
+      "model_inference_invoked": false,
+      "site_sha256_matches": true
+    },
+    "booster_hardware_recovered": false,
+    "controlled_water_entry_envelope_met": true,
+    "independently_recomputed_eight_checks": {
+      "area": true,
+      "horizontal": true,
+      "no_overlap": true,
+      "rate": true,
+      "reserve": true,
+      "speed": true,
+      "tilt": true,
+      "vertical": true
+    },
+    "independently_recomputed_metrics": {
+      "body_rate_rad_s": 0.002505628255299652,
+      "com_ground_speed_mps": 1.846707382555844,
+      "contact_clearance_m": -2.7939677238464355e-09,
+      "contact_latitude_deg": 26.007640061636298,
+      "contact_longitude_deg": -96.93803834484997,
+      "contact_point_speed_mps": 1.8835844992407478,
+      "contact_time_s": 619.6551636219351,
+      "horizontal_speed_mps": 1.2219895910146696,
+      "initial_overlap": false,
+      "propellant_above_registered_reserve_kg": 1419.5384839134294,
+      "remaining_propellant_kg": 11419.53848391343,
+      "site_distance_m": 8370.115040304589,
+      "tilt_deg": 0.29582117992571966,
+      "vertical_speed_mps": -1.433398760021725
+    },
+    "legacy_contact_envelope_met": false,
+    "registered_goal": {
+      "area_radius_m": 10000.0,
+      "clearance_verified": false,
+      "goal_id": "controlled_offshore_water_entry_model_v1",
+      "maximum_body_rate_rad_s": 0.02,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_downward_speed_mps": 2.0,
+      "maximum_horizontal_speed_mps": 3.0,
+      "maximum_tilt_deg": 5.0,
+      "minimum_propellant_kg": 10000.0,
+      "physical_execution": false,
+      "reference_site_sha256": "ae084d90ff631bf7a091fa3868a73fcdb564f9939072e6e8b749f3dcd6474721",
+      "schema": "missionos.starship_splashdown_goal.v1",
+      "surface": "WGS84_zero_elevation_sea_level_proxy",
+      "water_response_modeled": false
+    },
+    "water_response_verified": false
+  },
+  "claim_limits": [
+    "HTTP approval and host single-use consumption are confirmed; they do not establish a burn.",
+    "Later trusted executor telemetry confirms scope revision1 and an applied next-orbit reservation with the approved candidate hash. The precise application/worker-confirm event record was not saved before termination.",
+    "The same-state handoff and eight saved forecasts do not establish observed Ship return or contact.",
+    "The booster meets the eight frozen model water-entry criteria in one fixture flight; water response, structural survival, hardware recovery and robustness are not established.",
+    "The latest telemetry run_active=true describes a sample before controlled termination, not a currently running mission.",
+    "The recorded 7959s hash-only estimate is a single measurement/extrapolation, not an independently repeated benchmark or an elapsed-time measurement.",
+    "Models were disabled; this run tests the control/approval runtime, not new live AI judgment."
+  ],
+  "declared_fixture_accepted": false,
+  "early_stop": {
+    "estimate_is_single_measurement_not_full_runtime": true,
+    "estimated_hash_only_cpu_s": 7959,
+    "fixed_wall_budget_s": 2400,
+    "physical_outcome_claimed": false,
+    "reason": "measured_repeated_candidate_hashing_exceeds_fixed_runtime_budget",
+    "retry_performed": false,
+    "run_id": "m3-http-fixture-directory-repaired",
+    "schema": "missionos.starship_m3_bounded_early_stop.v1",
+    "source_commit": "09db378ddf1b84849834ad4e0d2873db5f55de9b",
+    "worker_group_only": true
+  },
+  "elapsed_wall_at_early_stop_s": 1059.4362085409812,
+  "fixed_budget": {
+    "attempts": 1,
+    "maximum_forecasts": 20,
+    "maximum_output_bytes": 1200000000,
+    "maximum_workers": 2,
+    "minimum_free_bytes": 1073741824,
+    "model_calls": 0,
+    "retry_performed": false,
+    "wall_time_s": 2400.0
+  },
+  "gateway_runtime_check": {
+    "checks": {
+      "gateway_http_started": true,
+      "health_ready": true,
+      "operator_route_ready": true
+    },
+    "forecasts": 0,
+    "model_calls": 0,
+    "operator_approvals": 0,
+    "passed": true,
+    "physical_execution": false,
+    "schema": "missionos.starship_m3_http_runtime_check.v1",
+    "simulator_runs": 0,
+    "wall_time_s": 1.1822355409967713,
+    "worker_spawned": false
+  },
+  "human_direct_flight_commands": 0,
+  "independent_prefix_record_check": {
+    "booster_recovery_verified": false,
+    "booster_splashdown": {
+      "controlled_water_entry_envelope_met": true,
+      "independent_physics_validation": false,
+      "issues": [],
+      "passed": true,
+      "physical_execution": false,
+      "trajectory_record_verified": true,
+      "water_response_verified": false
+    },
+    "handoff_ready": true,
+    "independent_physics_validation": false,
+    "issues": [],
+    "m3_completed": false,
+    "passed": true,
+    "physical_execution": false,
+    "schema": "missionos.starship_m3_prefix_verification.v1",
+    "scope": "concurrent_launch_ascent_deployment_prefix_only",
+    "ship_return_verified": false,
+    "source_manifest_validated_against_external_commit": false
+  },
+  "m3_completed": false,
+  "mission_completed": false,
+  "model_calls_reported": 0,
+  "operator_http": {
+    "approval_responses": 1,
+    "approval_time_s": 1403.9500000000407,
+    "candidate_hash": "d6257f413d19e141b704b0347ed96a4a7ed279a901eb4d2059494bbc73ed8666",
+    "checks": {
+      "consumed_request_not_resolvable": true,
+      "http_approved_not_dispatched": true,
+      "http_replay_rejected": true,
+      "one_scripted_operator_response": true,
+      "operator_auth_required": true,
+      "pending_request_delivered": true,
+      "real_gateway_started": true,
+      "second_consumption_rejected": true,
+      "separate_worker_exit_zero": false,
+      "sources_unchanged": true,
+      "storage_budget_preserved": true
+    },
+    "consumption_time_s": 1403.9500000000407,
+    "host_receipt_is_not_execution": true,
+    "host_single_use_consumption_observed": true,
+    "private_hmac_reverification_performed_by_this_audit": false,
+    "replay_probe_count": 1,
+    "request_time_s": 1403.9500000000407,
+    "requests": 1,
+    "scope_revision": 1,
+    "signature_provenance": "host saved ledger.status result; this audit checked content hashes and cross-record binding only",
+    "source": "scripted_local_test_operator",
+    "sso_identity_verified": false,
+    "statuses": [
+      {
+        "endpoint": "pending",
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "endpoint": "pending",
+        "method": "GET",
+        "status": 401
+      },
+      {
+        "endpoint": "approve",
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "endpoint": "approve",
+        "method": "POST",
+        "status": 409
+      },
+      {
+        "endpoint": "pending",
+        "method": "GET",
+        "status": 200
+      }
+    ]
+  },
+  "physical_execution": false,
+  "prior_attempts_preserved_separately": [
+    "m3-http-fixture: host initialization failure",
+    "m3-http-fixture-startup-repaired: prefix output initialization failure"
+  ],
+  "publication_exclusions": [
+    "private SQLite databases",
+    "credential material or authorization headers",
+    "full signed receipt blobs",
+    "workstation paths"
+  ],
+  "reservation": {
+    "candidate_id": "next_orbit",
+    "candidate_sha256": "d6257f413d19e141b704b0347ed96a4a7ed279a901eb4d2059494bbc73ed8666",
+    "latest_observed_time_s": 1893.9500000000407,
+    "latest_telemetry_frames": 7152,
+    "observed_in_later_trusted_executor_telemetry": true,
+    "plan_revision": 1,
+    "reservation_observation_claim_scope": "later host-saved executor snapshot shows applied scope and reservation; final worker confirmation-event audit is unavailable",
+    "reserved_burn_time_s": 7731.351388986685,
+    "scalar_binding_checks": {
+      "approval_and_consumption_before_original_sim_deadline": true,
+      "approval_and_consumption_before_original_wall_deadline": true,
+      "candidate_binding_matches_later_reservation": true,
+      "consumption_content_hash": true,
+      "host_ledger_consumption_exactly_matches_delivered_result": true,
+      "later_observation_strictly_after_consumption": true,
+      "latest_time_precedes_reserved_burn": true,
+      "receipt_content_hash": true,
+      "request_content_hash": true,
+      "requested_delta_only_adds_registered_next_orbit": true,
+      "reservation_content_hash": true,
+      "scope_matches_consumption": true,
+      "scope_revision_matches_consumption": true
+    },
+    "seconds_after_host_consumption": 490.0,
+    "worker_confirmation_event_saved": false
+  },
+  "result": "partial_before_return_burn_controlled_early_stop",
+  "retry_performed": false,
+  "run_id": "m3-http-fixture-directory-repaired",
+  "same_state_continuation": {
+    "checkpoint_time_s": 1000.7000000000407,
+    "exact_handoff_matches_return_launch_checkpoint": true,
+    "full_return_study_present": false,
+    "released_count": 26,
+    "retained_count": 0,
+    "return_constructor_authority_matches": true,
+    "return_constructor_handoff_matches": true,
+    "return_constructor_launch_matches": true
+  },
+  "schema": "missionos.starship_m3_partial_http_flight_audit.v1",
+  "ship_return": {
+    "actual_burn_dispatch_observed": false,
+    "actual_ship_contact_observed": false,
+    "final_return_record_verifier_completed": false,
+    "nominal_burn_time_s": 2280.7000000000407,
+    "prediction_files_saved": 8,
+    "reserved_burn_time_s": 7731.351388986685,
+    "total_forecast_attempts_independently_established": false
+  },
+  "source_commit": "09db378ddf1b84849834ad4e0d2873db5f55de9b",
+  "source_provenance": {
+    "preflight_files": 96,
+    "preflight_sources_unchanged": true,
+    "snapshot_mismatches": [],
+    "source_mismatches": [],
+    "worker_snapshot_files": 93,
+    "worker_snapshot_matches": true
+  },
+  "storage": {
+    "checks": {
+      "free_reserve_preserved": true,
+      "output_within_budget": true
+    },
+    "files_deleted": 0,
+    "free_bytes": 6718693376,
+    "observed_wall_time_s": 372767.921575583,
+    "output_bytes": 385612376
+  }
+}

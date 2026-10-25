@@ -1,0 +1,35 @@
+{
+  "schema": "missionos.starship_unified_registration.v2",
+  "revision_reason": "First v1 normal fixture stopped after its half-step forecast exceeded 180 seconds. Preserve it as unresolved; no physical threshold, step size or completed record changes.",
+  "forecast_resource_profile": "unified_forecast_300_v1",
+  "forecast_timeout_s": 300.0,
+  "batch_timeout_s": 600.0,
+  "resource_basis": "Completed full-step forecasts took 93.16, 93.16 and 127.56 seconds. Double the longest completed cost for the half-step check plus bounded headroom; 300 seconds per forecast remains inside the unchanged 600-second batch and 2400-second flight limits.",
+  "question": "Can visual observation, seeded plant faults, report-informed recovery judgment and symptom-controlled return share one exact-state mission and evidence index?",
+  "pool": ["normal", "propulsion_80", "sensor_gain_80", "payload_jam", "unknown_inventory"],
+  "distribution": "uniform_test_distribution_not_real_incident_rates",
+  "limits": {
+    "maximum_wall_time_s": 2400,
+    "maximum_output_bytes": 1610612736,
+    "minimum_free_bytes": 5368709120
+  },
+  "prestart_minimum_free_bytes": 21474836480,
+  "maximum_attempts_per_plan": 1,
+  "maximum_hosted_model_calls": 0,
+  "preflight_cases": ["normal", "propulsion_80", "sensor_gain_80", "payload_jam", "unknown_inventory"],
+  "preflight_acceptance": {
+    "normal": "visual confirmation followed by exact-state nominal return; no false symptom intervention",
+    "propulsion_80": "symptom observation, requested tracking, checked adoption and contact limits",
+    "sensor_gain_80": "requested tracking, checked unchanged assumption and contact limits",
+    "payload_jam": "image/telemetry-based stop; retained inventory and its full mass preserved in the nominal return path",
+    "unknown_inventory": "return inhibited and unresolved; never a mission-completion success"
+  },
+  "stop_conditions": ["source or backend changes", "invalid evidence", "wall time or output limit", "free-space floor", "unreaped worker", "first unexpected case failure"],
+  "no_retry": true,
+  "private_schedule_policy": "seed, fault identity, severity and future trigger schedule never enter model requests",
+  "qualification": "new experimental composition; nominal 39-case qualification is not extended or edited",
+  "catch": "history is supplied as judgment evidence; capture dispatch remains rejected until trajectory reachability and mechanical support are independently demonstrated",
+  "unsupported": ["combined retained payloads and propulsion fault", "arbitrary unknown fault families", "physical execution"],
+  "live": "requires successful new fixture evidence, a separately registered native image evaluation and approval of an exact live plan",
+  "storage": "fresh output per plan, one common index, raw frames and traces under flight/, no automatic deletion or overwrite"
+}

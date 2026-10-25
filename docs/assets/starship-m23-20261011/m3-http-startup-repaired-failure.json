@@ -1,0 +1,144 @@
+{
+  "artifact_sha256": {
+    "flight/mission/failure.json": "5b607923a7ef2303e305a3bb4fc1c41b823efdf087aceb1a044ff4cfffc9c317",
+    "flight/mission/study.json": "b605cdbbb6f2ac1cd6145a939e1f2e26e2d998d676347ab23c90a8c7ede862f2",
+    "flight/study.json": "bab792249dfc50fce479fb74750e021b4b1ca25e7049a1745e9c832f4430b4ba",
+    "host-runtime.json": "5a4cab1f0e2ce9ad3c3929d2dd54c2ffe27f7915700d8a6a65b247d370c8118a",
+    "http-transcript.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "preflight.json": "2233651b14065348768a829f23094433f5dfee16ef54636b75e048fd5334d7ff",
+    "runtime-check.json": "2fec3445ab5bb613dc672782fdb2e1c90779fbe950d6cfabecfffe777ffec435",
+    "storage-budget.json": "054c971403053be187cd7c6b0c5ad4b27f9042d4e2f50f9e1a9ed67bac7fcfab",
+    "summary.json": "4e777442e9616ae5467642b56b780150148ca717ab0d886db071616eb3086443",
+    "worker-result.json": "9832b6b431fe7566f348c03a25cc30555db0cd552309214bb7f62883cfc3efa2"
+  },
+  "attempt_budget": {
+    "attempts": 1,
+    "maximum_forecasts": 20,
+    "maximum_output_bytes": 1200000000,
+    "maximum_workers": 2,
+    "minimum_free_bytes": 1073741824,
+    "model_calls": 0,
+    "retry_performed": false,
+    "wall_time_s": 2400.0
+  },
+  "audit_added_flights": 0,
+  "audit_added_forecasts": 0,
+  "audit_added_model_calls": 0,
+  "audit_method": "saved_artifacts_source_digest_and_failure_path_read_only",
+  "claim_limits": [
+    "This attempt establishes real Gateway startup, not HTTP approval-to-return operation.",
+    "The shared-clock numerical prefix was not reached: the first prefix artifact write failed.",
+    "No new Ship or booster outcome exists; previous prefix results cannot substitute.",
+    "A worker exit code of zero persisted a negative study and does not establish flight success.",
+    "The original local failure record contains a workstation path; use this portable reason and relative target for publication."
+  ],
+  "declared_fixture_accepted": false,
+  "execution_evidence": {
+    "booster_outcome_observed": false,
+    "deployment_run_present": false,
+    "executor_telemetry_frames": 0,
+    "gateway_started": true,
+    "handoff_present": false,
+    "host_consumption_observed": false,
+    "http_approval_observed": false,
+    "http_transcript_entries": 0,
+    "later_reservation_confirmation_observed": false,
+    "operator_request_delivered": false,
+    "prefix_authority_saved": false,
+    "preflight_budget_and_contract_saved": true,
+    "reservation_change_observed": false,
+    "return_study_present": false,
+    "ship_contact_observed": false,
+    "ship_return_dispatch_observed": false
+  },
+  "failure": {
+    "reason": "concurrent_prefix_output_directory_missing",
+    "relative_target": "flight/mission/concurrent-prefix/authority.json",
+    "source_stage": "first prefix artifact write precedes simulate_concurrent",
+    "type": "FileNotFoundError"
+  },
+  "frozen_manifest_matches_current_source": true,
+  "human_direct_flight_commands": 0,
+  "m3_completed": false,
+  "mission_completed": false,
+  "model_calls_reported": 0,
+  "operator_response_source": "scripted_test_operator_configured_but_no_request_or_response",
+  "physical_execution": false,
+  "previous_attempt": "m3-http-fixture: retained separately as host_initialization_failed",
+  "process_result": {
+    "exit_zero_is_not_flight_success": true,
+    "same_state_continuation_checked": false,
+    "separate_worker_exit_zero": true
+  },
+  "publication_exclusions": [
+    "private SQLite databases",
+    "raw failure messages with workstation paths",
+    "credentials or authorization headers"
+  ],
+  "retry_performed": false,
+  "run_id": "m3-http-fixture-repaired",
+  "runtime_boundary": {
+    "checks": {
+      "gateway_http_started": true,
+      "health_ready": true,
+      "operator_route_ready": true
+    },
+    "forecasts": 0,
+    "model_calls": 0,
+    "operator_approvals": 0,
+    "passed": true,
+    "physical_execution": false,
+    "schema": "missionos.starship_m3_http_runtime_check.v1",
+    "simulator_runs": 0,
+    "wall_time_s": 1.1022267499938607,
+    "worker_spawned": false
+  },
+  "schema": "missionos.starship_m3_http_fixture_readonly_audit.v1",
+  "source_commit": "a974bca7fbe7a2df48f00154718525cbfa88afda",
+  "source_file_count": 96,
+  "source_mismatches": [],
+  "sso_identity_verified": false,
+  "storage": {
+    "checks": {
+      "free_reserve_preserved": true,
+      "output_within_budget": true
+    },
+    "files_deleted": 0,
+    "free_bytes": 7135072256,
+    "observed_wall_time_s": 363724.593960208,
+    "output_bytes": 3308782
+  },
+  "termination": "prefix_artifact_initialization_failed",
+  "verification": {
+    "approval_verification": {
+      "issues": [
+        "no_ship_return_study"
+      ],
+      "passed": false
+    },
+    "http_and_process_checks": {
+      "one_scripted_operator_response": false,
+      "real_gateway_started": true,
+      "separate_worker_exit_zero": true,
+      "sources_unchanged": true,
+      "storage_budget_preserved": true
+    },
+    "m2": {
+      "case_accepted": false,
+      "case_issues": [],
+      "independent_physics_validation": false,
+      "issues": [
+        "runtime_scope"
+      ],
+      "mission_completed": false,
+      "outcome": "unresolved",
+      "passed": false,
+      "physical_execution": false,
+      "schema": "missionos.starship_m2_verification.v1"
+    },
+    "record_checks_passed": false
+  },
+  "worker_snapshot_mismatches": [],
+  "worker_source_snapshot_file_count": 93,
+  "worker_source_snapshot_matches_manifest": true
+}

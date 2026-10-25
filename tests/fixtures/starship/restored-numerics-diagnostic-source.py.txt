@@ -1,0 +1,536 @@
+#!/usr/bin/env python3
+"""One-use held-command RK4 refinement of the restored ground-start mission.
+
+This process-local diagnostic changes no controller, command/event cadence,
+profile, hardware, qualification or contact gate. Its convergence tolerances
+are registered engineering assumptions, not formal numerical certification.
+"""
+from __future__ import annotations
+
+import argparse
+from contextlib import contextmanager
+import gzip
+from hashlib import sha256
+import math
+import os
+from pathlib import Path
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from scripts.run_starship_state_insertion import (  # noqa: E402
+    clean_commit, environment, offline_only, parse, require, save, wire,
+)
+from scripts.run_starship_state_mission import (  # noqa: E402
+    GOAL, INPUT_SHA256, OUTAGES, PROFILE, SITES, ascent_values, digest,
+    settings_for, sites_for,
+)
+from scripts.run_starship_booster_outage_repair import (  # noqa: E402
+    BRAKING_CONTROL, control_settings,
+)
+from src.runtime import starship_physics as env, starship_sixdof as dyn  # noqa: E402
+
+REGISTRATION = "examples/spaceflight/starship-restored-numerics-v1.json"
+CASES = tuple((f"{condition}_s{n}", condition, n) for condition in ("H0", "O0") for n in (1, 2, 4))
+LIMITS = {"maximum_trials": 6, "per_trial_wall_s": 1200., "cohort_wall_s": 5400.,
+    "duration_s": 7500., "maximum_output_bytes": 2**31, "minimum_free_bytes": 10*2**30,
+    "workers": 1, "hosted_model_calls": 0, "nested_sixdof_forecasts": 0}
+THRESHOLDS = {"maximum_ecef_distance_m": 100., "maximum_contact_time_difference_s": 1.,
+    "maximum_contact_speed_difference_mps": .1, "maximum_propellant_difference_kg": 100.}
+# Only actual transitions/discrete outcomes gate convergence. Repeated attempts
+# or diagnostic announcements remain visible, but are not transition evidence.
+CRITICAL_EVENTS = {name: [] for name in (
+    "initial_state", "stage_separation", "ascent_screen_engine_unavailable",
+    "ascent_screen_first_cutoff_command", "ascent_screen_restart_command",
+    "ascent_screen_final_cutoff_command", "state_insertion_settled_handoff",
+    "state_insertion_settled_gate_unreached", "orbit_cutoff_command", "orbit_not_reached",
+    "payload_released", "return_requested", "deorbit_ignition_command", "deorbit_cutoff_command",
+    "retained_return_terminal_trigger", "flip_and_landing_command", "booster_return_start",
+    "booster_boostback_ignition_command", "booster_boostback_cutoff_command", "booster_powered_slew_command",
+    "booster_landing_burn_requested", "surface_contact", "low_speed_surface_contact", "surface_impact",
+    "angular_rate_envelope_exceeded", "time_limit", "numerical_failure")}
+CRITICAL_EVENTS.update({"booster_powered_reference_capture_status": ["request.status"],
+    "booster_reference_capture_handoff": ["capture_met"],
+    "ascent_screen_engine_unavailable": ["shutdown.engine_name"],
+    "ascent_screen_final_cutoff_command": ["termination", "next_phase"],
+    "ascent_screen_first_cutoff_command": ["next_phase"],
+    "ascent_screen_restart_command": ["next_phase"],
+    "state_insertion_settled_handoff": ["next_phase"],
+    "ascent_screen_physical_failure": ["termination", "next_phase"]})
+WORKER_ENV = "MISSIONOS_RESTORED_NUMERICS_WORKER"
+BASELINE_SOURCE = "579f8a667e61f7414e5848e02fd67e8378308dbe"
+EXECUTION_SCHEMA = "missionos.starship_restored_numerics_execution.v1"
+BASELINE_HASHES = {
+    "H0": ("e3b8b3de5a8dc81661f9f5a4ed3f2bf2bc4983bbd61f50f1e82f5ad54f6fc30b",
+           "f20dc5854c62eb37115f5130d009993b4606e70d21b07f7593831cbb79aaead9"),
+    "O0": ("42345dd49a08b7859f843d7da75a5b278af2e49eaa25e3d8f60ff49948aec2b2",
+           "228bb55d533d0132b5f2b15722ec8258a1e3d363f9f0e8cf8a086f9fb1c0f9ab"),
+}
+
+
+def read(path):
+    return parse(Path(path).read_bytes())
+
+
+def relative_path(name):
+    path = Path(name)
+    require(not path.is_absolute() and ".." not in path.parts and path.parts, "numerics_unsafe_path")
+    actual = ROOT/path
+    require(not actual.is_symlink() and actual.resolve().is_relative_to(ROOT.resolve()), "numerics_unsafe_path")
+    return actual
+
+
+def validate_registration(reg):
+    require(type(reg) is dict and reg.get("schema") == "missionos.starship_restored_numerics_registration.v1"
+        and reg.get("limits") == LIMITS and wire(reg.get("control_settings")) == wire(BRAKING_CONTROL)
+        and reg.get("comparison_thresholds") == THRESHOLDS
+        and reg.get("critical_event_fields") == CRITICAL_EVENTS
+        and reg.get("diagnostic_thresholds_are_assumptions") is True
+        and reg.get("qualification_refreshed") is False and reg.get("mission_authority_granted") is False
+        and reg.get("baseline_source_commit") == BASELINE_SOURCE
+        and (reg.get("profile"), reg.get("site_catalog"), reg.get("goal")) == (PROFILE, SITES, GOAL),
+        "numerics_registration_contract_changed")
+    require(all(type(value) in (int, float) for group in (reg["limits"], reg["comparison_thresholds"])
+                for value in group.values()), "numerics_boolean_limit")
+    rows = reg.get("cases")
+    require(type(rows) is list and len(rows) == len(CASES), "numerics_six_cases_required")
+    for row, expected in zip(rows, CASES):
+        require(type(row) is dict and set(row) == {"id", "condition", "subdivisions", "ascent_settings"}
+            and tuple(row.get(key) for key in ("id", "condition", "subdivisions")) == expected
+            and type(row["subdivisions"]) is int
+            and wire(row["ascent_settings"]) == wire(ascent_values([] if row["condition"] == "H0" else OUTAGES)),
+            "numerics_case_contract_changed")
+    require(type(reg.get("baselines")) is dict and set(reg["baselines"]) == {"H0", "O0"},
+        "numerics_baselines_required")
+    pins = reg.get("input_sha256")
+    require(type(pins) is dict and all(pins.get(name) == value for name, value in INPUT_SHA256.items()),
+        "numerics_profile_site_goal_not_pinned")
+    for condition, (packed_hash, raw_hash) in BASELINE_HASHES.items():
+        item = reg["baselines"][condition]
+        require(type(item) is dict and set(item) == {"record", "gzip_sha256", "raw_sha256"}
+            and item["gzip_sha256"] == packed_hash and item["raw_sha256"] == raw_hash
+            and pins.get(item["record"]) == packed_hash, "numerics_baseline_not_pinned")
+        relative_path(item["record"])
+    relative_path(reg["output"])
+    for name, expected in pins.items():
+        require(type(expected) is str and re.fullmatch("[a-f0-9]{64}", expected)
+            and sha256(relative_path(name).read_bytes()).hexdigest() == expected, "numerics_input_changed:"+name)
+
+
+def hashes(reg):
+    paths = {relative_path(REGISTRATION), Path(__file__).resolve(),
+        *(ROOT/"src/runtime").glob("starship*.py"),
+        *(relative_path(name) for name in reg["input_sha256"]),
+        *(relative_path("scripts/"+name) for name in (
+            "run_starship_state_insertion.py", "run_starship_system_repair_ascent.py",
+            "run_starship_state_mission.py", "run_starship_booster_outage_repair.py"))}
+    return {str(path.relative_to(ROOT)): sha256(path.read_bytes()).hexdigest() for path in sorted(paths)}
+
+
+def check_binding(plan):
+    reg = read(relative_path(REGISTRATION))
+    validate_registration(reg)
+    require(plan.get("schema") == "missionos.starship_restored_numerics_plan.v1"
+        and wire(plan.get("registration")) == wire(reg)
+        and plan.get("control_settings") == BRAKING_CONTROL
+        and plan.get("profile") == read(relative_path(PROFILE))
+        and plan.get("site_catalog") == read(relative_path(SITES)) and plan.get("goal") == read(relative_path(GOAL))
+        and type(plan.get("model_calls")) is int and plan["model_calls"] == 0
+        and plan.get("physical_execution") is False and plan.get("qualification_refreshed") is False
+        and plan.get("mission_authority_granted") is False, "numerics_plan_binding_changed")
+    require(plan.get("source_commit") == clean_commit() and plan.get("source_sha256") == hashes(reg)
+        and plan.get("environment") == environment(), "numerics_source_or_environment_changed")
+
+
+@contextmanager
+def diagnostic_hooks(subdivisions, trace):
+    """Only inner RK4 arithmetic changes; commands and outer event handling stay held.
+
+    A nonpositive fuel endpoint before the final inner step cannot be delegated
+    to the original outer fuel-event solver safely; reject instead of inventing
+    a subdivision-specific depletion policy. The final endpoint is left to that
+    unchanged outer solver. Subdivision one directly calls the original function.
+    """
+    require(type(subdivisions) is int and subdivisions in (1, 2, 4), "numerics_invalid_subdivision")
+    original = dyn._rk4
+    trace.update(rk4_calls=0, rk4_substeps=0, commands_recomputed_inside_rk4=0,
+        outer_control_cadence_changed=False, fuel_event_search_changed=False, contact_search_changed=False)
+
+    def refined(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+            force, torque, gradient, time_s=0.):
+        trace["rk4_calls"] += 1
+        if subdivisions == 1:
+            out = original(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+                force, torque, gradient, time_s)
+            trace["rk4_substeps"] += 1
+            return out
+        out = y
+        for index in range(subdivisions):
+            before_fuel = out[13]
+            out = original(out, vehicle, command, available, dt/subdivisions, gravity, j2, atmosphere,
+                force, torque, gradient, time_s+index*dt/subdivisions)
+            trace["rk4_substeps"] += 1
+            if index < subdivisions-1 and (out[13] < 0 or before_fuel > 0 and out[13] == 0):
+                raise ValueError("numerics_subdivision_crossed_fuel_zero_unsupported")
+        return out
+
+    dyn._rk4 = refined
+    try:
+        yield
+    finally:
+        dyn._rk4 = original
+
+
+@contextmanager
+def simulation_scope():
+    """Deny network, nested predictors and process execution during plant/checks."""
+    from src.runtime import starship_return_prediction as prediction
+
+    def forbidden(*_args, **_kwargs):
+        raise RuntimeError("numerics_network_process_or_nested_forecast_forbidden")
+
+    with offline_only(), patch.object(prediction, "forecast", forbidden), \
+            patch.object(subprocess, "Popen", forbidden), patch.object(os, "system", forbidden):
+        yield
+
+
+def execution_binding(plan, row, trace):
+    return {"schema": EXECUTION_SCHEMA, "source_sha256": digest(plan["source_sha256"]),
+        "plan_sha256": sha256(wire(plan)).hexdigest(), "case_id": row["id"],
+        "condition": row["condition"], "subdivisions": row["subdivisions"],
+        "held_command_policy": "existing_outer_commands_no_inner_recompute",
+        "fuel_zero_inside_inner_step": "unsupported_stop_no_retry", "trace": trace,
+        "physics_limits_changed": False, "qualification_refreshed": False,
+        "mission_authority_granted": False, "model_calls": 0, "nested_sixdof_forecasts": 0}
+
+
+def verify_record(record, plan, row):
+    from src.runtime.starship_booster_terminal_metrics import verify_terminal_state_physical_mission
+    trace = record.get("restored_numerics", {}).get("trace", {})
+    require(record.get("restored_numerics") == execution_binding(plan, row, trace)
+        and type(trace.get("rk4_calls")) is int and trace["rk4_calls"] > 0
+        and type(trace.get("rk4_substeps")) is int
+        and trace["rk4_substeps"] == trace["rk4_calls"]*row["subdivisions"]
+        and trace.get("commands_recomputed_inside_rk4") == 0
+        and type(trace["commands_recomputed_inside_rk4"]) is int
+        and all(trace.get(key) is False for key in ("outer_control_cadence_changed",
+            "fuel_event_search_changed", "contact_search_changed")), "numerics_execution_trace_invalid")
+    sites, goal = sites_for(plan)
+    return verify_terminal_state_physical_mission(record, plan["profile"],
+        expected_settings=settings_for(row).record(), expected_control_settings=plan["control_settings"],
+        expected_source_sha256=digest(plan["source_sha256"]), expected_site=sites.divert.to_dict(),
+        expected_goal=goal.to_dict(), expected_return_sites=sites.to_dict(), expected_duration_s=LIMITS["duration_s"])
+
+
+def baseline_comparison(record, reg, condition):
+    item = reg["baselines"][condition]
+    packed = relative_path(item["record"]).read_bytes()
+    require(sha256(packed).hexdigest() == item["gzip_sha256"], "numerics_baseline_gzip_changed")
+    raw = gzip.decompress(packed)
+    require(sha256(raw).hexdigest() == item["raw_sha256"], "numerics_baseline_raw_changed")
+    baseline = parse(raw)
+    omit = {"experimental_mission_execution", "restored_numerics"}
+    expected = {key: value for key, value in baseline.items() if key not in omit}
+    actual = {key: value for key, value in record.items() if key not in omit}
+    fields = {key: key in expected and key in actual and wire(expected[key]) == wire(actual[key])
+        for key in sorted(expected.keys() | actual.keys())}
+    return {"passed": all(fields.values()), "compared_fields": fields,
+        "baseline_raw_sha256": item["raw_sha256"], "baseline_source_commit": BASELINE_SOURCE,
+        "ignored_top_level_fields": sorted(omit), "states_commands_events_outcome_compared": True}
+
+
+def contact_metrics(body, *, booster, profile, goal):
+    """Contact point at its own event epoch; distinct from COM speed/location."""
+    receipt = body.get("contact") if booster else body["outcome"].get("contact_receipt")
+    if receipt is None:
+        return {"contact_observed": False, "gates": {}, "accepted": False}
+    final = body["final_state"]
+    point, velocity = receipt["point_eci_m"], receipt["point_velocity_eci_mps"]
+    omega = 7.292115e-5
+    relative = [velocity[0]+omega*point[1], velocity[1]-omega*point[0], velocity[2]]
+    normal = receipt["surface_normal_eci"]
+    speed, vertical = math.hypot(*relative), sum(x*y for x, y in zip(relative, normal))
+    horizontal = math.sqrt(max(0., speed**2-vertical**2))
+    axis = dyn.rotate(final["q_body_to_eci"], (0., 0., 1.))
+    if booster:
+        # Water envelope intentionally uses COM ellipsoid normal for attitude.
+        a, b = 6378137., 6378137.*(1-1/298.257223563)
+        r = final["r_eci_m"]
+        up = [r[0]/a**2, r[1]/a**2, r[2]/b**2]
+        normal_for_tilt = [x/math.hypot(*up) for x in up]
+    else:
+        normal_for_tilt = normal
+    tilt = math.degrees(math.acos(max(-1., min(1., sum(x*y for x, y in zip(axis, normal_for_tilt))))))
+    rate, fuel = math.hypot(*final["omega_body_rad_s"]), final["propellant_kg"]
+    ecef = env.eci_to_ecef(tuple(point), receipt["event_time_s"])
+    lat, lon, height = env.ecef_to_geodetic(ecef)
+    gates = {"contact_speed": speed <= (goal["maximum_contact_speed_mps"] if booster else 5.),
+        "tilt": tilt <= (goal["maximum_tilt_deg"] if booster else 5.),
+        "body_rate": rate <= (goal["maximum_body_rate_rad_s"] if booster else .02),
+        "reserve": fuel >= (goal["minimum_propellant_kg"] if booster else profile["ship"]["return_reserve_kg"]),
+        "nonoverlapping_descending_contact": receipt["initial_overlap"] is False and vertical <= 0}
+    distance = None
+    if booster:
+        site = body["active_return_site"]
+        r_ecef = env.eci_to_ecef(tuple(final["r_eci_m"]), final["time_s"])
+        target = env.geodetic_to_ecef(math.radians(site["latitude_deg"]), math.radians(site["longitude_deg"]), 0.)
+        cosine = sum(x*y for x, y in zip(r_ecef, target))/(math.hypot(*r_ecef)*math.hypot(*target))
+        distance = 6378137.*math.acos(max(-1., min(1., cosine)))
+        gates = {"area": distance <= goal["area_radius_m"], "speed": speed <= goal["maximum_contact_speed_mps"],
+            "vertical": -goal["maximum_downward_speed_mps"] <= vertical <= 0,
+            "horizontal": horizontal <= goal["maximum_horizontal_speed_mps"],
+            "tilt": tilt <= goal["maximum_tilt_deg"], "rate": rate <= goal["maximum_body_rate_rad_s"],
+            "reserve": fuel >= goal["minimum_propellant_kg"], "no_overlap": receipt["initial_overlap"] is False}
+    return {"contact_observed": True, "point_ecef_m": list(ecef), "event_time_s": receipt["event_time_s"],
+        "point_geodetic": {"latitude_deg": math.degrees(lat), "longitude_deg": math.degrees(lon), "height_m": height},
+        "point_speed_mps": speed, "point_normal_speed_mps": vertical, "point_horizontal_speed_mps": horizontal,
+        "tilt_deg": tilt, "body_rate_rad_s": rate, "propellant_kg": fuel, "site_distance_m": distance,
+        "gates": gates, "accepted": all(gates.values())}
+
+
+def measured(record, plan):
+    booster = record.get("booster_run")
+
+    def phase_order(samples):
+        order = []
+        for row in samples:
+            if not order or order[-1] != row["phase"]:
+                order.append(row["phase"])
+        return order
+
+    def signature(events):
+        result = []
+        for row in events:
+            name = row["event"]
+            if name not in CRITICAL_EVENTS:
+                continue
+            fields = {}
+            for field in CRITICAL_EVENTS[name]:
+                value = row
+                for part in field.split("."):
+                    value = value[part]
+                require(type(value) is (bool if field == "capture_met" else str), "numerics_critical_event_field_invalid")
+                fields[field] = value
+            result.append({"event": name, "fields": fields})
+        return result
+
+    return {"ship": contact_metrics(record, booster=False, profile=plan["profile"], goal=plan["goal"]),
+        "booster": {"contact_observed": False, "gates": {}, "accepted": False} if booster is None else
+            contact_metrics(booster, booster=True, profile=plan["profile"], goal=plan["goal"]),
+        "sample_phase_order": {"ship": phase_order(record["samples"]),
+            "booster": [] if booster is None else phase_order(booster["samples"])},
+        "critical_event_order": {"ship": signature(record["events"]),
+            "booster": [] if booster is None else signature(booster["events"])},
+        "diagnostic_event_names": {"ship": [x["event"] for x in record["events"]],
+            "booster": [] if booster is None else [x["event"] for x in booster["events"]]},
+        "payload_release_order": [row["id"] for row in record["satellites"]],
+        "payload_release_event_count": sum(row["event"] == "payload_released" for row in record["events"]),
+        "termination_status": {"ship": record["outcome"]["termination"],
+            "booster": None if booster is None else booster["outcome"]["termination"]}}
+
+
+def compare_cases(first, reference):
+    bodies = {}
+    for body in ("ship", "booster"):
+        a, b = first[body], reference[body]
+        if not a["contact_observed"] or not b["contact_observed"]:
+            bodies[body] = {"passed": False, "reason": "actual_contact_missing"}
+            continue
+        delta = {"ecef_distance_m": math.dist(a["point_ecef_m"], b["point_ecef_m"]),
+            "contact_time_difference_s": abs(a["event_time_s"]-b["event_time_s"]),
+            "contact_speed_difference_mps": abs(a["point_speed_mps"]-b["point_speed_mps"]),
+            "propellant_difference_kg": abs(a["propellant_kg"]-b["propellant_kg"])}
+        gates = {key: value <= THRESHOLDS["maximum_"+key] for key, value in delta.items()}
+        bodies[body] = {"passed": all(gates.values()), "deltas": delta, "gates": gates}
+    transitions = {key+"_unchanged": first[key] == reference[key] for key in (
+        "sample_phase_order", "critical_event_order", "payload_release_order", "payload_release_event_count", "termination_status")}
+    return {"passed": all(transitions.values()) and all(x["passed"] for x in bodies.values()), "bodies": bodies,
+        "transition_checks": transitions, "diagnostic_event_names_compared_as_gate": False,
+        "event_times_and_sample_counts_required_equal": False,
+        "diagnostic_thresholds_are_assumptions": True, "qualification_refreshed": False}
+
+
+def case_claim(plan, row):
+    return {"case_id": row["id"], "condition": row["condition"], "subdivisions": row["subdivisions"],
+        "source_commit": plan["source_commit"], "plan_sha256": sha256(wire(plan)).hexdigest(), "attempt": 1}
+
+
+def worker(out, case_id):
+    plan = read(out/"plan.json")
+    token = sha256(wire(plan)).hexdigest()
+    require(read(out/"execution.claim").get("plan_sha256") == token and os.environ.get(WORKER_ENV) == token,
+        "numerics_private_worker_requires_claim")
+    check_binding(plan)
+    require(out.resolve() == relative_path(plan["registration"]["output"]).resolve(), "numerics_worker_output_changed")
+    rows = [x for x in plan["registration"]["cases"] if x["id"] == case_id]
+    require(len(rows) == 1, "numerics_case_not_registered")
+    row, folder = rows[0], out/case_id
+    require(read(folder/"started.json") == case_claim(plan, row), "numerics_worker_start_changed")
+    save(folder/"worker.claim", case_claim(plan, row))
+    from src.runtime.starship_state_mission import state_physical_mission
+    trace, sites_goal = {}, sites_for(plan)
+    with simulation_scope(), diagnostic_hooks(row["subdivisions"], trace):
+        sites, goal = sites_goal
+        record = state_physical_mission(plan["profile"], settings_for(row), return_sites=sites,
+            splashdown_goal=goal, duration_s=LIMITS["duration_s"],
+            booster_terminal_recovery=control_settings("terminal-braking-v11"))
+    record["experimental_mission_execution"] = {
+        "schema": "missionos.experimental_terminal_state_physical_mission_execution.v1",
+        "source_sha256": digest(plan["source_sha256"]), "profile_sha256": digest(plan["profile"]),
+        "settings_sha256": digest(settings_for(row).record()), "control_settings_sha256": digest(plan["control_settings"])}
+    record["restored_numerics"] = execution_binding(plan, row, trace)
+    raw = wire(record)
+    packed = gzip.compress(raw, mtime=0)
+    with (folder/"record.json.gz").open("xb") as handle:
+        handle.write(packed)
+    require(gzip.decompress((folder/"record.json.gz").read_bytes()) == raw, "numerics_roundtrip_failed")
+    actual = parse(raw)
+    with simulation_scope():
+        checks = verify_record(actual, plan, row)
+        measurement = measured(actual, plan)
+        baseline = baseline_comparison(actual, plan["registration"], row["condition"]) if row["subdivisions"] == 1 else None
+    save(folder/"verification.json", checks)
+    if baseline is not None:
+        save(folder/"baseline-comparison.json", baseline)
+    require(checks.get("passed") is True, "numerics_record_invalid_no_retry")
+    require(baseline is None or baseline["passed"] is True, "numerics_default_point_not_bit_identical")
+    check_binding(plan)
+    save(folder/"result.json", {"schema": "missionos.starship_restored_numerics_case.v1",
+        **case_claim(plan, row), "record_sha256": sha256(raw).hexdigest(), "gzip_sha256": sha256(packed).hexdigest(),
+        "verification": checks, "measurement": measurement, "baseline_comparison": baseline,
+        "trace": trace, "model_calls": 0, "nested_sixdof_forecasts": 0,
+        "trial_completed_once": True, "qualification_refreshed": False})
+
+
+def validate_result(out, plan, row):
+    folder = out/row["id"]
+    result, packed = read(folder/"result.json"), (folder/"record.json.gz").read_bytes()
+    raw = gzip.decompress(packed)
+    record = parse(raw)
+    with simulation_scope():
+        checks, measurement = verify_record(record, plan, row), measured(record, plan)
+        baseline = baseline_comparison(record, plan["registration"], row["condition"]) if row["subdivisions"] == 1 else None
+    expected = {"schema": "missionos.starship_restored_numerics_case.v1", **case_claim(plan, row),
+        "record_sha256": sha256(raw).hexdigest(), "gzip_sha256": sha256(packed).hexdigest(),
+        "verification": checks, "measurement": measurement, "baseline_comparison": baseline,
+        "trace": record["restored_numerics"]["trace"], "model_calls": 0, "nested_sixdof_forecasts": 0,
+        "trial_completed_once": True, "qualification_refreshed": False}
+    require(wire(result) == wire(expected) and checks.get("passed") is True
+        and read(folder/"verification.json") == checks
+        and (baseline is None or baseline["passed"] is True and read(folder/"baseline-comparison.json") == baseline),
+        "numerics_child_result_invalid_no_retry")
+    return result
+
+
+def resource_budget(out, started, trial=None):
+    now = time.monotonic()
+    require(now-started <= LIMITS["cohort_wall_s"] and (trial is None or now-trial <= LIMITS["per_trial_wall_s"])
+        and sum(p.stat().st_size for p in out.rglob("*") if p.is_file()) <= LIMITS["maximum_output_bytes"]
+        and shutil.disk_usage(ROOT).free >= LIMITS["minimum_free_bytes"], "numerics_resource_stop_no_retry")
+
+
+def child_environment(token):
+    result = {key: value for key, value in os.environ.items()
+        if key in ("PATH", "HOME", "TMPDIR", "LANG", "LC_ALL", "PYTHONDONTWRITEBYTECODE")}
+    result.update(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", **{WORKER_ENV: token})
+    return result
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--prepare", action="store_true")
+    parser.add_argument("--run", action="store_true")
+    parser.add_argument("--approve-plan-sha256")
+    parser.add_argument("--_worker", help=argparse.SUPPRESS)
+    args = parser.parse_args(argv)
+    if not args._worker and (args.prepare == args.run or args.run and not args.approve_plan_sha256
+            or args.prepare and args.approve_plan_sha256 is not None):
+        parser.error("explicit prepare or run with exact plan approval required")
+    out = args.output_dir.resolve()
+    if args._worker:
+        require(not args.prepare and not args.run and args.approve_plan_sha256 is None, "numerics_worker_flags_invalid")
+        return worker(out, args._worker)
+    reg = read(relative_path(REGISTRATION))
+    validate_registration(reg)
+    require(out == relative_path(reg["output"]).resolve(), "numerics_output_must_match_registration")
+    if args.prepare:
+        require(not out.exists(), "numerics_prepare_requires_fresh_output")
+        require(shutil.disk_usage(ROOT).free >= LIMITS["minimum_free_bytes"], "numerics_disk_floor")
+        plan = {"schema": "missionos.starship_restored_numerics_plan.v1", "registration": reg,
+            "source_commit": clean_commit(), "source_sha256": hashes(reg), "environment": environment(),
+            "profile": read(relative_path(PROFILE)), "site_catalog": read(relative_path(SITES)),
+            "goal": read(relative_path(GOAL)), "control_settings": BRAKING_CONTROL,
+            "model_calls": 0, "physical_execution": False, "qualification_refreshed": False,
+            "mission_authority_granted": False}
+        check_binding(plan)
+        out.mkdir(parents=True)
+        save(out/"plan.json", plan)
+        print(sha256(wire(plan)).hexdigest())
+        return
+    require(not (out/"execution.claim").exists(), "numerics_cohort_already_consumed")
+    plan = read(out/"plan.json")
+    token = sha256(wire(plan)).hexdigest()
+    require(args.approve_plan_sha256 == token, "numerics_plan_hash_mismatch")
+    check_binding(plan)
+    resource_budget(out, time.monotonic())
+    save(out/"execution.claim", {"plan_sha256": token, "models": 0, "attempts_maximum": 6,
+        "operator_identity_proven": False, "automatic_retry": False})
+    started, results = time.monotonic(), []
+    try:
+        for row in plan["registration"]["cases"]:
+            check_binding(plan)
+            resource_budget(out, started)
+            require(len(results) < LIMITS["maximum_trials"], "numerics_trial_cap")
+            folder = out/row["id"]
+            folder.mkdir()
+            save(folder/"started.json", case_claim(plan, row))
+            trial = time.monotonic()
+            with (folder/"worker.log").open("xb") as log:
+                child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), "--output-dir", str(out),
+                    "--_worker", row["id"]], cwd=ROOT, env=child_environment(token), stdout=log,
+                    stderr=subprocess.STDOUT, start_new_session=True)
+                try:
+                    while child.poll() is None:
+                        resource_budget(out, started, trial)
+                        time.sleep(.25)
+                    require(child.returncode == 0, "numerics_worker_failed_no_retry")
+                    resource_budget(out, started, trial)
+                finally:
+                    if child.poll() is None:
+                        os.killpg(child.pid, signal.SIGTERM)
+                        try:
+                            child.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(child.pid, signal.SIGKILL)
+                            child.wait()
+            results.append(validate_result(out, plan, row))
+            resource_budget(out, started, trial)
+            print(wire({"case_id": row["id"], "record_valid": True,
+                "physical_success": results[-1]["verification"]["physical_success"]}).decode(), flush=True)
+        check_binding(plan)
+        by_id = {result["case_id"]: result for result in results}
+        comparisons = {f"{condition}_s{n}_vs_s4": compare_cases(by_id[f"{condition}_s{n}"]["measurement"],
+            by_id[f"{condition}_s4"]["measurement"]) for condition in ("H0", "O0") for n in (1, 2)}
+        resource_budget(out, started)
+        save(out/"summary.json", {"schema": "missionos.starship_restored_numerics_result.v1", "results": results,
+            "comparisons": comparisons, "attempts": len(results), "wall_time_s": time.monotonic()-started,
+            "records_valid": True, "all_six_physical_success": all(x["verification"]["physical_success"] for x in results),
+            "diagnostic_numerical_gate_met": all(x["passed"] for x in comparisons.values()),
+            "diagnostic_thresholds_are_assumptions": True, "source_unchanged": True, "retry": False,
+            "model_calls": 0, "nested_sixdof_forecasts": 0, "qualification_refreshed": False,
+            "all_features_completed": False, "mission_authority_granted": False})
+    except BaseException as error:
+        save(out/"stop.json", {"error_type": type(error).__name__, "message": str(error),
+            "completed": len(results), "retry": False, "model_calls": 0})
+        raise
+
+
+if __name__ == "__main__":
+    main()

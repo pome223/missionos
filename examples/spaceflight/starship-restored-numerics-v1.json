@@ -1,0 +1,353 @@
+{
+  "schema": "missionos.starship_restored_numerics_registration.v1",
+  "registered_on": "2026-10-20",
+  "purpose": "Fixed-control-cadence internal RK4 resolution check before restored-source AI M1-M3 regression. No model calls or operational grant.",
+  "output": "output/starship-system-repair-20261018/restored-numerics-v1",
+  "limits": {
+    "maximum_trials": 6,
+    "per_trial_wall_s": 1200.0,
+    "cohort_wall_s": 5400.0,
+    "duration_s": 7500.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "profile": "examples/spaceflight/starship-sixdof-profile.json",
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "output/starship-system-repair-20261018/state-mission-v12/H0/record.json.gz": "e3b8b3de5a8dc81661f9f5a4ed3f2bf2bc4983bbd61f50f1e82f5ad54f6fc30b",
+    "output/starship-system-repair-20261018/state-mission-v12/O0/record.json.gz": "42345dd49a08b7859f843d7da75a5b278af2e49eaa25e3d8f60ff49948aec2b2"
+  },
+  "baselines": {
+    "H0": {
+      "record": "output/starship-system-repair-20261018/state-mission-v12/H0/record.json.gz",
+      "gzip_sha256": "e3b8b3de5a8dc81661f9f5a4ed3f2bf2bc4983bbd61f50f1e82f5ad54f6fc30b",
+      "raw_sha256": "f20dc5854c62eb37115f5130d009993b4606e70d21b07f7593831cbb79aaead9"
+    },
+    "O0": {
+      "record": "output/starship-system-repair-20261018/state-mission-v12/O0/record.json.gz",
+      "gzip_sha256": "42345dd49a08b7859f843d7da75a5b278af2e49eaa25e3d8f60ff49948aec2b2",
+      "raw_sha256": "228bb55d533d0132b5f2b15722ec8258a1e3d363f9f0e8cf8a086f9fb1c0f9ab"
+    }
+  },
+  "baseline_source_commit": "579f8a667e61f7414e5848e02fd67e8378308dbe",
+  "cases": [
+    {
+      "id": "H0_s1",
+      "condition": "H0",
+      "subdivisions": 1,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "H0_s2",
+      "condition": "H0",
+      "subdivisions": 2,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "H0_s4",
+      "condition": "H0",
+      "subdivisions": 4,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "O0_s1",
+      "condition": "O0",
+      "subdivisions": 1,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "O0_s2",
+      "condition": "O0",
+      "subdivisions": 2,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "O0_s4",
+      "condition": "O0",
+      "subdivisions": 4,
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      }
+    }
+  ],
+  "comparison_thresholds": {
+    "maximum_ecef_distance_m": 100.0,
+    "maximum_contact_time_difference_s": 1.0,
+    "maximum_contact_speed_difference_mps": 0.1,
+    "maximum_propellant_difference_kg": 100.0
+  },
+  "diagnostic_thresholds_are_assumptions": true,
+  "qualification_refreshed": false,
+  "mission_authority_granted": false,
+  "unchanged": [
+    "control sampling/command-hold cadence",
+    "physical profile and vehicle constants",
+    "hardware and finite actuators",
+    "contact and fuel-event search",
+    "Ship and Booster contact/reserve/area gates",
+    "ground initial state and scheduled outages"
+  ],
+  "interpretation": {
+    "all_valid_and_all_physical_and_all_numeric_gates": "Numerical precondition met only for these two conditions. Proceed to separately registered restored M1-M3 fixture preparation; no new model run implied.",
+    "valid_physical_or_numeric_miss": "Keep all records, finish each unexecuted declared case once; do not start formal fixture/native AI cohort. Diagnose saved data and register any changed design separately.",
+    "baseline_s1_drift": "Stop cohort; retain prior records; no tuning or rerun to hide replay mismatch.",
+    "invalid_or_resource_or_environment_drift": "Stop cohort, preserve records; no resume or retry of consumed plan."
+  },
+  "limits_of_claim": [
+    "Six numerical resolutions represent two declared initial configurations, not six independent operating conditions.",
+    "Internal refinement is not outer-control-cadence convergence, full numerical-error bound, real-flight fidelity, AI reliability or return qualification.",
+    "Prior successful and failed runs remain on their original sources."
+  ],
+  "retention": {
+    "destination": "output/starship-system-repair-20261018/restored-numerics-v1",
+    "reviewed_git": "docs/assets/starship-system-repair-20261018/",
+    "raw_records": "private gzip with raw and stored hashes; archive/readback/restore before any later deletion",
+    "deletions_authorized": false
+  },
+  "critical_event_fields": {
+    "initial_state": [],
+    "stage_separation": [],
+    "ascent_screen_engine_unavailable": [
+      "shutdown.engine_name"
+    ],
+    "ascent_screen_first_cutoff_command": [
+      "next_phase"
+    ],
+    "ascent_screen_restart_command": [
+      "next_phase"
+    ],
+    "ascent_screen_final_cutoff_command": [
+      "termination",
+      "next_phase"
+    ],
+    "state_insertion_settled_handoff": [
+      "next_phase"
+    ],
+    "state_insertion_settled_gate_unreached": [],
+    "orbit_cutoff_command": [],
+    "orbit_not_reached": [],
+    "payload_released": [],
+    "return_requested": [],
+    "deorbit_ignition_command": [],
+    "deorbit_cutoff_command": [],
+    "retained_return_terminal_trigger": [],
+    "flip_and_landing_command": [],
+    "booster_return_start": [],
+    "booster_boostback_ignition_command": [],
+    "booster_boostback_cutoff_command": [],
+    "booster_powered_slew_command": [],
+    "booster_landing_burn_requested": [],
+    "surface_contact": [],
+    "low_speed_surface_contact": [],
+    "surface_impact": [],
+    "angular_rate_envelope_exceeded": [],
+    "time_limit": [],
+    "numerical_failure": [],
+    "booster_powered_reference_capture_status": [
+      "request.status"
+    ],
+    "booster_reference_capture_handoff": [
+      "capture_met"
+    ],
+    "ascent_screen_physical_failure": [
+      "termination",
+      "next_phase"
+    ]
+  },
+  "transition_comparison": "Consecutive-deduplicated actual sample phases + listed critical event signatures/discrete status + actual payload id order/count + final termination. All event names retained separately; nontransition diagnostic repetition, timestamps and sample counts are not exact-equality gates."
+}

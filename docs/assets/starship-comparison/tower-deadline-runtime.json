@@ -1,0 +1,35 @@
+{
+  "schema": "missionos.tower_deadline_runtime_smoke.v1",
+  "passed": true,
+  "clock_origin": 511.7,
+  "authorized_duration_s": 75,
+  "subtracted_duration_s": 75.00000000000006,
+  "observations": [
+    {
+      "http_status": 200,
+      "run_active": true
+    }
+  ],
+  "actor_and_process_fixture": true,
+  "real_gateway_http": true,
+  "physical_execution": false,
+  "simulator_runs": 0,
+  "model_calls": 0,
+  "scope": "signed fixture activation, real registration, real HTTP status, lease cleanup",
+  "source_base_commit": "3354a3c55705c895cbebc6bce973f0cbf242665e",
+  "source_contains_uncommitted_fix": true,
+  "source_sha256": {
+    "src/runtime/starship_mission_control.py": "eb7c8e948c2383a73364a8e8f9f2bfb17aee33bb7762eefece23aa8ee2a7cb19",
+    "tests/contract/test_starship_tower_runtime.py": "379ad9c15d0154d2a185e87c7b21ab380949d8d7a4c7fcf7c20f8e9cfde817fc"
+  },
+  "before_fix": {
+    "fixed_clock_regressions_failed": 2,
+    "unchanged_and_rejection_cases_passed": 3
+  },
+  "after_fix": {
+    "related_tests_passed": 136,
+    "warnings": 2
+  },
+  "ci_original_clock_recorded": false,
+  "original_ci_failure_cause_uniquely_proven": false
+}

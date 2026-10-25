@@ -1,0 +1,229 @@
+{
+  "schema": "missionos.starship_insertion_continuation_registration.v1",
+  "registered_on": "2026-10-19",
+  "purpose": "Carry each of the three accepted saved v7 actual final states into the shared deployment/Ship return loop; no old-state substitution or ascent rerun. This is a suffix experiment, not a new full launch or AI mission.",
+  "producer": {
+    "source_commit": "bc4e2c031e61e547664fb41b41876be377206ceb",
+    "plan": "docs/assets/starship-system-repair-20261018/state-insertion-v2-plan.json",
+    "result": "docs/assets/starship-system-repair-20261018/state-insertion-v2-result.json",
+    "verification": "docs/assets/starship-system-repair-20261018/state-insertion-v2-verification.json"
+  },
+  "cases": [
+    {
+      "id": "N0",
+      "parent": {
+        "record": "output/starship-system-repair-20261018/state-insertion-v2/N0/record.json.gz",
+        "gzip_sha256": "6d28e33204ab49f115bbebbd58f0dd3f64aa21288bb0e602ffb5ec195c5527ab",
+        "raw_sha256": "27fb07bd1bb13d65478454837f419b7f13f6579273f00717e0790bcf3d498cf6"
+      },
+      "expected_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      }
+    },
+    {
+      "id": "L0",
+      "parent": {
+        "record": "output/starship-system-repair-20261018/state-insertion-v2/L0/record.json.gz",
+        "gzip_sha256": "9cc1de9bf949cbcfea02704aa0cd4ad46237f1ef3ee36699a7d76488e5a95f82",
+        "raw_sha256": "af57d0ead6653207d22567ac3fbbefabd43e15de0d20911d22e49161a331bfd5"
+      },
+      "expected_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": -10.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": -10.0
+      }
+    },
+    {
+      "id": "T0",
+      "parent": {
+        "record": "output/starship-system-repair-20261018/state-insertion-v2/T0/record.json.gz",
+        "gzip_sha256": "b4fa68b29bf2dd4e2a82f988fc1bf232289a18e08936b2d793ba5d55f6d792f2",
+        "raw_sha256": "a8a5c877fb5d71cb15d54976fd806b1efee53b696fd9728e4e8f0deb5b60da68"
+      },
+      "expected_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": true
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": -10.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": -10.0
+      }
+    }
+  ],
+  "limits": {
+    "maximum_trials": 3,
+    "per_trial_wall_s": 420.0,
+    "cohort_wall_s": 1500.0,
+    "duration_s": 6000.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0
+  },
+  "handoff": {
+    "actual_state": "Exact source.final_state including nonzero finite spool/gimbal/flap/history/clock/fuel and engine availability; exact final_vehicle with26retained; no source state assignment or reconstruction to old success.",
+    "schedule_anchor": "Actual verified v7 cutoff_measurement.time_s; suffix starts actual finaltime=cutoff+5. First release at cutoff+45, return request cutoff+1800 using unchanged profile delays.",
+    "expected_schedule_s": {
+      "N0": {
+        "start": 1884.9499999999975,
+        "first_release": 1924.9499999999975,
+        "return_request": 3679.9499999999975
+      },
+      "L0": {
+        "start": 2842.700000000005,
+        "first_release": 2882.700000000005,
+        "return_request": 4637.700000000004
+      },
+      "T0": {
+        "start": 3045.5000000000036,
+        "first_release": 3085.5000000000036,
+        "return_request": 4840.500000000004
+      }
+    },
+    "source_engine_outages_remain_applied": true,
+    "no_ascent_rerun": true,
+    "no_booster_continuation": true
+  },
+  "control": {
+    "return_policy": "trimmed_state_terminal_v4",
+    "release_limit": 26,
+    "bounded_ship_flaps": true,
+    "profile_unchanged": true,
+    "adjusted_fitting_scalars": 0,
+    "development_application": "wind_trim_state_return_v2"
+  },
+  "acceptance": {
+    "source": {
+      "bound": true,
+      "minimum_perigee_m": 220000,
+      "maximum_apogee_m": 600000,
+      "minimum_propellant_kg": 75000,
+      "maximum_body_rate_rad_s": 5
+    },
+    "suffix": {
+      "release_count": 26,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_tilt_deg": 5.0,
+      "maximum_body_rate_rad_s": 0.02,
+      "minimum_propellant_kg": 28000,
+      "nonoverlapping_descending_contact": true
+    }
+  },
+  "interpretation": {
+    "valid_success": "All26 actual release receipts/inventory/mass transition verified; actual return scheduled from sourcecutoff; nonoverlapping descendingcontact with all unchanged contact/reserve gates. Supports this saved actual state only.",
+    "valid_negative": "Save impact/envelope failure/time limit as physical negative and continue remaining registered cases without modifications. No fuel drain, payload shortcut, control tuning, thresholds change or alternative source.",
+    "invalid_or_budget": "Stop cohort on invalid source/record/serialization/hash/environment/budget. Preserve all started records. No retry/resume or added case.",
+    "all_three_success": "Register separate final-build launch-to-contact regression including healthy and supported outages; no automatic whole-mission admission/old39casecertificate.",
+    "any_physical_negative": "Diagnose saved records without rerunning; propose separately registered Executor/control repair. Overall restoration remains incomplete.",
+    "not_claimed": [
+      "AI decision",
+      "real operational approval",
+      "Booster recovery",
+      "images",
+      "arbitrary fault diagnosis",
+      "qualification",
+      "develop port",
+      "whole mission in one source/process",
+      "Flight14 fidelity",
+      "video"
+    ]
+  },
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "docs/assets/starship-system-repair-20261018/state-insertion-v2-plan.json": "01c7d251e328d9b28a27ec37d12cd255b0c9f4f51d5e97d859eeb766b183b60d",
+    "docs/assets/starship-system-repair-20261018/state-insertion-v2-result.json": "725920722f557ea0c762d01242016d9e2d8b3e2d4e21890999ae83e15e504be2",
+    "docs/assets/starship-system-repair-20261018/state-insertion-v2-verification.json": "f834e2b40c9ef328f340a3ec52500900abfb35ee14eb8a110623d2762b15b926",
+    "output/starship-system-repair-20261018/state-insertion-v2/N0/record.json.gz": "6d28e33204ab49f115bbebbd58f0dd3f64aa21288bb0e602ffb5ec195c5527ab",
+    "output/starship-system-repair-20261018/state-insertion-v2/L0/record.json.gz": "9cc1de9bf949cbcfea02704aa0cd4ad46237f1ef3ee36699a7d76488e5a95f82",
+    "output/starship-system-repair-20261018/state-insertion-v2/T0/record.json.gz": "b4fa68b29bf2dd4e2a82f988fc1bf232289a18e08936b2d793ba5d55f6d792f2"
+  }
+}

@@ -46,6 +46,23 @@ def write_json(path: Path, value: object) -> None:
         stream.write("\n")
 
 
+def _signal_worker_group(process, sig):
+    """Do not mask protocol failures when an exited child's group is gone.
+
+    Some hosts report EPERM rather than ESRCH for the finished group. A live
+    child's permission failure remains an error; it must never be swallowed.
+    """
+    if process.poll() is not None:
+        return
+    try:
+        os.killpg(process.pid, sig)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        if process.poll() is None:
+            raise
+
+
 def run_shadow(output_dir: Path, *, mode: str, router=None) -> dict:
     """Run 60 paired local conditions; observe at most one eligible fault per case."""
     from src.intelligence.starship_jev_router import StarshipJevRouter
@@ -160,14 +177,11 @@ def run_shadow(output_dir: Path, *, mode: str, router=None) -> dict:
         })
         return verdict
     finally:
-        try:
-            os.killpg(process.pid, signal.SIGTERM)
-        except ProcessLookupError:
-            pass
+        _signal_worker_group(process, signal.SIGTERM)
         try:
             process.wait(timeout=2)
         except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
+            _signal_worker_group(process, signal.SIGKILL)
             process.wait(timeout=2)
         reader.join(timeout=2)
         if process.stdout:

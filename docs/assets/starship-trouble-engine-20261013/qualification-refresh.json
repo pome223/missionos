@@ -1,0 +1,562 @@
+{
+  "schema": "missionos.starship_trouble_qualification_refresh.v1",
+  "passed": true,
+  "scope": "Fresh no-fault qualification of the final frozen source. Entire saved run and profile equal the prior registered baseline except development-source identity.",
+  "certificate_path": "docs/assets/starship-state-return-qualification/qualification.json",
+  "baseline_certificate_sha256": "dc925be6529d2d17a4de38ad89c8ecf66ccfe5e4285f2d0bace77bd20f20eced",
+  "final_certificate_sha256": "e3c01387757719e692f106a410673c0fc320dedb9d82abda72f72d5f36dda952",
+  "frozen_run_sources_sha256": "fed5770d3578421e74a862b2736d5ca0ed8d0645b3f67ca50bcc46ea137bada5",
+  "frozen_run_source_count": 20,
+  "final_core_source_count": 19,
+  "final_core_source_sha256": {
+    "src/runtime/starship_sixdof_mission.py": "6b1cdb4d755febb531761cab8ea11bd099961d6aac5a95c54a1813df87c8e620",
+    "src/runtime/starship_concurrent.py": "4e54e640628f87cbf00f719ff5682259d6e70def294ca2dd051e044f738ee91b",
+    "src/runtime/starship_sixdof_booster.py": "3ce4af569d64c5b934ba2f2f9bf84cb90411aa84370ca365aef5595334aaa140",
+    "src/runtime/starship_booster_coast_probe.py": "1f1947212f909d3d2105879c8abb40582bb46e7f9c89d2885a3e693972fb6d6e",
+    "src/runtime/starship_ship_return.py": "da691c4b67ae9562e19fa08189c4946ab83cbc913cd54322f5ccf6a93c8482db",
+    "src/runtime/starship_sixdof.py": "31fa93bcf1a66c51466c4fa8ecd9b56ac721052f1bb604eefb5d579aa8c07fbb",
+    "src/runtime/starship_entry_trim.py": "b753a5023e78f6446ded41f23aa530f2e5735ff10370b5855202ca5e9f13c219",
+    "src/runtime/starship_fin_allocation.py": "2e00e960830d9b5a281fd41f5f37702e824111e063262430b98636ed35ca1745",
+    "src/runtime/starship_retained_return.py": "d7e21b771ae798f18799675685526c3d3d3f24be7cdfe3659b0e4ce822592eea",
+    "src/runtime/starship_retained_return_verifier.py": "0c0036a8bb355de40bf37e8e15757b955b1955b55a12601066136ca579a10e66",
+    "src/runtime/starship_sixdof_verifier.py": "95f34e44c815fe8e88143091a2f3e48da8e1e3df0658d2b0531e5f93db950f11",
+    "src/runtime/starship_sixdof_separation.py": "7920a96eb1d1e2f808d81e4dff2b9033c2a16044f8824967a0021a8301584503",
+    "src/runtime/starship_sixdof_contact.py": "c4cc69c3ceb2d5f0c84cd444cd91b274b25c6c1ac128b2302c6c1d28bb43edc9",
+    "src/runtime/starship_attitude_reference.py": "cbf912521955b535f2f9e61fa47fe497a17605ebfeda3a226cf4696e36a87c1a",
+    "src/runtime/starship_physics.py": "de18e25225aba8cf60e64113fc740b59a35a3c36d2bdbc379a99c500b45e6ff9",
+    "src/runtime/starship_wind.py": "0eb095fc27db12289246c1cd90a46df7699839c7813bb4b44340ef048bec1c7f",
+    "src/runtime/starship_return_feasibility.py": "3c7d1322fae727400b03e7aec06fe039a8711d05c00f704ec6f9142395fadb31",
+    "src/runtime/starship_return_feasibility_verifier.py": "0ec92caea4d6763a3b0d782fd5853bcd404d768bf408b4aa455873361e87e009",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "backend": {
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  },
+  "cases_requested": 39,
+  "cases_executed_once_on_final_source": 39,
+  "exact_comparisons_passed": 39,
+  "successful_process_exit_codes_observed": 39,
+  "comparison_checks_per_case": 16,
+  "comparison_checks_total": 624,
+  "sample_count": 97703,
+  "comparison": {
+    "profile_exact": true,
+    "all_run_fields_exact_except_development_source_sha256": true,
+    "run_identity_exclusion": [
+      "development_source_sha256"
+    ],
+    "certificate_domain_and_numerical_sections_equal": true,
+    "certificate_identity_exclusions": [
+      "source_sha256",
+      "cases[].study_sha256",
+      "coast_corridors[].study_sha256"
+    ],
+    "certificate_with_only_identity_fields_removed_sha256": "b32f4b02c7dba4ba9e5bb332c25fcdfea866a263cf72139cb3877551380963b2",
+    "numerical_tolerance_used": 0,
+    "independent_registration_and_scalar_checks_passed": 39,
+    "certificate_hash_validation_weakened": false
+  },
+  "cases": [
+    {
+      "case": "retained0",
+      "retained_count": 0,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "ace65b9fec8fa6ed0cd0c4ff470e01b322671788d9f28018e17175c85b877df0",
+      "final_study_sha256": "1c9fada60a655c377e880bf2e9e65a088fa8c885421d183b67656acead11e231",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2529
+    },
+    {
+      "case": "retained1",
+      "retained_count": 1,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "91ed219ce558dd4f261f70b8c801e7ba9b624632709673e2de6f526f5be54676",
+      "final_study_sha256": "5737ca45ff3d98269612996ba446c94bf1e594132e656ef6b9d2b95b63544a38",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2530
+    },
+    {
+      "case": "retained2",
+      "retained_count": 2,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "8a6bc878ae90617a941aeb427d4660ff99d603b2479ce76f4f4bc654d76df7ea",
+      "final_study_sha256": "5853d77994499ebcde9a7b052723d481c597ac954cef65ab4063fadf8bc5a754",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2531
+    },
+    {
+      "case": "retained3",
+      "retained_count": 3,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "fcc5f5678a5aaebddf76c2ab30ff675259d1edebd1f7edca4ffb7f6412b4d91f",
+      "final_study_sha256": "0addbebce924d2f799a5c7bb3731f95fc86859ed542ea1f3294d99dfd680fbfc",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2523
+    },
+    {
+      "case": "retained4",
+      "retained_count": 4,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "33e16a169466c180e28cbbbc3e875ef8324382408284048f3c38d49042c327a2",
+      "final_study_sha256": "81b3f4811bef439261fa290c2298a4d2c17d46787ea41f7205b141fe1d5cfb67",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2527
+    },
+    {
+      "case": "retained5",
+      "retained_count": 5,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "954a08e269be75a5509c549321988e755b501f8667efda67a799d3ddafdeec1c",
+      "final_study_sha256": "8a1a79671d1853b7d10c4ce0b4cc53ded74bd17cff1fed5d23540c2b6dfab97c",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2530
+    },
+    {
+      "case": "retained6",
+      "retained_count": 6,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "b59e8b92fedb20a5d39f4c76ccf70efe53acd9a3508b53174fbbcdda8fc12a79",
+      "final_study_sha256": "26a19a825000db2e1de91234b4cb5e49997e515ec7ee416bd85f8d488d17cfdb",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2533
+    },
+    {
+      "case": "retained7",
+      "retained_count": 7,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "c608863dee6b44f881b54bf539b5c44a9713976d0e216e1a121137ff6750f110",
+      "final_study_sha256": "b768b2a6fb8703e2a158344de713e8a78e89e9cc2a728fa87f933294fab33827",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2522
+    },
+    {
+      "case": "retained8",
+      "retained_count": 8,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "63ed423ea6cd5fee25b31c482d6f8e14a4ce3be8e61cf90ce8a6a5abef9486c4",
+      "final_study_sha256": "eb6a27770747db221e015471e27a0173213397fe9fb7e86b97983567ebf3ee7a",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2526
+    },
+    {
+      "case": "retained9",
+      "retained_count": 9,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "657faeef98fe7e83f5dafc9614d0ccd5d216718803926b37c5f27bc05a88d61c",
+      "final_study_sha256": "3a9d030a9b7c0643be1d141e2f2b0a6f96928e5fd4fb7670bc083304b667db14",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2511
+    },
+    {
+      "case": "retained10",
+      "retained_count": 10,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "495719c92a19a3324822a2a0e6818834e2d9cd3fa97aba2d44f64d41d24c4c08",
+      "final_study_sha256": "ee56ea1729a36ffd2a0d53c0cda0eab08b95b14a08facd38e4030daaf9969ef2",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2519
+    },
+    {
+      "case": "retained11",
+      "retained_count": 11,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "4e4361ae952102f2e22c31c6223e3111a5db4bef9788defa53a71935ca9299b0",
+      "final_study_sha256": "673c946f473d200cab3f57a87b99d1efe3db524b3c4814bb413ec0e8cb987d30",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2522
+    },
+    {
+      "case": "retained12",
+      "retained_count": 12,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "8c646967b6409277999d35e179f02f717378b13a9d95cb2d8aa31f4f309cdddb",
+      "final_study_sha256": "a7dbe53cc123564bdd4ce79c7a7f50a8f5b2dff7afbcb68e1f16274c33fe28a5",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2511
+    },
+    {
+      "case": "retained13",
+      "retained_count": 13,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "571a991857cc8cd7a4d27b0f9f1777d1a6c99b43d5b20aa4f0dd3557354a3806",
+      "final_study_sha256": "724f5e23d81bb66c36c36d9400f3c5b5bb6982172b9dfa010fe023c6d2b9e829",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2513
+    },
+    {
+      "case": "retained14",
+      "retained_count": 14,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "6a068cb73337f514aa615721e9d1e16421c58b3211d258fd9473e2649c013621",
+      "final_study_sha256": "dfb32d47afdd99e8c205a733a4fc67b97bbcc414bd8910ee5202dbd20aaa1356",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2515
+    },
+    {
+      "case": "retained15",
+      "retained_count": 15,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "815eec7bfbfb79ca27206a2f5b67956f21a4cdabe5168210a0002256255decae",
+      "final_study_sha256": "46a65bf5f0160f9bf057528aad9264a55e595fe1692586e249fa62a2013cfe3b",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2505
+    },
+    {
+      "case": "retained16",
+      "retained_count": 16,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "537404bd8ad44ae4bb1a9d9a49df53697650d7aa633c7b332fdc36686d95c8cf",
+      "final_study_sha256": "119bbf6638bac99403b77f005a50dbfd92a5fd5ffe90998fb6036769bcf017d1",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2501
+    },
+    {
+      "case": "retained17",
+      "retained_count": 17,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "17deaef1f09821b8fefb616730857b6c02f9bbafecaf268fa1344194de2c552e",
+      "final_study_sha256": "99073d654daa6eb478d96fd25a3ae76e81a57ecf0a91e1b18f2d281e881a1cb0",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2505
+    },
+    {
+      "case": "retained18",
+      "retained_count": 18,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "6695231f9bd82d5f97406b4e6e8b8ddf4958e564ef2cd5af693faf6623344826",
+      "final_study_sha256": "413e6b38ec0daa310cd52be2765104719db4f5e4e7ac532a934b21a37f90c3f1",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2495
+    },
+    {
+      "case": "retained19",
+      "retained_count": 19,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "0bdedbc85837cb56121c3dfff926fdc4328597f612fb1f5ff75baaca98c9ac61",
+      "final_study_sha256": "bc29990b1f0c7c47243c45b9d2c1a0d5c5fda844de65d9f62c797688a3dff461",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2498
+    },
+    {
+      "case": "retained20",
+      "retained_count": 20,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "d0973c227dd584b51f957238c5a678111c202ca07b7b19904afedeb332e71a00",
+      "final_study_sha256": "5ed7854d5c5713f16320d7802572b870bb2181deffc0e96b597231102925b09f",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2501
+    },
+    {
+      "case": "retained21",
+      "retained_count": 21,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "9c9e84d0c1b10d62192ded2a0709a991a8a1b8c0bbeb122f7fa0ca2435955b6b",
+      "final_study_sha256": "1f178b81d15b1a09413802e4c7a52bf67ed46f30940e53ac510500b302c6f8df",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2490
+    },
+    {
+      "case": "retained22",
+      "retained_count": 22,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "6ac9a2b687871bdb4be44fa9ffcf1c1ba3b22b6c7972647823216257a22b8050",
+      "final_study_sha256": "088c70bc83e1f9cfbbf266d3b7d535e52685f89b80ad93672efc5d8c2a378575",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2493
+    },
+    {
+      "case": "retained23",
+      "retained_count": 23,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "8a96369c7497aeea804be0dad9a1b8dbba1f28154239deffbaa686658f660aa7",
+      "final_study_sha256": "4d73456f8f62220897d392f6fb01c2a1730d06ea771dfaea15e82648f0032783",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2496
+    },
+    {
+      "case": "retained24",
+      "retained_count": 24,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "1f96d3384e14c71daf440fb6bb80fc7ac079e00c9a437f09218b0dba78bd8f75",
+      "final_study_sha256": "055d8a1652b642af3d807e6162fbc20b222fb998c359ae87255c838cb0cc7129",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2487
+    },
+    {
+      "case": "retained25",
+      "retained_count": 25,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "359b1a09bb07b498ada61c8e7cc7858984e661123637fd60e112baca195e9607",
+      "final_study_sha256": "3baebea7a2110d33e29fc899120091ce52b0b7cc7cf5ec9feaa17b251551bbfd",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2489
+    },
+    {
+      "case": "retained26",
+      "retained_count": 26,
+      "initial_fuel_offset_kg": 0,
+      "baseline_study_sha256": "85fd079e79b1dff77317a0c74e8ea26f4603cca40af1b10a6461ff788416d2be",
+      "final_study_sha256": "5fc85c249d0bb849f1dffe6c6ed1ae30abff3ad635749e8c8fa9a9055e357cf2",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2492
+    },
+    {
+      "case": "retained0-fuel-1000",
+      "retained_count": 0,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "8d3701144d3bc33da1dfd3fe590ec8418686ccc4a04551f712e49adf536dfd0c",
+      "final_study_sha256": "bdc44524e30c36098e2f1c520ae2ce0f6d0bd75dd05e3d003be20fc757a2d05a",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2511
+    },
+    {
+      "case": "retained0-fuel+1000",
+      "retained_count": 0,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "dcd7e1c5ef4176bc69c4eb6d1968ab44fbbfca41c520ff142b9199660d8097c2",
+      "final_study_sha256": "6145394a28ec9c123946d9666c19f590f47d978c4f151d6cfcf5d6471b9099dd",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2523
+    },
+    {
+      "case": "retained14-fuel-1000",
+      "retained_count": 14,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "48f5becf408e1a5d7001a8f56c8816b1848a2b6797f7a07b86f0894d79df35f2",
+      "final_study_sha256": "69851643e2e22551c1af1fa36ece747c982218a39b94a8fcad08d50cf11b4fdd",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2483
+    },
+    {
+      "case": "retained14-fuel+1000",
+      "retained_count": 14,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "ce11bf21326c93b263efc1be5e9220aa3f2a61c0ad54f321c3c7e57bcf654f19",
+      "final_study_sha256": "dac7917e6d0ba420ee86b6f988352ed1a803143df91d3c5c2a71018c87e80655",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2510
+    },
+    {
+      "case": "retained15-fuel-1000",
+      "retained_count": 15,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "8e5f1be5c1eee3ea13882e62cbdfbb6094a687e68c5c9010e84ef2aef448ff5e",
+      "final_study_sha256": "df885b086bd7328924240ae2a5fb6b5ba65baf5735708b68ea400e8b6f26a88b",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2485
+    },
+    {
+      "case": "retained15-fuel+1000",
+      "retained_count": 15,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "3e6fa14f2a420ee3f08c8e100e3337b6a50ab7450637f84d8d1dd4d81b1d0210",
+      "final_study_sha256": "2f5e3ac5b9817a317d209af6a4f59e42160ebeedccd94c459f456d3aa9acb304",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2499
+    },
+    {
+      "case": "retained16-fuel-1000",
+      "retained_count": 16,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "a69277c90a1b0d73e368f297e63e69fea2165d18665c927e7519185ecbf23a86",
+      "final_study_sha256": "d0758391fea67d8a607ee1751d8d31a4373436dd2e4b6e0f88fe5915314bb1d5",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2487
+    },
+    {
+      "case": "retained16-fuel+1000",
+      "retained_count": 16,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "613eeacd2742c96ab51a2c2da34036f13ab4fc2be3946a40029a7a2139e471f6",
+      "final_study_sha256": "85c506177f760efef3d162160cf3cae0870140cf3e38257d6361f87a7d2dc01a",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2501
+    },
+    {
+      "case": "retained25-fuel-1000",
+      "retained_count": 25,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "a71ec0fc148f597e0a48eed0dab8fe6d1d499e89f5de694ce560b7f81529a486",
+      "final_study_sha256": "97ddcc5de1ceff4059d24b30f455c3c3f779a0989b68281184b76c208f7dfcf2",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2469
+    },
+    {
+      "case": "retained25-fuel+1000",
+      "retained_count": 25,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "a76f7c6104d4a7efe1e3472c566eef258d4baae1a9a199dae184e6a04d3322e7",
+      "final_study_sha256": "5fde65d2022e712f5edeb6d51130973a37887deda02b9c0d166eadc74172d856",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2483
+    },
+    {
+      "case": "retained26-fuel-1000",
+      "retained_count": 26,
+      "initial_fuel_offset_kg": -1000,
+      "baseline_study_sha256": "4ea41a8fa3c47b0f15242d937f0df5efd6fb7ad2c29deddddacb853ec1629bee",
+      "final_study_sha256": "9846cfacb87930ea3e39092f74187b724c6209bed17ca4c8cc3843ba8804af99",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2472
+    },
+    {
+      "case": "retained26-fuel+1000",
+      "retained_count": 26,
+      "initial_fuel_offset_kg": 1000,
+      "baseline_study_sha256": "d45d4560b3b2600dfe6061968d513ebeee0f65079cb77b8c3c92ab341459c874",
+      "final_study_sha256": "154f435c39d6eaf7893dfc51b5b639d72d99ad50f59482afe81f2aca661c7a2a",
+      "exact_comparison_passed": true,
+      "process_exit_code": 0,
+      "checks_passed": 16,
+      "sample_count": 2486
+    }
+  ],
+  "execution_budget": {
+    "maximum_workers": 4,
+    "per_case_wall_limit_s": 900,
+    "maximum_output_bytes": 4294967296,
+    "actual_total_owned_output_bytes_at_completion": 2717278882,
+    "final_cohort_elapsed_s": 1292.2464698340045,
+    "automatic_flight_retries": 0,
+    "model_calls": 0
+  },
+  "earlier_attempts": {
+    "archive_root_prefix_setup_failure": {
+      "simulations_started": 0,
+      "repaired_before_any_simulation": true
+    },
+    "superseded_source_cohort": {
+      "simulations_completed": 17,
+      "exact_comparisons_passed": 17,
+      "cases": [
+        "retained0",
+        "retained1",
+        "retained2",
+        "retained3",
+        "retained4",
+        "retained5",
+        "retained6",
+        "retained7",
+        "retained8",
+        "retained9",
+        "retained10",
+        "retained11",
+        "retained12",
+        "retained13",
+        "retained14",
+        "retained15",
+        "retained16"
+      ],
+      "source_manifest_sha256": "887c05a33a2387c5212fa1ea75f272e86b3c849af3238cf5816fe35d24dcdb12",
+      "reason": "Additional standalone and legacy-API admission guards changed mission source. The final source received a fresh cohort of 39 cases.",
+      "records_relabelled_or_used_as_final_source_evidence": false,
+      "active_cases_drained_before_source_change": [
+        "retained13",
+        "retained14",
+        "retained15",
+        "retained16"
+      ],
+      "monitor_race": {
+        "affected_case": "retained11",
+        "kind": "Concurrent atomic temporary-file rename during disk accounting",
+        "original_process_exit_code": null,
+        "original_process_exit_code_unknown": true,
+        "original_process_completed_result_observed": true,
+        "saved_study_independently_verified_and_exact": true,
+        "same_source_flight_retried": false,
+        "final_source_retained11_clean_exit_observed": true
+      }
+    },
+    "total_fresh_simulations_across_sources": 56
+  },
+  "local_evidence_preserved": [
+    "output/starship-trouble-qualification-20261013/final-source",
+    "output/starship-trouble-qualification-20261013/attempt-2",
+    "output/starship-trouble-qualification-20261013/summary.json"
+  ],
+  "portable_command_template": "python scripts/run_starship_return_qualification.py --approve-simulation --wind-trim --retained <n> --initial-fuel-offset-kg <offset> --output-dir output/starship-trouble-qualification-20261013/final-source/census/<case>",
+  "claim_boundary": {
+    "existing_default_qualified_domain_preserved": true,
+    "fault_recovery_qualified": false,
+    "independent_physics_validation": false,
+    "physical_execution": false,
+    "old_record_relabelling": false
+  }
+}

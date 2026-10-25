@@ -1,0 +1,39 @@
+{
+  "schema": "missionos.starship_system_repair_ship.v1",
+  "registered_on": "2026-10-18",
+  "purpose": "One finite native plant continuation from R2healthy actual insertion through real26payloadreleases and shared Shipreturn. Physicalcontrolrepair diagnostic only; noAI/qualification/catch.",
+  "ascent": {
+    "record": "output/starship-system-repair-20261018/ascent-v2/healthy/record.json.gz",
+    "raw_sha256": "194c7c8640ae4b57804b65e95f0f770c48a8e752677d26d1d76c5938bf2e1057",
+    "gzip_sha256": "3fda460ba6e65602c42d28950ffbc8d7c59b8ee45df0067d981aa13bceab2a1c",
+    "source_commit": "c583e0f8addef6e2dfa7391f9911bbbd191072ac",
+    "plan_sha256": "0144d74f62b83498a6a385d35673c565e5fcaaeb2bb302c109a81a62d8eeedc0",
+    "case_id": "healthy"
+  },
+  "limits": {
+    "maximum_trials": 1,
+    "per_trial_wall_s": 600.0,
+    "cohort_wall_s": 650.0,
+    "duration_s": 6000.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "fixed_inputs": {
+    "expected_policy": "coast_orbit_v5",
+    "release_count": 26,
+    "first_release_after_orbit_gate_s": 45.0,
+    "return_after_orbit_gate_s": 1800.0,
+    "old39casequalification_borrowed": false,
+    "release_limit": 26,
+    "bounded_ship_flaps": true,
+    "application": "wind_trim_state_return_v2"
+  },
+  "unchanged": "Allfullstate/vehicle/engineavailability/actuators/inventory inherited exactly; no stateprojection, no forcedreleasecount, no mass/fuel/thrust/inertia/RCS changes. Shared original release_payload and ReturnController execute actual physics.",
+  "acceptance": "Independent savedconsistency is separate from physical outcome. Require26actualreleases withinventory/momentumreceipts, strict unchangedreturncontactspeed/tilt/rate/fuel bounds for physicalpass. Validnegative staysnegative; numericalfailure invalid.",
+  "stop": "One-use source/environment/input-bound claim; invalidrecord, numericalexception, source/input/environmentchange, timeout/output/diskbreach stopswithoutretry. Validnegativeendsonecase. Do not addcandidates, altercontrols or rerun inthiscohort.",
+  "output": "output/starship-system-repair-20261018/ship-v1",
+  "cleanup": "Keeporiginals; archive/hash/restoreverifybeforefuturedeletion. NoDocker/models/publicpush/merge."
+}
