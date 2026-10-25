@@ -1835,6 +1835,10 @@
     {
       "path": "tests/contract/test_starship_state_mission_metrics.py",
       "sha256": "d914133bdd795b9140b0676f0db9f5a484090d32f594053533c8cb03e031a83f"
+    },
+    {
+      "path": "tests/fixtures/starship/restored-numerics-diagnostic-source.py.txt",
+      "sha256": "1100d0be24aca4d766fdc674fa5d54525bf4d28071e7060470c6144ae8175c9e"
     }
   ],
   "private_outputs_imported": false,
@@ -1843,6 +1847,16 @@
       "path": "tests/contract/test_starship_deployment_forecast.py",
       "reason": "old_certificate_must_reject_changed_public_source_instead_of_assuming_still_qualified",
       "sha256": "10834a87c73ff83e6da659b744761bf0124cbc16ceadfe4738f2583705a53a0f"
+    },
+    {
+      "path": "tests/contract/test_starship_replanning.py",
+      "reason": "scoped synthetic qualification for approval_receipt_UI tests_only; unpatched refusal asserted",
+      "sha256": "7886f4618cf5f750f56484ff182207155d35f0e6bb8bfe4b9d30b6637f93e2fd"
+    },
+    {
+      "path": "tests/contract/test_starship_m3_fixture.py",
+      "reason": "scoped synthetic prerequisite to reach directory setup; test stops before first physics step",
+      "sha256": "c52f260a9c79f11e36db718e3426f9e8cc4b89258f73b8664012d7356001cc57"
     }
   ],
   "public_baseline": "bdf95820dce250f460b4bc2148b77ab962bcf341",

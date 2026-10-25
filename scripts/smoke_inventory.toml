@@ -144,3 +144,16 @@ files = [
   "smoke_source_backed_world_bound_sitl_e2e.py",
   "smoke_turtlebot3_live_perception_binding.py",
 ]
+
+[categories.starship_final_public_opt_in]
+action = "Run explicitly documented Starship fixed-response HTTP/pipe boundary smokes only; never infer a flight, paid model judgment, approval or qualification."
+files = [
+  "smoke_starship_final_protocol.py",
+  "smoke_starship_final_runtime.py",
+  "smoke_starship_final_timing.py",
+  "smoke_starship_restored_approval.py",
+  "smoke_starship_restored_decision_pipe.py",
+  "smoke_starship_restored_native_host.py",
+  "smoke_starship_restored_outer.py",
+  "smoke_starship_restored_process_owner.py",
+]

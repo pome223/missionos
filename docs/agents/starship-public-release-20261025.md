@@ -58,3 +58,17 @@ flight outcomes. Hosted CI results must refer to the exact public PR head.
 - `ruff check src/gateway/starship_chat.py`: **passed**.
 - Selected-file publication scan: 459 files, no actual personal workstation path/private-key block/common token value found. Local links in the README and new documentation: **87 checked**, no missing target. This is not a comprehensive security audit.
 - The initial broad contract run exposed an inherited test expecting the old certificate to remain valid after source changes. The public adaptation now requires source-mismatch refusal; its six-test file passed. No runtime admission condition, certificate, flight threshold or historical record was weakened. Broader matrix results are recorded separately at the final PR head.
+
+### Public-port compatibility fixes
+
+The first broad local run stopped after eight failures: one stale certificate
+expectation, three old authority/receipt/UI cases that implicitly depended on
+that certificate, one directory-preparation case stopped at readiness, and three
+checks missing the historical 30 KB diagnostic-source text fixture. The fixture
+is algorithm AST input, not executed private flight output; it was reviewed and
+added. Only the authority/UI/directory tests receive explicitly scoped synthetic
+readiness; unpatched source refusal remains asserted, and the directory test
+throws before its first physics step. The five affected test modules then passed
+**163 tests**. No production gate, physical threshold or historical record changed.
+New fixed-response smoke scripts have explicit opt-in dispositions in the smoke
+inventory; this does not schedule or authorize their execution.

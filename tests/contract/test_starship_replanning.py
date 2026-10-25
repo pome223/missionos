@@ -14,6 +14,16 @@ from src.runtime import starship_sixdof as dyn
 from src.runtime.starship_sixdof_mission import vehicle
 
 
+
+@pytest.fixture
+def synthetic_qualification_for_authority(monkeypatch):
+    """Only approval/receipt/UI mechanics; never qualify the public plant."""
+    from src.runtime import starship_return_feasibility as feasibility
+    profile = json.loads(Path("examples/spaceflight/starship-sixdof-profile.json").read_text())
+    assert feasibility.readiness(profile, check_backend=False)[2] == "return_qualification_source_mismatch"
+    monkeypatch.setattr(feasibility, "readiness", lambda *_a, **_k: (
+        {"synthetic_qualification_fixture_only": True}, "a" * 64, None))
+
 def example():
     p = json.loads(Path("examples/spaceflight/starship-sixdof-profile.json").read_text())
     craft = vehicle(p, payload_count=0)
@@ -172,7 +182,7 @@ def test_updated_status_is_not_revealed_in_earlier_observation():
     assert late["sequence"] > early["sequence"] and late["areas"]["west"] == [10000.0, 11000.0]
 
 
-def test_m1_approval_covers_envelope_and_source_and_is_not_automatic(tmp_path, monkeypatch):
+def test_m1_approval_covers_envelope_and_source_and_is_not_automatic(tmp_path, monkeypatch, synthetic_qualification_for_authority):
     from src.runtime.starship_mission_control import StarshipMissionService, StarshipMissionError
 
     monkeypatch.setenv("MISSIONOS_STARSHIP_MISSION_DIRECTOR_MODE", "fixture")
@@ -413,7 +423,7 @@ def test_budget_exhaustion_has_own_fresh_observation_and_cannot_reuse_response()
 
 
 def test_verified_but_unresolved_receipt_remains_readable_without_success_label(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, synthetic_qualification_for_authority
 ):
     from hashlib import sha256
     from src.runtime.starship_mission_control import (
@@ -479,7 +489,7 @@ def test_refined_grid_must_also_reach_the_unchanged_area_and_contact_limits():
     assert "uncertainty_or_refinement_trials_missing" in admit(c, e, o, n, 2280.0)["reasons"]
 
 
-def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp_path, monkeypatch):
+def test_m1_chat_displays_its_return_delegation_not_the_older_director_scope(tmp_path, monkeypatch, synthetic_qualification_for_authority):
     from src.runtime.starship_mission_control import StarshipMissionService
     from src.gateway.starship_chat import _response
 

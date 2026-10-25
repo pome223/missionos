@@ -215,6 +215,8 @@ def test_real_composition_prepares_nested_prefix_before_first_physical_step(tmp_
         assert kwargs["splashdown_goal"].to_dict() == authority["booster_authority"]["splashdown_goal"]
         assert kwargs["mission_director"].ship.run_id == "directory-boundary-deployment"
         raise RuntimeError("test_stop_before_first_physical_step")
+    # Test directory preparation only; no current plant qualification is inferred.
+    monkeypatch.setattr(m2, "readiness", lambda _p: ({"synthetic_fixture_only": True}, "a"*64, None))
     monkeypatch.setattr(prefix, "simulate_concurrent", before_physics)
     monkeypatch.setattr(m2, "ReplanningExecutor", lambda *a, **k: pytest.fail("return must not start"))
     result = m3.run_fixture(profile, "normal", output, run_id="directory-boundary")
