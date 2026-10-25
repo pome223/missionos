@@ -1,0 +1,186 @@
+{
+  "schema": "missionos.ship_fault_step3_registration.v1",
+  "experiment_id": "ship-capability-control-step3-repair-20261015",
+  "stage": 3,
+  "status": "registered_repair_before_additional_execution",
+  "base_commit": "2ced69d959dfcd0b0d58d1be181ea326a07aad93",
+  "authorization": "User asked Codex to complete step 3 on 2026-10-15; includes actual Jev/DeepSeek judgments and finite 6DOF verification",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "prior_request_file": "docs/assets/starship-ship-fault-step2-20261014/request-2.json",
+  "inputs": [
+    {
+      "path": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+      "sha256": "a5b95b17ce46c27689c4db45a80dd7fb5f41cae6efc765fbab0e600610cff621"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step2-registration.json",
+      "sha256": "3ec1a89f27f4ffeb754de208fc8c22d1c39bb28199fe2824a11ad8f5c717a1b1"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step2-20261014/request-2.json",
+      "sha256": "3ee35d863e13e31959be0bff748176e5058a7764ceee7b2a72cd42a65e95762a"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step2-20261014/combined-summary.json",
+      "sha256": "e43bca334210d1d99202d387247ee5cb903b08b60be365276542b7c3062335f3"
+    },
+    {
+      "path": "docs/assets/starship-ship-capability-matrix-20261014/assumed_100pct_actual_80pct-sixdof.json.gz",
+      "sha256": "a08bdad0a36363feaef70ae476f4419771d9837c8462a2550acbb29e274d32fa"
+    },
+    {
+      "path": "docs/assets/starship-ship-capability-matrix-20261014/assumed_100pct_actual_100pct-sixdof.json.gz",
+      "sha256": "b3bbccf7bfc9ea4be16f26e4a41b2c979114feb12c8a24259ef95adfe3d6045e"
+    },
+    {
+      "path": "output/ship-capability-step3-20261015/reviewed-forecast-cache.json.gz",
+      "sha256": "07dd025cc7bc2e9028d909eb2c557b1db5136494acdc602cab076685a611edc5"
+    }
+  ],
+  "cases": [
+    "fault_live",
+    "fault_no_response",
+    "normal_live"
+  ],
+  "physical_fault": {
+    "kind": "landing_engine_derate",
+    "actual_factor": 0.8,
+    "retained_count": 0,
+    "from_step1_frozen_condition": true
+  },
+  "sensing": "Same registered stage-2 accelerometer, per-seed bias, throttle/availability telemetry and quantized fuel gauge, seed 0; estimator consumes only arrived samples. No fault label enters a model request. Ideal kinematics remain a limitation.",
+  "request_routing": {
+    "burn_anomaly": "Jev native choices continue_nominal_assumption or collect_status; no capability adoption before complete data",
+    "complete_fault": "DeepSeek compares observed estimate, uncertainty and prepared adoption/continuation previews; action and numerical-reference IDs only",
+    "normal_complete": "Jev monitoring; continue_nominal_assumption only"
+  },
+  "provider_configuration": {
+    "jev_model": "jev-1.13.0",
+    "jev_decision_s": 35.0,
+    "jev_transport_s": 30.0,
+    "deepseek_model": "deepseek-flash",
+    "deepseek_decision_s": 150.0,
+    "deepseek_transport_s": 120.0,
+    "reasoning_effort": "low",
+    "thinking_enabled": true,
+    "maximum_output_tokens": 16384,
+    "maximum_model_calls": null,
+    "retries": 0,
+    "raw_reasoning_recorded": false
+  },
+  "application": {
+    "delay_after_complete_request_s": 600.0,
+    "change": "one replacement of only model-vehicle landing-engine limits; actual plant remains unchanged",
+    "deadline_after_issue_s": 900.0,
+    "planning_wall_limit_s": 598.0,
+    "time_semantics": "Measured prediction/check/model wall duration must fit the fixed 600-second reserved coast interval. Physical actual-plant integration advances through that whole interval with the unchanged controller, then consumes the receipt at the first scheduled control step. This is a finite simulator workflow, not hard-real-time flight certification."
+  },
+  "numerical_preparation": {
+    "new_predictions": 0,
+    "points": [
+      "band_low",
+      "point_estimate",
+      "band_high"
+    ],
+    "plant_capability": "estimated band point only",
+    "switch_value": "numeric point estimate, never model-written factor",
+    "continue_previews": "reuse only already-reviewed Git-tracked step2 request material when observation and complete estimate exactly match; no private raw-record import; no execution authority",
+    "no_response_reuse": "reuse first-case adoption forecasts only when snapshot hash, estimate point, band point, application time and record hash exactly match; no repeated physics",
+    "scope": "three points, not a continuous-band guarantee",
+    "all_reused_forecasts": "First stopped cohort forecasts reverified and reused only after exact producer-source/backend, snapshot, estimate/band, record hash and scheduled-time checks"
+  },
+  "independent_check": {
+    "process": "separate credential-free Python process, strict JSON",
+    "checks": [
+      "registered actual file SHA and installed backend",
+      "authority/profile/inventory hashes",
+      "causal telemetry re-estimation and estimate ID",
+      "request snapshot and observation match",
+      "application deadline and allowed phase",
+      "prediction inputs/switches and independently reconstructed contact arithmetic",
+      "every control step ordered and uses assumed model; every physical step uses plant",
+      "controller witness marker/phase/audited time",
+      "one-use receipt consumed at fresh current state"
+    ],
+    "claim": "independent contract and arithmetic checks; shared-model forecasts are not independent physical-model validation"
+  },
+  "fallback": {
+    "missing_or_invalid_model_judgment": "adopt numeric point estimate only through the same passed guard and preapproved scope",
+    "valid_continue_judgment": "retain judgment; do not override merely to obtain a successful landing",
+    "guard_failed_or_late": "no adoption; retain nominal execution and dangerous/unresolved outcome, with no safe-return claim"
+  },
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "budgets": {
+    "maximum_new_6dof_rollouts": 3,
+    "maximum_prediction_wall_s": 180.0,
+    "maximum_case_wall_s": 900.0,
+    "maximum_cohort_wall_s": 1200.0,
+    "maximum_output_bytes": 268435456,
+    "minimum_free_space_bytes": 5368709120,
+    "maximum_model_calls": null,
+    "retries": 0
+  },
+  "pass_conditions": [
+    "fault_live: actual Jev judgment and actual DeepSeek judgment; adopted capability bound to cited decision-time inputs, admitted and consumed once, actual faulty plant meets all contact limits",
+    "fault_no_response: no model call; same independent check, bounded automatic adoption and actual faulty plant contact pass; record as safety-net evidence",
+    "normal_live: no capability switch; final physical state equals saved nominal reference; contact gates pass"
+  ],
+  "comparison": "Reuse saved assumed-100%/actual-80% no-intervention flight (9.16575255358686 m/s); no Rules-score comparison and no new comparator rollout. Do not extrapolate from one state or tune the scenario after live results.",
+  "result_actions_ordered": [
+    {
+      "when": "input/source/backend/budget/invalid physical record",
+      "next": "retain partial/negative records and stop without retry"
+    },
+    {
+      "when": "model returns invalid/no response",
+      "next": "record the model failure; checked fallback may finish the flight but does not count as AI completion"
+    },
+    {
+      "when": "valid model keeps original assumption and contact fails",
+      "next": "retain judgment and failed result; no tuning or rerun to manufacture success"
+    },
+    {
+      "when": "all three case conditions pass",
+      "next": "step3 complete in this frozen experimental scenario; publish internal evidence and stop before broader fault/continuous-band qualification"
+    }
+  ],
+  "physical_execution": false,
+  "nominal_certificate_admits_faults": false,
+  "held_out_success_rate": null,
+  "end_preservation": "Retain source snapshots, approval claim, wall/space ledger, raw model receipts without credentials/reasoning, restored gzip flight records and guard receipts outside temporary directories. No deletion of prior evidence.",
+  "repair_registration_file": "examples/spaceflight/starship-ship-fault-step3-repair-registration.json",
+  "reused_forecast_file": "output/ship-capability-step3-20261015/reviewed-forecast-cache.json.gz",
+  "extra_execution_requires_user_approval": true,
+  "original_attempt": {
+    "code_commit": "72e421a964ead5a6a64eb7b31d03d3c57bb92c56",
+    "plan_sha256": "15221bdb88611486907ad18ece882b39f38304dffcdad0e6a9902869a1d7ea0f",
+    "result": "stopped_after_fault_live: Jev valid, DeepSeek response invalid, verifier indexed 18 engine states into six saved main-thrust values, no adoption, contact 9.16575255358686 m/s",
+    "preservation": "original source snapshot, failed guard, flight and model attempt remain unchanged",
+    "raw_response_not_retained": "Legacy-to-canonical model-name mismatch is a likely interface issue; exact cause of the old provider rejection remains unknown"
+  },
+  "repairs": {
+    "guard": "Six main engines follow the producer name-filter; 18 full engine states and all audited capability routes remain required",
+    "model": "Explicit current canonical deepseek-flash; strict returned-model equality is retained",
+    "diagnostics": "Allowlisted model name, model-match bool, choice count, finish reason and response length only; no reasoning/raw response",
+    "unchanged": [
+      "plant",
+      "controller",
+      "sensor",
+      "estimator",
+      "origin",
+      "fault",
+      "contact limits",
+      "model prompt and action semantics"
+    ]
+  },
+  "local_cache_requirement": "Opt-in repair run requires retained output from this same experiment; raw private task/Gateway databases are never inputs",
+  "primary_sources": [
+    "https://api-docs.deepseek.com/",
+    "https://api-docs.deepseek.com/api/create-chat-completion/"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "actual_fixed_agent_decoders": true,
+  "automatic_retry": false,
+  "coverage_revision": 3,
+  "execution_permission_granted": false,
+  "fixture_only": true,
+  "flight_result": false,
+  "local_visual_http_requests": 2,
+  "loopback_gateway": true,
+  "nine_channel_process_smoke": true,
+  "passed": true,
+  "physics_steps": 0,
+  "provider_calls": 0,
+  "qualification_refreshed": false,
+  "schema": "missionos.starship_final_boundary_runtime_smoke.v1",
+  "two_visual_rpc_requests": true,
+  "visual_loopback_http": true,
+  "visual_original_epoch_preserved": true
+}

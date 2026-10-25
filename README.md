@@ -115,6 +115,18 @@ release evidence, not autonomous picking or physical robot execution.*
 
 ### Starship-inspired six-degree-of-freedom mission simulation
 
+**2026-10-25 status:** the selected public port includes the integrated mission,
+image/deployment accounting, seeded symptom diagnosis and exact-point return
+qualification tools. The historical integrated flight used Jev 10/10 and DeepSeek
+1/1 valid responses and reached Ship model contact at 3.459 m/s. **This public
+checkout has not flown or been qualified by those historical records.** The
+normal permission adapter's four-record verification stopped before execution
+on its storage gate; ordinary launch readiness remains fail-closed. See
+[the integrated result, failures and current limits](docs/examples/starship-final-mission.md).
+
+The players below retain their original earlier mission dates and evidence.
+
+
 **Live AI judgments, approved bounds, 6DOF execution and later observations run together in MissionOS.**
 For booster recovery, DeepSeek received the current observation and catch-development
 history, selected splashdown and passed the independent execution check. A later

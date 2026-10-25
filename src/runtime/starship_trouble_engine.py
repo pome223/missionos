@@ -25,10 +25,13 @@ FAMILIES = MappingProxyType({
     "payload_jam": ("ship", "orbital_coast", (0., 10.), ("dispenser",)),
     "tower_unavailable": ("booster", "booster_boostback_slew", (0., 0.), ("tower",)),
     "booster_restart_failure": ("booster", "booster_boostback", (0., 0.), tuple(f"booster_main_{i}" for i in range(13))),
+    "return_propulsion_80": ("ship", "accepted_return_dispatch", (0., 0.), ("landing_engine_group",)),
+    "return_sensor_gain_80": ("ship", "accepted_return_dispatch", (0., 0.), ("axial_accelerometer",)),
 })
 # No verified actuator-jam precedent is claimed. This family remains an explicit
 # synthetic sensitivity fixture; it is not in the historically motivated pool.
-DEFAULT_FAMILIES = tuple(family for family in FAMILIES if family != "flap_jam")
+DEFAULT_FAMILIES = tuple(family for family in FAMILIES
+                         if family not in ("flap_jam", "return_propulsion_80", "return_sensor_gain_80"))
 
 
 def _json(value):
@@ -166,7 +169,20 @@ class TroubleEngine:
             if (event["id"] in self._applied or event["body"] != body or event["phase"] != phase
                     or state.time_s < start + event["delay_s"]):
                 continue
-            state, effect = self._apply(event, state, vehicle, body)
+            if event["family"] == "return_propulsion_80":
+                names = {f"ship_main_{i}" for i in range(3)}
+                if not names.issubset({e.name for e in vehicle.engines}):
+                    raise ValueError("trouble_return_engine_group_missing")
+                effect = [dict(component=e.name, max_thrust_before_n=e.max_thrust_n,
+                               max_thrust_after_n=e.max_thrust_n*.8)
+                          for e in vehicle.engines if e.name in names]
+                vehicle = replace(vehicle, engines=tuple(
+                    replace(e, max_thrust_n=e.max_thrust_n*.8) if e.name in names else e
+                    for e in vehicle.engines))
+            elif event["family"] == "return_sensor_gain_80":
+                effect = [dict(component=event["target"], gain_before=1., gain_after=.8)]
+            else:
+                state, effect = self._apply(event, state, vehicle, body)
             receipt = dict(event_id=event["id"], family=event["family"], body=body, phase=phase,
                 scheduled_at_s=start+event["delay_s"], applied_at_s=state.time_s, effects=effect,
                 previous_sha256=self._receipts[-1]["receipt_sha256"] if self._receipts else self.manifest_sha256)
@@ -240,6 +256,10 @@ class TroubleEngine:
 
     def tower_ready(self, time_s):
         return not self._signal_active("tower_unavailable", time_s)
+
+    def accelerometer_gain(self, time_s):
+        """Private sensor-harness setting, never a model observation field."""
+        return .8 if self._signal_active("return_sensor_gain_80", time_s) else 1.
 
     def observation(self, state, vehicle, body):
         """Synthetic current component diagnostics, not a fault schedule oracle.

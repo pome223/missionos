@@ -1,0 +1,57 @@
+{
+  "schema": "missionos.starship_unified_trouble_registration.v2",
+  "question": "Can a seeded return fault actually be injected into the same launch-derived plant, then handled by real Jev and optional DeepSeek through observed symptoms, requested tracking, independent Rules and one-use execution?",
+  "seed": 20261017,
+  "fault_pool": [
+    "propulsion_80",
+    "sensor_gain_80"
+  ],
+  "selection": "sha256(unified-return-trouble-v1:seed), first 8 bytes modulo 2; one draw before any flight; no resampling",
+  "probabilities": "uniform fault-only test distribution; not historical incident probabilities",
+  "trigger": "accepted_return_dispatch",
+  "stages": [
+    "one same-case fixture full flight",
+    "one same-case live-sensor full flight after fixture verification"
+  ],
+  "maximum_attempts_per_stage": 1,
+  "maximum_hosted_deepseek_calls": null,
+  "provider_policy": "Jev first; DeepSeek only after explicit Jev delegation, within existing 35/150 second decision windows",
+  "phase_scope": {
+    "ascent_booster_deployment_orbital_planning": "fixed_response",
+    "visual_observation": "real pixels and HTTP, fixed response",
+    "return_symptom_decisions": "live in the live-sensor stage"
+  },
+  "limits": {
+    "maximum_wall_time_s": 2400,
+    "maximum_output_bytes": 1610612736,
+    "minimum_free_bytes": 5368709120
+  },
+  "prestart_minimum_free_bytes": 21474836480,
+  "acceptance": [
+    "one hash-bound TroubleEngine receipt at accepted dispatch",
+    "actual actuator limits or measurement gain agree with the private sampled manifest",
+    "no private seed, schedule or fault label in model requests",
+    "same physical state and retained mass from launch",
+    "live tracking request and final admitted action, with no fallback substituted as an AI choice",
+    "independent guard and observed contact limits pass"
+  ],
+  "stop": [
+    "first invalid evidence or unexpected fixture failure",
+    "source or backend mismatch",
+    "wall/output/free-space limit",
+    "model failure retained without retry; a checked fallback may protect the flight but cannot satisfy AI-work acceptance"
+  ],
+  "qualification": "experimental same-model discrete predictions only; nominal 39-case certificate unchanged",
+  "publication": "internal PR only; compact reviewed receipts in Git, raw frames and flight records in private durable output, archive and verify before any cleanup",
+  "unsupported": [
+    "native image judgments",
+    "arbitrary fault families",
+    "tower catch",
+    "retained-payload plus propulsion fault",
+    "physical flight"
+  ],
+  "revision_reason": "The 9ae07eff fixed-response flight injected and detected the sampled sensor fault, but only 4 of 6 online forecasts finished before the 235-second work deadline. Preserve the failed fixture; do not run its live plan.",
+  "online_forecast_resource_profile": "unified_sensor_online_300_v1",
+  "online_forecast_batch_timeout_s": 300.0,
+  "resource_basis": "Two workers, six jobs: observed completed job plus artifact wall times 79.66, 79.67, 81.24, 87.74 seconds. Three waves at the longest completed cost plus bounded serialization/cleanup headroom fit a 300-second batch (295 seconds work). Per-job 180 seconds, two workers, six points, application delay 600 seconds, 197-second decision/guard reserve and flight 2400 seconds are unchanged; actual application deadline may shorten the work window."
+}

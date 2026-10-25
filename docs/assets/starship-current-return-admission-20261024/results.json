@@ -1,0 +1,23 @@
+{
+  "certificate_sha256": "0deea6687fd99cca4ec1a3505ae54c963fa4469df2b997d2f9e258e1e5c6d2a1",
+  "contract_tests": {
+    "python311": 135,
+    "python313": 135
+  },
+  "fixture_runtime_smoke_passed": true,
+  "free_bytes": 9699000320,
+  "minimum_free_bytes": 10737418240,
+  "new_flights": 0,
+  "normal_fault_continuation_admitted": false,
+  "old39_certificate_admitted": false,
+  "operational_dispatch": false,
+  "original_certificate_unchanged": true,
+  "provider_calls": 0,
+  "registered_retries": 0,
+  "registration_sha256": "2ac66c2fd5ef8681c14cdaa1d71c28876df74079b9c8206a039c446eea573067",
+  "runtime_live_observation_verified": false,
+  "saved_four_cell_verification_executed": false,
+  "schema": "missionos.starship_current_admission_reviewed_result.v1",
+  "source_commit": "cb52a4974b88a8664fe1f2fbb54b895107374c3c",
+  "status": "capacity_preflight_stop_no_registered_verification"
+}

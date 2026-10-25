@@ -1,0 +1,138 @@
+{
+  "schema": "missionos.starship_state_mission_registration.v1",
+  "registered_on": "2026-10-19",
+  "purpose": "Two fresh-ground same-build cooperative physical missions through v7 state-based insertion, a real five-second finite shutdown tail, actual26payload releases and Ship return. The Booster begins from the actual rigid separation on the same physical clock. H0 is healthy; O0 carries the two fixed representative outages. No saved state initializes either flight. No AI, images, approval workflow or arbitrary faults are claimed.",
+  "initialization": "fresh_profile_ground_only_no_saved_state",
+  "schedule": "actual_cutoff_plus45_and1800;real_five_second_shutdown_before_orbital_coast",
+  "limits": {
+    "maximum_trials": 2,
+    "per_trial_wall_s": 600.0,
+    "cohort_wall_s": 1500.0,
+    "duration_s": 7500.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "cases": [
+    {
+      "id": "H0",
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0",
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {"engine_name": "booster_main_32", "time_s": 76.0},
+          {"engine_name": "ship_main_3", "time_s": 437.0}
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    }
+  ],
+  "control": {
+    "return_policy": "trimmed_state_terminal_v4",
+    "booster_policy": "fixed_v1",
+    "release_limit": 26,
+    "bounded_ship_flaps": true,
+    "development_application": "wind_trim_state_return_v2",
+    "profile_unchanged": true,
+    "adjusted_fitting_scalars": 0
+  },
+  "acceptance": {
+    "settled_insertion": {
+      "bound": true,
+      "minimum_perigee_m": 220000.0,
+      "maximum_apogee_m": 600000.0,
+      "minimum_propellant_kg": 75000.0,
+      "maximum_body_rate_rad_s": 5.0,
+      "shutdown_settle_s": 5.0
+    },
+    "ship": {
+      "release_count": 26,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_tilt_deg": 5.0,
+      "maximum_body_rate_rad_s": 0.02,
+      "minimum_propellant_kg": 28000.0,
+      "nonoverlapping_descending_contact": true
+    },
+    "booster": "unchanged_pinned_splashdown_goal;actual_separation_and_concurrent_clock_required"
+  },
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "comparison_reference": {
+    "report": "docs/agents/starship-insertion-continuation-v1.md",
+    "scope": "Prior N0 suffix supports feasibility context only; no prior record/state/checkpoint is read to initialize or qualify this cohort. HealthyH0 has not been demonstrated by that outage-containing suffix."
+  },
+  "invariants": [
+    "Original profile, mass, propellant, thrust/Isp, aero geometry, actuator limits, integration steps and reserve/contact limits are unchanged.",
+    "The oldv5 whole-mission and standalonev7 screen admission/checkers remain strict. A separate explicitv7whole type is required.",
+    "Ground origin, actual rigid separation, shutdown availability receipts, complete ascent command/plant chain through cutoff+5s, actual same-state handoff and shared physical clock must be verified.",
+    "Only after the measured settled gate may the existing deployment/return loop begin; its schedule is anchored to actual cutoff, not the end of settling. No state/vehicle/clock/fuel/spool reset or saved-state substitution.",
+    "Booster receives its actual separation engine availability, Ship keeps its registered RVac outage through release and return; neither is healed.",
+    "Each payload release uses physical mass/linear/angular momentum receipts. Report retained inventory and mass, Ship contact and Booster water envelope separately.",
+    "Contact is geometric model surface entry, not water response, postcontact support or real Starship landing validation. Old39casecertificate is not reused."
+  ],
+  "interpretation": {
+    "valid_success": "Freshground samebuild physical composition only. Whole physical success requires independently checked settled insertion, actual26releases, Ship contact envelope and actual-separation Booster water envelope. No AI/allfeatures/qualification/Flight14fidelity claim.",
+    "valid_negative": "Preserve physical ascent failure, surface impact, contact/reserve miss or actual horizon exhaustion as negative. Complete the other registered case without tuning, retries, threshold changes or added candidates.",
+    "invalid_or_budget": "Stop the whole cohort on source/profile/site/goal/environment mismatch, invalid record, numerical exception, serialization/save/restore/hash failure, wall/output/disk breach. Preserve all started artifacts, no retry or resume.",
+    "all_two_success": "Register the next bounded nativeAI and feature regression against this one entry; physical success does not automatically authorize M1/M2/M3, images, symptom diagnosis, arbitraryfaults, certification or develop integration.",
+    "any_physical_negative": "Diagnose preserved records and propose a separate registered Executor/control repair. Do not close whole restoration as complete.",
+    "not_claimed": ["Jev/DeepSeek judgments", "image evaluation", "human inflight approval", "random or arbitrary fault diagnosis", "tower catch", "operational permission", "return qualification", "Flight14 fidelity", "allfeatures mission", "develop port", "video"]
+  },
+  "retention": "Keep original failed and successful outputs. Archive a manifest of sourcebound plans/claims/logs/rawgzip/results, verify every member and representative actual restore before any separate cleanup; do not change Docker, public branches or merge."
+}

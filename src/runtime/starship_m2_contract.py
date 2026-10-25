@@ -131,7 +131,7 @@ def _deployment_evidence(handoff, launch):
                      for e in launch["events"]), "m2_ship_already_returning")
 
 
-def validate_deployment_origin(profile, envelope, handoff, launch):
+def validate_deployment_origin(profile, envelope, handoff, launch, *, visual_authority=None):
     """Return copied continuation inputs; never execute, admit or reset a plant.
 
     Hash and recorded-evidence checks do not establish independent physical
@@ -166,7 +166,12 @@ def validate_deployment_origin(profile, envelope, handoff, launch):
                  and outcome["duration_s"] == when, "m2_checkpoint_time")
         expected_vehicle = _copy(asdict(vehicle(profile, payload_count=handoff["retained_count"])))
         _require(_same(launch["final_vehicle"], expected_vehicle), "m2_retained_vehicle_binding")
-        _deployment_evidence(handoff, launch)
+        if visual_authority is not None:
+            from .starship_visual_verifier import validate_visual_origin
+            validate_visual_origin(visual_authority, envelope, handoff, launch)
+        else:
+            _require("visual_observation" not in launch, "visual_origin_requires_explicit_authority")
+            _deployment_evidence(handoff, launch)
         cutoffs = [e["time_s"] for e in launch["events"] if e["event"] == "orbit_cutoff_command"]
         _require(len(cutoffs) == 1 and _finite(cutoffs[0]) and 0 <= cutoffs[0] < when,
                  "m2_original_cutoff_required")

@@ -44,7 +44,7 @@ def _norm(v):
     return tuple(x/max(length, 1e-30) for x in v)
 
 
-def _local_force(velocity, axis, density, panels):
+def _local_force(velocity, axis, density, panels, *, reference_axis_enu=None):
     """Same panel law in a predicted local frame; no actuator/state mutation."""
     z = np.asarray(axis)
     x = np.asarray([1., 0., 0.])-z[0]*z
@@ -52,6 +52,9 @@ def _local_force(velocity, axis, density, panels):
         x = np.asarray([0., 1., 0.])-z[1]*z
     x /= np.linalg.norm(x)
     rotation = np.column_stack([x, np.cross(z, x), z])
+    if reference_axis_enu is not None:
+        from .starship_booster_energy_guidance import body_axes
+        rotation = np.column_stack(body_axes(axis, reference_axis_enu))
     air = rotation.T@np.asarray(velocity)
     force = np.zeros(3)
     for panel in panels:
@@ -63,7 +66,8 @@ def _local_force(velocity, axis, density, panels):
     return tuple(rotation@force)
 
 
-def _trim_entry_candidate(velocity, axis, density, panels, com_body_m, jet_torque_nm, minimum_trim_dynamic_pressure_pa=0.):
+def _trim_entry_candidate(velocity, axis, density, panels, com_body_m, jet_torque_nm, minimum_trim_dynamic_pressure_pa=0.,
+                          reference_axis_enu=None):
     """Static bounded-fin prediction using the unchanged finite panel law.
 
     This solves only a proposed steady trim. Executed deflections retain their
@@ -75,6 +79,9 @@ def _trim_entry_candidate(velocity, axis, density, panels, com_body_m, jet_torqu
         x = np.asarray([0., 1., 0.])-z[1]*z
     x /= np.linalg.norm(x)
     rotation = np.column_stack([x, np.cross(z, x), z])
+    if reference_axis_enu is not None:
+        from .starship_booster_energy_guidance import body_axes
+        rotation = np.column_stack(body_axes(axis, reference_axis_enu))
     speed = max(_length(velocity), 1e-30)
     air = rotation.T@np.asarray(velocity)/speed
     pressure = .5*density*speed*speed
@@ -126,13 +133,22 @@ def _trim_entry_candidate(velocity, axis, density, panels, com_body_m, jet_torqu
         "trim_is_executed_deflection": False}
 
 
-def _entry_axis(position, velocity, mass, fuel, panels, *, isp_s, previous=None, trim_context=None):
+def _entry_axis(position, velocity, mass, fuel, panels, *, isp_s, previous=None, trim_context=None,
+                candidate_angles_deg=None, reserve_propellant_kg=0., reference_axis_enu=None):
     """Bounded model force allocation, including future site and energy errors.
 
     Candidate attitudes are predictions only. Their aerodynamic forces are
     scored against a finite-horizon translational demand; actual attitude must
     still be reached and trimmed by the six-DOF controller.
     """
+    if (type(reserve_propellant_kg) not in (int, float) or not math.isfinite(reserve_propellant_kg)
+            or not 0 <= reserve_propellant_kg <= fuel):
+        raise ValueError("invalid_entry_propellant_reserve")
+    if candidate_angles_deg is not None and (type(candidate_angles_deg) is not tuple
+            or not candidate_angles_deg or any(type(a) not in (int, float) or not math.isfinite(a)
+                or not 0 < a <= CONFIG["entry_max_angle_deg"] for a in candidate_angles_deg)
+            or tuple(sorted(set(candidate_angles_deg))) != candidate_angles_deg):
+        raise ValueError("invalid_entry_candidate_angles")
     height = position[2]
     if velocity[2] >= 0:
         return (0., 0., 1.), {"entry_angle_deg": 0., "candidate_count": 1}
@@ -150,6 +166,8 @@ def _entry_axis(position, velocity, mass, fuel, panels, *, isp_s, previous=None,
     tgo = max(8., min(120., height/max(50., -velocity[2])))
     desired_h = tuple(-2*(position[i]+velocity[i]*tgo)/(tgo*tgo) for i in (0, 1))
     remaining_dv = isp_s*env.STANDARD_GRAVITY_MPS2*math.log(mass/max(1., mass-fuel))
+    if reserve_propellant_kg:
+        remaining_dv = isp_s*env.STANDARD_GRAVITY_MPS2*math.log(mass/max(1., mass-fuel+reserve_propellant_kg))
     terminal_speed = max(100., .6*remaining_dv)
     desired_up = 9.8+max(0., (velocity[2]**2-terminal_speed**2)/(2*max(1000., height-1500.)))
     desired = (desired_h[0], desired_h[1], desired_up)
@@ -162,6 +180,8 @@ def _entry_axis(position, velocity, mass, fuel, panels, *, isp_s, previous=None,
     heading /= np.linalg.norm(heading)
     angle_candidates = ((10., 20., CONFIG["point_model_entry_max_angle_deg"]) if trim_context is None
                         else (10., 20., 30., 35., 40., 45., CONFIG["entry_max_angle_deg"]))
+    if candidate_angles_deg is not None:
+        angle_candidates = candidate_angles_deg
     for angle in angle_candidates:
         for sign in (-1., 1.):
             direction = sign*heading.copy()
@@ -174,9 +194,13 @@ def _entry_axis(position, velocity, mass, fuel, panels, *, isp_s, previous=None,
     candidate_loads = []
     for item in candidates:
         if trim_context is None:
-            candidate_loads.append((_local_force(velocity, item[0], rho, panels), {}))
+            candidate_loads.append((_local_force(velocity, item[0], rho, panels), {}) if reference_axis_enu is None
+                else (_local_force(velocity, item[0], rho, panels, reference_axis_enu=reference_axis_enu), {}))
         else:
-            candidate_loads.append(_trim_entry_candidate(velocity, item[0], rho, panels, **trim_context))
+            context = dict(trim_context)
+            if reference_axis_enu is not None:
+                context["reference_axis_enu"] = reference_axis_enu
+            candidate_loads.append(_trim_entry_candidate(velocity, item[0], rho, panels, **context))
     def score(index):
         item = candidates[index]
         force, trim = candidate_loads[index]
@@ -273,46 +297,16 @@ def _plan_boostback(position, velocity, mass, fuel, booster, profile, catch_conf
     horizontal velocity solved by a forward-model impact correction. This is
     onboard planning, not a sweep over vehicle coefficients or observed data.
     """
-    exhaust = profile["booster"]["engine_isp_s"]*env.STANDARD_GRAVITY_MPS2
-    dry = mass-fuel
-    candidates = []
-    for target_vertical in (200., 400., 600., 800., 1000.):
-        fall_time = (target_vertical+math.sqrt(target_vertical**2+19.6*position[2]))/9.8
-        horizontal = [-position[i]/max(30., fall_time) for i in (0, 1)]
-        remaining_mass, prediction = mass, None
-        for _ in range(3):
-            difference = [horizontal[i]-velocity[i] for i in (0, 1)]+[target_vertical-velocity[2]]
-            estimated_burn = _length(difference)/max(1., .4*33*profile["booster"]["engine_thrust_n"]/mass)
-            difference[2] += 9.8*estimated_burn
-            remaining_mass = mass*math.exp(-_length(difference)/exhaust)
-            remaining_fuel = max(0., remaining_mass-dry)
-            post_position = [position[i]+.5*(velocity[i]+horizontal[i])*estimated_burn for i in (0, 1)]
-            post_position.append(position[2]+.5*(velocity[2]+target_vertical)*estimated_burn)
-            prediction = _coast_prediction(post_position, [*horizontal, target_vertical], remaining_mass, remaining_fuel, booster.aero_panels, isp_s=profile["booster"]["engine_isp_s"], slew_rate_rad_s=profile["guidance"]["max_angular_acceleration_rad_s2"]/profile["guidance"]["attitude_frequency_rad_s"], entry=True)
-            for i in (0, 1):
-                horizontal[i] -= prediction["position_enu_m"][i]/max(30., prediction["elapsed_s"])
-        speed = _length(prediction["velocity_enu_mps"])
-        after_stop = remaining_mass*math.exp(-(speed+60.)/exhaust)-dry
-        contact_reserve = _capture_reserve(dry+max(0., after_stop), profile, catch_config)
-        candidates.append({"target_velocity_enu_mps": [*horizontal, target_vertical],
-                           "predicted_post_burn_fuel_kg": remaining_mass-dry,
-                           "predicted_point_model_after_arrest_fuel_kg": after_stop,
-                           "point_model_contact_propellant_reserve_kg": contact_reserve,
-                           "point_model_contact_budget_met": bool(after_stop >= contact_reserve),
-                           "prediction": prediction})
-    feasible = [c for c in candidates if c["point_model_contact_budget_met"]]
-    chosen = max(feasible or candidates, key=lambda c: c["predicted_point_model_after_arrest_fuel_kg"]
-                 -c["point_model_contact_propellant_reserve_kg"])
-    if development_candidate_index is not None:
-        chosen = candidates[development_candidate_index]
-    return {"method": "finite_command_candidates_and_point_model_intercept", "candidates": candidates,
-            "selected": chosen, "prediction_is_execution": False,
-            "selection_rule": ("explicit_development_candidate" if development_candidate_index is not None
-                               else "contact_budget_first_else_best_effort_surplus"),
-            **({"development_candidate_index": development_candidate_index} if development_candidate_index is not None else {}),
-            "contact_budget_candidate_count": len(feasible),
-            "selected_contact_budget_met": chosen["point_model_contact_budget_met"],
-            "limitations": "Local frame, slew-limited axis without attitude dynamics, no trim or finite burn integration in coarse planning; actual six-DOF outcome is independent of this estimate."}
+    from .starship_booster_guidance import coupled_boostback_plan
+    def coast(position, velocity, mass, fuel):
+        return _coast_prediction(position, velocity, mass, fuel, booster.aero_panels,
+            isp_s=profile["booster"]["engine_isp_s"],
+            slew_rate_rad_s=profile["guidance"]["max_angular_acceleration_rad_s2"]/profile["guidance"]["attitude_frequency_rad_s"], entry=True)
+    return coupled_boostback_plan(position, velocity, mass, fuel,
+        exhaust_velocity_mps=profile["booster"]["engine_isp_s"]*env.STANDARD_GRAVITY_MPS2,
+        burn_force_n=.4*33*profile["booster"]["engine_thrust_n"], coast_prediction=coast,
+        terminal_reserve=lambda candidate_mass: _capture_reserve(candidate_mass, profile, catch_config),
+        development_candidate_index=development_candidate_index)
 
 
 def _predict_cutoff(state, booster, profile, catch_config, *, full=False, reference=None, remaining_duration_s=None):
@@ -831,3 +825,114 @@ def simulate_recovery(profile, initial_state, catch_config, *, duration_s=None, 
                             "Shared main/header propellant reservoir; no thermal or structural survival certification.",
                             "Offline predictive simulation: forecast CPU time does not advance the simulated flight clock; real-time flight scheduling is not validated.",
                             "Predictive point-model attitude is not executed attitude; finite six-DOF actuation determines the outcome."]}
+
+
+def finite_landing_preview(observation, engine_facts, *, axial_drag_area_m2,
+        current_drag_area_m2, upright_support_m, minimum_propellant_kg):
+    """Shared reserve-aware 1D *prediction*, never an executed state.
+
+    Facts contain every actual engine, including finite shutdown tails. Only
+    the first thirteen available mains are requested fully on. RCS tails cost
+    propellant but provide no assumed upward force. Actual alignment, lateral
+    velocity, fin/jet tracking and structural survival are not predicted here.
+    ``minimum_altitude_m`` is clearance ABOVE the upright cylinder's lowest
+    point, bounded additionally by the measured current hull clearance.
+    """
+    from .starship_booster_energy_guidance import GuidanceObservation, LandingPreview
+    if type(observation) is not GuidanceObservation or type(engine_facts) is not tuple:
+        raise ValueError("exact_preview_facts_required")
+    numbers = (axial_drag_area_m2, current_drag_area_m2, upright_support_m, minimum_propellant_kg)
+    if any(not isinstance(x, (int, float)) or isinstance(x, bool) or not math.isfinite(x) or x < 0 for x in numbers):
+        raise ValueError("invalid_preview_bounds")
+    keys = {"max_thrust_n", "isp_s", "throttle_time_constant_s", "throttle_rate_per_s", "throttle", "available", "is_main"}
+    for fact in engine_facts:
+        if (type(fact) is not dict or set(fact) != keys or type(fact["available"]) is not bool
+                or type(fact["is_main"]) is not bool or any(not isinstance(fact[k], (int, float))
+                or isinstance(fact[k], bool) or not math.isfinite(fact[k]) or fact[k] <= 0
+                for k in ("max_thrust_n", "isp_s", "throttle_time_constant_s", "throttle_rate_per_s"))
+                or not isinstance(fact["throttle"], (int, float)) or isinstance(fact["throttle"], bool)
+                or not math.isfinite(fact["throttle"]) or not 0 <= fact["throttle"] <= 1):
+            raise ValueError("invalid_preview_engine_facts")
+    if len(engine_facts) < 33 or any(not f["is_main"] for f in engine_facts[:33]):
+        raise ValueError("preview_requires_physical_main_prefix")
+    area = min(current_drag_area_m2, axial_drag_area_m2)
+    h, initial_height = float(observation.position_enu_m[2]), float(observation.position_enu_m[2])
+    # Preserve the more conservative current attitude footprint at entry.
+    support = max(upright_support_m, h-observation.clearance_m)
+    speed, fuel, dry = max(0., -observation.velocity_enu_mps[2]), observation.propellant_kg, observation.mass_kg-observation.propellant_kg
+    spools = np.asarray([float(f["throttle"]) for f in engine_facts])
+    targets = np.asarray([float(i < 13 and f["available"]) for i, f in enumerate(engine_facts)])
+    rates = np.asarray([f["throttle_rate_per_s"] for f in engine_facts])
+    taus = np.asarray([f["throttle_time_constant_s"] for f in engine_facts])
+    thrusts = np.asarray([f["max_thrust_n"] if f["available"] else 0. for f in engine_facts])
+    flows = np.asarray([f["max_thrust_n"]/(f["isp_s"]*env.STANDARD_GRAVITY_MPS2)
+                        if f["available"] else 0. for f in engine_facts])
+    upward_thrusts = thrusts*np.asarray([f["is_main"] for f in engine_facts])
+    elapsed, minimum_clearance, termination, iterations = 0., h-support, "horizon_exceeded", 0
+    def advance_spools(dt):
+        first = np.clip((targets-spools)/taus, -rates, rates)
+        midpoint = spools+first*dt/2
+        after = spools+np.clip((targets-midpoint)/taus, -rates, rates)*dt
+        return after, float(flows@midpoint), float(upward_thrusts@midpoint)
+    while elapsed < 100.:
+        if fuel <= minimum_propellant_kg+1e-8:
+            termination = "reserve_exhausted"
+            break
+        if h-support <= 0:
+            termination = "surface_before_arrest"
+            break
+        if speed <= 2.:
+            termination = "arrested"
+            break
+        if not any(f["available"] for f in engine_facts[:13]):
+            termination = "no_available_thrust"
+            break
+        dt = min(.1, 100.-elapsed)
+        after, flow, thrust = advance_spools(dt)
+        if flow*dt > fuel-minimum_propellant_kg:
+            low, high = 0., dt
+            for _ in range(36):
+                middle = (low+high)/2
+                if advance_spools(middle)[1]*middle > fuel-minimum_propellant_kg:
+                    high = middle
+                else:
+                    low = middle
+            dt = low
+            after, flow, thrust = advance_spools(dt)
+        density = env.standard_atmosphere(max(0., h))["density_kg_m3"]
+        gravity = env.EARTH_MU_M3_S2/(env.EARTH_EQUATORIAL_RADIUS_M+max(0., h))**2
+        acceleration = (thrust+.5*density*area*speed*speed)/(dry+fuel-flow*dt/2)-gravity
+        arrest_event = acceleration > 0 and speed-acceleration*dt <= 2.
+        if arrest_event:
+            low, high = 0., dt
+            for _ in range(36):
+                middle = (low+high)/2
+                _, middle_flow, middle_thrust = advance_spools(middle)
+                middle_acceleration = (middle_thrust+.5*density*area*speed*speed)/(dry+fuel-middle_flow*middle/2)-gravity
+                if speed-middle_acceleration*middle <= 2.:
+                    high = middle
+                else:
+                    low = middle
+            dt = high
+            after, flow, thrust = advance_spools(dt)
+            acceleration = (thrust+.5*density*area*speed*speed)/(dry+fuel-flow*dt/2)-gravity
+        after_speed = speed-acceleration*dt
+        h -= (speed+after_speed)*dt/2
+        speed, fuel, spools = after_speed, fuel-flow*dt, after
+        elapsed += dt
+        minimum_clearance = min(minimum_clearance, h-support)
+        iterations += 1
+        if arrest_event:
+            termination = "arrested" if minimum_clearance >= 0 else "surface_before_arrest"
+            break
+        if dt < 1e-11:
+            termination = "reserve_exhausted" if fuel-minimum_propellant_kg < 1e-6 else "numerical_stall"
+            break
+    preview = LandingPreview(bool(termination == "arrested"), initial_height-h,
+        minimum_clearance, float(fuel), termination)
+    return preview, {"schema": "missionos.booster_energy_landing_preview.v1",
+        "preview_assumption": "aligned_1d_all_actual_spool_tails_conservative_axial_drag_reserve_and_hull_clearance",
+        "estimated_drag_area_m2": float(area), "upright_support_m": float(upright_support_m),
+        "conservative_support_m": float(support), "estimated_burn_time_s": float(elapsed),
+        "estimated_final_downward_speed_mps": float(speed), "iterations": iterations,
+        "finite_spool": True, "lateral_velocity_predicted": False, "prediction_is_execution": False}

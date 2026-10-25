@@ -1,0 +1,46 @@
+{
+  "schema": "missionos.starship_system_repair_water.v2",
+  "registered_on": "2026-10-18",
+  "purpose": "One current-source regression of the existing fixed_v1+splashdown path from R2healthy exactseparation, matching old M3 separation SHA ad31d4feca85e5e45c9e8b1def1ff1388edc82e0c0e5f722e2708199a33bdea6. This is not reexecution of coupled_water_return_v1 trial or new planning search.",
+  "policy": "fixed_v1",
+  "ascent": {
+    "record": "output/starship-system-repair-20261018/ascent-v2/healthy/record.json.gz",
+    "raw_sha256": "194c7c8640ae4b57804b65e95f0f770c48a8e752677d26d1d76c5938bf2e1057",
+    "gzip_sha256": "3fda460ba6e65602c42d28950ffbc8d7c59b8ee45df0067d981aa13bceab2a1c",
+    "source_commit": "c583e0f8addef6e2dfa7391f9911bbbd191072ac",
+    "plan_sha256": "0144d74f62b83498a6a385d35673c565e5fcaaeb2bb302c109a81a62d8eeedc0",
+    "case_id": "healthy"
+  },
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "limits": {
+    "maximum_trials": 1,
+    "per_trial_wall_s": 600.0,
+    "cohort_wall_s": 650.0,
+    "duration_s": 1200.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0,
+    "maximum_plans": 0,
+    "maximum_point_forecasts_per_plan": 0,
+    "maximum_point_coast_forecasts": 0,
+    "maximum_coarse_burn_estimates": 0,
+    "maximum_coarse_burn_steps": 0,
+    "maximum_point_coast_steps": 0
+  },
+  "unchanged_limits": {
+    "boostback_reserve_kg": 60000.0,
+    "boostback_burn_deadline_s": 70.0,
+    "terminal_reserve_kg": 10000.0,
+    "actual_start_state_and_actuators": true,
+    "mass_thrust_inertia_gates_unchanged": true
+  },
+  "acceptance": "Record/source/handoff/planning bounds and actual-command witnesses independently consistent; report strict existing splashdown goal separately. Valid negative is not invalid evidence. No altered contact limits, no catch or buoyancy claim.",
+  "stop": "One-use plan/source/environment/input bound. Invalid record, numerical exception, source/input/environment change, timeout/output/disk breach stops without retry. Valid negative ends this one trial without adding candidates. No half-step or follow-up trial in this registration.",
+  "output": "output/starship-system-repair-20261018/fixed-water-v2",
+  "cleanup": "Keep originals; archive/hash/restore verify before any future deletion. No Docker/models/public push/merge.",
+  "forecast_count_scope": "No boostback planning forecasts. Existing fixed controller stopping-distance algebra remains unchanged, within600s walllimit. No nested6DOFforecasts.",
+  "parent_closed_negative": "examples/spaceflight/starship-system-repair-water-v1.json"
+}

@@ -1,0 +1,209 @@
+{
+  "acceptance": {
+    "booster": "unchanged_pinned_splashdown_goal;actual_separation_and_concurrent_clock_required",
+    "settled_insertion": {
+      "bound": true,
+      "maximum_apogee_m": 600000.0,
+      "maximum_body_rate_rad_s": 5.0,
+      "minimum_perigee_m": 220000.0,
+      "minimum_propellant_kg": 75000.0,
+      "shutdown_settle_s": 5.0
+    },
+    "ship": {
+      "maximum_body_rate_rad_s": 0.02,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_tilt_deg": 5.0,
+      "minimum_propellant_kg": 28000.0,
+      "nonoverlapping_descending_contact": true,
+      "release_count": 26
+    }
+  },
+  "capture_contract": {
+    "boundary_origin": "existing legacy fin activation boundary",
+    "capture_reporting": {
+      "is_flight_acceptance": false,
+      "maximum_full_attitude_error_deg": 5.0,
+      "maximum_rate_error_rad_s": 0.003
+    },
+    "comparison": "Nominal H0 reference is a design input. No generalization claim.",
+    "handoff": "sticky first pressure>50 after actual boostback cutoff, even if capture incomplete",
+    "pressure_boundary_pa": 50.0,
+    "reference": "desired q/rate/alpha only; no r/v/fuel/actualactuator state initialization",
+    "reference_raw_source_sha256": "ca52b1bde4ec0214087aac82cf07a3e8e19a57ab192e154d5b2dd62e4eef27fe",
+    "reference_sha256": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9"
+  },
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "H0",
+      "parent": {
+        "gzip_sha256": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+        "raw_sha256": "ca52b1bde4ec0214087aac82cf07a3e8e19a57ab192e154d5b2dd62e4eef27fe",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz"
+      }
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "O0",
+      "parent": {
+        "gzip_sha256": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244",
+        "raw_sha256": "49609b8c43bddeca41f9697096cd6ece0e1f56580b272ebbe0b36849f95c5019",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz"
+      }
+    }
+  ],
+  "control_contract": {
+    "faulty": "At actual BB cutoff, request one installed center at physical minimum throttle to track current source-bound desired fullq/rate/alpha with actual measured TVC and finite actuators. Stop power at actual fullq<=1deg and rate<=.001, or at15s/75t guards as incomplete; preserve reference tracking during finite strong shutdown tail. Then prior low-pressure RCS capture and sticky q>50 legacy handoff. No achieved-state assignment or terminal threshold relaxation. During the low-pressure RCS stage only, use residual_authority_capture to correct signed braking-budget allocation; all power, handoff and final physical gates stay unchanged.",
+    "healthy": "Exact legacy control, no reference capture.",
+    "policy_id": "availability_terminal_recovery_v1",
+    "scope": "Keep the preceding finite powered pulse unchanged; correct only signed residual RCS closing authority. Reference is a nominal model-specific controller design input, not held-out or real SpaceX validation."
+  },
+  "control_settings": {
+    "low_pressure_reference_capture": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true
+  },
+  "design": "terminal-residual-v8",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "initialization": "exact_original_fullrecord_booster_separation_only",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json": "266e48a70404d7c84a3e7f421da4c3e20451e76f422f8e8c3996c15685e39bce",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json": "2d71dcfbf4a96246583671a259ccae9c88bf4b842a6a5b66bd6aa199e36dc59e",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json": "ac3afec3dd186c9766a3467b5d11ca61a2e54107161cab39f50ade427c8c962a",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+    "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244"
+  },
+  "interpretation": {
+    "gate": "Only two accepted saved-separation repair results from this same source/environment/profile/settings open a separate fresh-ground whole stage.",
+    "invalid_or_budget": "Stop entire stage on source/profile/site/goal/environment changes, invalid record, numerical or serialization/save/restore errors, output/disk/wall breach; no retry/resume.",
+    "new_design": "Diagnose preserved artifacts, then register a new sourcebound design if needed. Trial caps do not close the restoration project.",
+    "valid_negative": "Preserve unchanged negative and finish other registered case; do not tune or rerun within this design.",
+    "whole_success": "Report Ship, Booster, deployment and whole physical success separately. No AI/allfeatures/qualification claims."
+  },
+  "limits": {
+    "cohort_wall_s": 1500.0,
+    "duration_s": 1200.0,
+    "hosted_model_calls": 0,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 2,
+    "minimum_free_bytes": 10737418240,
+    "nested_sixdof_forecasts": 0,
+    "per_trial_wall_s": 600.0,
+    "workers": 1
+  },
+  "output": "output/starship-system-repair-20261018/booster-residual-reference-v1",
+  "powered_capture_contract": {
+    "completion": "actual measured fullq/rate gate, no ideal assignment",
+    "incomplete": "record timeout/reserve/noavailablecenter and end pulse, no retry",
+    "is_contact_acceptance": false,
+    "main_prefix_count": 1,
+    "main_throttle": "installed center physical minimum .4; do not modify hardware",
+    "maximum_attitude_error_deg": 1.0,
+    "maximum_duration_s": 15.0,
+    "maximum_rate_error_rad_s": 0.001,
+    "minimum_propellant_kg": 75000.0,
+    "shutdown": "main OFF request after pulse, reference-tracked real tail while currentgimbalcapacity>physicalRCS, actual spool not erased",
+    "time_step": "Use unchanged powered_dt when actual pulse commands power, unchanged coast_dt otherwise; shorten current step at the fixed 15s guard, never integrate ON past the guard."
+  },
+  "producer": {
+    "plan": "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json",
+    "result": "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json",
+    "source_commit": "a8b2d8db3bf674c7df6fc919d45894e158b3232c",
+    "verification": "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json"
+  },
+  "purpose": "Correct RCS closing-rate authority double-booking using signed residual braking torque after current reference/external/main feedforward. Keep the preceding finite powered preparation, shutdown tail and sticky50Pa handoff unchanged. Both suffixes must pass before separately prepared same-source whole missions.",
+  "registered_on": "2026-10-20",
+  "residual_capture_contract": {
+    "actual_jet_request": "subtract actual main once, clip to available signed jet capacities, add main back for existing measured allocator to subtract once. Recenter mains through actual finite actuators; command all mainsOFF and hold actual fins.",
+    "braking_budget": "direction=-I*quaternion_error_axis; intersect actual signed jet box. If feedforward outside box set a_stop=0 and ff_feasible=false. a_stop shapes closing speed only, not the rate-correction acceleration clip.",
+    "claims": "current-state heuristic, not stopping guarantee, admission, qualification or achieved capture",
+    "feedforward": "I*(reference alpha - omega cross referenceomega)+gyro-aero-gravitygradient-actualmainmoment",
+    "old_default": "Preserve old v6/v7 default command and receipt arithmetic; newly source-bound execution records have their own source identity. Only this explicit setting selects the residual law.",
+    "total_acceleration": "reference feedforward+raw rate correction clipped to unchanged configured .03 component limits"
+  },
+  "retention": "Keep source plans/claims/logs, original H0/O0 successes/negatives and all new outputs; archive/hash/readback/representative restore before later separately authorized cleanup. No public push, merge, Docker or worktree cleanup.",
+  "schema": "missionos.starship_booster_outage_repair_registration.v1",
+  "scope_limits": [
+    "AI/image/symptom diagnosis/inflight approval/tower catch/arbitrary faults/qualification/develop/video are not included.",
+    "A valid original O0 negative is an admissible separation source; it is not required to have succeeded physically.",
+    "Contact is model geometry and controlled water-entry envelope only, not water response/postcontact support/real SpaceX qualification."
+  ],
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "stage": "separation",
+  "unchanged": [
+    "Original physics/profile, mass/fuel, thrust/Isp, engine layout, RCS/flaps/gimbal authority, integration timesteps and reserve/contact/water limits.",
+    "Legacy fixed_v1 default, original v5/v7 admission and original state-mission-v1 records/registrations stay strict and unchanged.",
+    "No gains, controller limits, dt or hardware change. A new capture law uses physical signed jet torque and current inertia; its stopping-distance expression is a heuristic request, not finite-trajectory admission. Raw residual aero/gyro/main torque and saturation remain integrated.",
+    "Each stage has its own immutable plan and exclusive one-use parent/private-worker claims. No retry or resumed consumed cohort.",
+    "All consumed original/energy/terminal/allocation/tail trials are preserved; none may be rerun.",
+    "New powered_reference_capture is explicit; consumed lowq-only source5f1b13bd and its valid negative are immutable. This pulse changes actual finite thrust/fuel/translation; it is not a free attitude reset.",
+    "Powered pulse15s/75t/1deg/.001, strong shutdown-reference tracking, source reference, sticky50Pa and all contact gates unchanged. Only RCS request computation changes. Prior source11038f4b valid negative remains immutable."
+  ]
+}

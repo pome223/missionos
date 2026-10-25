@@ -1,0 +1,253 @@
+{
+  "ascent_settings": {
+    "control_options": {
+      "first_burn_only_bias": true,
+      "moving_reference_tracking": false
+    },
+    "finite_mode": true,
+    "insertion_options": {
+      "maximum_attitude_error_deg": 5.0,
+      "maximum_body_rate_rad_s": 0.02,
+      "maximum_burn_duration_s": 60.0,
+      "maximum_radial_speed_mps": 20.0,
+      "maximum_restart_time_s": 4000.0,
+      "shutdown_settle_s": 5.0
+    },
+    "objectives": {
+      "final_perigee_m": 220000.0,
+      "first_burn_apogee_m": 300000.0,
+      "first_burn_perigee_m": -20000.0,
+      "insertion_altitude_m": 275000.0,
+      "minimum_apogee_headroom_m": 50000.0
+    },
+    "policy": "state_insertion_v7",
+    "ship_pitch_offset_deg": 0.0,
+    "shutdowns": [
+      {
+        "engine_name": "booster_main_32",
+        "time_s": 76.0
+      },
+      {
+        "engine_name": "ship_main_3",
+        "time_s": 437.0
+      }
+    ],
+    "stack_pitch_offset_deg": 0.0
+  },
+  "authority": {
+    "actual_request_required": true,
+    "allowed_scope_delta": {
+      "add_commands": [
+        "select_next_orbit"
+      ],
+      "resource_limits": {}
+    },
+    "candidate_sha256_required": true,
+    "kind": "preauthorized_scripted_http_simulation_principal",
+    "may_bypass_rules": false,
+    "may_choose_for_model": false,
+    "observed_state_sha256_required": true,
+    "permanent_deepseek_call_count_cap": null,
+    "real_human_review": false,
+    "request_sha256_required": true,
+    "tower_catch_allowed": false
+  },
+  "bounds": {
+    "automatic_retry": false,
+    "cohort_wall_s": 6000.0,
+    "maximum_output_bytes": 6442450944,
+    "maximum_simulation_time_s": 16000.0,
+    "minimum_free_bytes": 10737418240,
+    "parallel_forecasts": 2,
+    "parallel_missions": 1,
+    "per_mission_wall_s": 1800.0
+  },
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "design_scope": {
+    "all_valid_choices_preserved": true,
+    "areas": "synthetic_development_areas_calibrated_on_previous_model_predictions_not_real_clearance_or_held_out_targeting",
+    "ascent_condition": "O0",
+    "fault_probabilities": "synthetic_test_settings_not_historical_incident_rates",
+    "missing_roles": "incomplete_showcase_never_filled_from_another_flight",
+    "normal_means": "no_additional_return_fault_not_fault_free_ascent",
+    "normal_thrust_shutdowns_are_shared_by_all_cases": true,
+    "public_data_alignment_implied": false,
+    "seed_selection": "lowest_seed_per_family_in_0_to_999_by_manifest_only_before_any_execution",
+    "showcase_case_before_execution": "T",
+    "source_of_control_and_operating_area_scalars": "previous_registered_O0_combined_configuration_not_execution_evidence"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "typed_crossing_bracket_then_existing_outer_root_and_dry_coast",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v2",
+    "subdivisions": 2
+  },
+  "operations": {
+    "deployment_intents": {
+      "0": null,
+      "13": {
+        "evaluation_point": "closed_inventory",
+        "generation": 0,
+        "intent_class": "desired_outcome_not_authority",
+        "intent_id": "retain_pending_payloads",
+        "issuer": "registered_operations",
+        "objective": {
+          "comparison": "gte",
+          "metric": "inventory.retained_count",
+          "unit": "count",
+          "value": 13
+        },
+        "schema": "missionos.operational_intent.v1",
+        "trigger": {
+          "phase": "deployment",
+          "released_count": 13
+        }
+      }
+    },
+    "deployment_notices": {
+      "0": "Synthetic ground notice: first deployment group is available for release.",
+      "13": "Synthetic ground notice: withhold the remaining 13 payloads for this scenario."
+    },
+    "notice_schedule": [
+      {
+        "notice": {
+          "available_site_ids": [
+            "area_O0_next_0",
+            "area_O0_next_13"
+          ],
+          "expires_s": 16000.0,
+          "generation": 0,
+          "issued_s": 0.0,
+          "schema": "missionos.starship_restored_operational_notice.v1",
+          "synthetic_operations_only": true
+        },
+        "summary": "Synthetic operations: nominal development areas unavailable; next-orbit areas available."
+      }
+    ],
+    "resource_accounting": {
+      "epoch": "closed_origin",
+      "initial_energy_kwh": 22.0,
+      "initial_modeled_propellant_loss_kg": 0.0,
+      "initial_temperature_k": 295.0,
+      "modeled_loss_kg_per_s": 0.02,
+      "power_kw": 6.0,
+      "warming_k_per_s": 0.001
+    },
+    "schema": "missionos.starship_restored_native_operations.v2",
+    "sites": [
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.24870010503818,
+        "longitude_deg": -149.61585639679762,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_H0_nominal_0",
+        "synthetic_operating_area_only": true
+      },
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.034309475916228,
+        "longitude_deg": -149.71562314279836,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_O0_nominal_0",
+        "synthetic_operating_area_only": true
+      },
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.700490024525816,
+        "longitude_deg": -148.9305211539394,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_O0_nominal_13",
+        "synthetic_operating_area_only": true
+      },
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.800175694302936,
+        "longitude_deg": -146.92533324224445,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_O0_nominal_26",
+        "synthetic_operating_area_only": true
+      },
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.35256617597786,
+        "longitude_deg": -171.4570285916003,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_O0_next_0",
+        "synthetic_operating_area_only": true
+      },
+      {
+        "closes_s": 16000.0,
+        "latitude_deg": 22.76345184981335,
+        "longitude_deg": -171.8059147279218,
+        "opens_s": 0.0,
+        "radius_m": 125000.0,
+        "real_ocean_clearance_verified": false,
+        "site_id": "area_O0_next_13",
+        "synthetic_operating_area_only": true
+      }
+    ]
+  },
+  "return_context_projection": true,
+  "return_review_policy": {
+    "confidence_floor": 0.5,
+    "schema": "missionos.starship_restored_return_review_policy.v1",
+    "selected_action_margin_floor": 0.1
+  },
+  "schema": "missionos.starship_final_configuration.v1",
+  "sensor_policy": {
+    "application_delay_s": 600.0,
+    "application_reserve_s": 2.0,
+    "fallback": "retain_nominal",
+    "final_decision_s": 150.0,
+    "forecast_s": 300.0,
+    "guard_s": 45.0,
+    "initial_decision_s": 35.0,
+    "maximum_duration_s": 3600.0,
+    "maximum_reconsiderations": 1,
+    "maximum_wall_s": 1800.0,
+    "sensor_seed": 20261021
+  },
+  "supervision_policy": {
+    "application_reserve_s": 2.0,
+    "ascent_window_s": 35.0,
+    "baseline_ascent_time_s": 30.0,
+    "booster_window_s": 8.0
+  },
+  "visual_policy": {
+    "apply_margin_s": 2.0,
+    "confirmation_timeout_s": 2.0,
+    "counter_max_age_s": 2.001,
+    "first_counter_delay_s": 4.0,
+    "frame_max_age_s": 3.0,
+    "height": 280,
+    "hold_s": 35.0,
+    "maximum_judgments": 2,
+    "maximum_observations": 1,
+    "trigger_released_count": 13,
+    "width": 384
+  }
+}

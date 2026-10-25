@@ -1,0 +1,88 @@
+{
+  "schema": "missionos.starship_reference_selection.v3",
+  "status": "frozen_for_prospective_registration;not_activated_in_existing_runners",
+  "created_on": "2026-10-18",
+  "immutable_parent": {
+    "path": "docs/assets/starship-reference-v2-20261018/reference.json",
+    "sha256": "eefdd1b147a13d371e87c2b861fc69d57b0ea6c497e679e9f67d2f15b26229c7"
+  },
+  "source_original_csv": {
+    "path": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+    "sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+    "unchanged": true
+  },
+  "ascent_csv": {
+    "path": "docs/assets/starship-reference-v3-20261018/ascent_stack_and_ship.csv",
+    "sha256": "cb5380593b065f7ebbb4b8ca5d3fe4ca18530bbd790018e74b65567a69c50b48"
+  },
+  "manual_audit": {
+    "registration": "examples/spaceflight/starship-reference-speed-review-v2.json",
+    "registration_sha256": "39b3b9b237c3f1c7e7d3399dd7e1811eef4196ccb3726ce76da2cd63a18b1653",
+    "results": "docs/assets/starship-system-repair-20261018/speed-reference-review-v2-results.json",
+    "all30_transcription": "docs/assets/starship-system-repair-20261018/speed-reference-review-v2-manual.csv"
+  },
+  "field_overrides": [
+    {
+      "t_plus_s": 80,
+      "field": "displayed_speed_kmh",
+      "old_processed_value": "233.0",
+      "new_manual_display_value": 2230,
+      "manual_id": "V2-14",
+      "frame_sha256": "963fb58b480dd74812c1d694cbb4e4b71f495c5fb8926aa3db50e589b9357dc4",
+      "reason": "source-display confirmation; exact originalOCR/filter failure stage unknown; a new point observation, not recovered oldmedian"
+    },
+    {
+      "t_plus_s": 83,
+      "field": "displayed_speed_kmh",
+      "old_processed_value": "366.0",
+      "new_manual_display_value": 2388,
+      "manual_id": "V2-17",
+      "frame_sha256": "35d026b20bd2f4f69d9704cccc6384e25a7406f1cf1fa18c94e25347c6ff79d2",
+      "reason": "source-display confirmation; exact originalOCR/filter failure stage unknown; a new point observation, not recovered oldmedian"
+    },
+    {
+      "t_plus_s": 84,
+      "field": "displayed_speed_kmh",
+      "old_processed_value": "405.5",
+      "new_manual_display_value": 2441,
+      "manual_id": "V2-18",
+      "frame_sha256": "8cf86f23355ecb183e835dee356694d49acec260a25bafc7623483f2ad55748d",
+      "reason": "source-display confirmation; exact originalOCR/filter failure stage unknown; a new point observation, not recovered oldmedian"
+    },
+    {
+      "t_plus_s": 88,
+      "field": "displayed_speed_kmh",
+      "old_processed_value": "613.0",
+      "new_manual_display_value": 2667,
+      "manual_id": "V2-22",
+      "frame_sha256": "acab5e5d2f987be179901fdeac19b75f74a4888515546dcf0bf7b7d31cb781cf",
+      "reason": "source-display confirmation; exact originalOCR/filter failure stage unknown; a new point observation, not recovered oldmedian"
+    }
+  ],
+  "data_handling": {
+    "original_csvs_preserved": true,
+    "altitude_mask_inherited_from_reference_v2": "exclude original11wrong-body altitude fields only; do not add manual altitudes",
+    "speed_mask_changed": false,
+    "new_missing_rows_or_fields_filled": false,
+    "speed_points": 442,
+    "altitude_points": 145,
+    "only_changed_fields": 4,
+    "other_values_identical": true,
+    "interpretation": "mixed engineering reference: original processedOCR/rollingmedian except4 individually sourced manual speed observations; not raw telemetry",
+    "manual_time_uncertainty": "integer visible clock interval; requestedMET is1s ahead for this acquisition; do not use request time to key observations",
+    "display_rounding": "speed integerkm/h; altitude0.1km; does not specify sensor accuracy",
+    "unresolved": "subsecond timing, original rollingmedian window/alignment, rawOCR stage and publicoverlay frame/speed filtering"
+  },
+  "accepted_fidelity_gates_unchanged": {
+    "ascent_altitude_rmse_m": 3000,
+    "ascent_speed_rmse_mps": 150,
+    "maximum_fraction_of_new_registered_baseline": 0.8,
+    "maximum_adjustable_scalars": 6,
+    "holdout_gates_unchanged": true
+  },
+  "activation_rule": "a new source-bound execution registration must explicitly select referencev3, run its new baseline before candidates, and retain all oldv3cohort results with referencev2; do not reinterpret oldpasses or negativenumbers as prospective results",
+  "prior_evaluation_or_certificate_changed": false,
+  "new_physical_runs": 0,
+  "mission_provider_calls": 0,
+  "authority": "source-review derivative only; no flight dispatch, qualification, or live model authority"
+}

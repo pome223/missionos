@@ -1,0 +1,204 @@
+{
+  "added_sources": {
+    "src/runtime/starship_restored_return_context.py": "806d026d4a0398287dab15d9c5738efbd9fb303f10442fe3a2f2137e0effc1f5"
+  },
+  "automatic_retry": false,
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "id": "O0_combined",
+      "scenario": "combined"
+    }
+  ],
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "evidence_pins_ready": true,
+  "fixture_prerequisite": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-fixture-v1-plan.json",
+        "sha256": "c2fbb6f64ff9a91e670ea77f818a6824e2f42050ba425a57ba55c01fde1497d3"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-fixture-v1-result.json",
+        "sha256": "fddbd0dc17f974836cc14a10f14fd2f2ac489e081d043f1e95f94777133d637f"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-fixture-v1-saved-review.json",
+        "sha256": "01b86a77afc4d79b51217e7d7330c64a6c4071d8dd74e1aa4ed85d3211bab6c9"
+      }
+    },
+    "plan_sha256": "ecf439681a8a45887b5d4c595b5624f9c43d42f2ef0abf04c66dc6c55dd3f838",
+    "source_commit": "430033cdb146dca1ebb3da2223fff8415fcfffb8"
+  },
+  "initialization": "fresh_ground_actual_inventory_new_independent_copy_predictions",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "positive_to_nonpositive_unsupported_zero_to_zero_allowed",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v1",
+    "subdivisions": 2
+  },
+  "interpretation": "One combined condition only; previous notice success and combined negative remain original evidence. Public context changes information, not actions, authority or physics. Valid contrary choices remain valid negatives.",
+  "limits": {
+    "cohort_wall_s": 2000.0,
+    "maximum_concurrent_copy_forecasts": 2,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 1,
+    "minimum_free_bytes": 10737418240,
+    "per_trial_wall_s": 1800.0,
+    "prefix_horizon_s": 7500.0,
+    "total_horizon_s": 16000.0,
+    "workers": 1
+  },
+  "maximum_host_record_bytes": 536870912,
+  "mission_authority_granted": false,
+  "mode": "live",
+  "objectives": {
+    "actual_released_count": 13,
+    "actual_retained_count": 13,
+    "not_model_answer_constraints": true,
+    "operator_amendment_consistency_verified": true,
+    "physical_success": true,
+    "reservation_change_count": 1,
+    "return_candidate_id": "next_orbit"
+  },
+  "operator_policy": {
+    "actual_request_required": true,
+    "allowed_scope_delta": {
+      "add_commands": [
+        "select_next_orbit"
+      ],
+      "resource_limits": {}
+    },
+    "candidate_sha256_required": true,
+    "choice": "approve",
+    "fresh_resolvable_request_required": true,
+    "kind": "preauthorized_scripted_http_simulation_principal",
+    "may_bypass_rules": false,
+    "may_choose_for_model": false,
+    "observed_state_sha256_required": true,
+    "real_human_review": false,
+    "request_sha256_required": true
+  },
+  "output": "output/starship-restored-ai-20261020/return-context-live-v1",
+  "prior_intent_live": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-live-v1-plan.json",
+        "sha256": "d6e99340b68b93a0357ed37caa190dc1c97955a6d49d851bf1382b54458bbf1e"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-live-v1-result.json",
+        "sha256": "1c6b77781933e7d09419c073e55e5605f912703dbe49abcf19fb69128128c911"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-live-v1-saved-review.json",
+        "sha256": "29899be5ef44222037d6bf0c4852647ecd67615c766952ea4ee1a98b4e39713e"
+      }
+    },
+    "plan_sha256": "ba401b973db8c3992d27ebb83f1ea386cdfa61f0eb7677fa61f765e3da56a4d9",
+    "source_commit": "8bec625a8b892533f293b9145cfcdb7aa60b7b68"
+  },
+  "providers": {
+    "automatic_retry": false,
+    "deep_reasoning_remaining_s": 150.0,
+    "deepseek_http_timeout_s": 120.0,
+    "deepseek_only_on_explicit_delegation": true,
+    "deployment_window_s": 35.0,
+    "first": "typesafe",
+    "maximum_instance_calls": null,
+    "original_deadline_may_be_extended": false,
+    "return_window_s": 180.0,
+    "typesafe_http_timeout_s": 30.0
+  },
+  "qualification_refreshed": false,
+  "resource_accounting": {
+    "epoch": "closed_origin",
+    "initial_energy_kwh": 22.0,
+    "initial_modeled_propellant_loss_kg": 0.0,
+    "initial_temperature_k": 295.0,
+    "modeled_loss_kg_per_s": 0.02,
+    "power_kw": 6.0,
+    "warming_k_per_s": 0.001
+  },
+  "return_context_projection": true,
+  "schema": "missionos.starship_restored_return_context_registration.v1",
+  "source_equivalence": {
+    "src/intelligence/starship_restored_agent.py": {
+      "current_sha256": "2f05aaaef0e43ce138b75b20fb04ee69d82b3b203bd1fa66a1904be46e872b3e",
+      "previous_sha256": "16c6dded07b4fe951fa9b2d2af23c0079e8053e6ec88d757bc9601efaf0ca273",
+      "reason": "Expose opt-in typed current reservation and conditional return effects without changing choices or legacy payloads."
+    },
+    "src/runtime/starship_restored_coordinator.py": {
+      "current_sha256": "764bd67979d9a6e08a80ab60b0e92d6a925bdd3c662d6599ed95809c11980ea0",
+      "previous_sha256": "5922ce26a3a1efbc0fcee42e9c89c4bad8e1b2d0821162de78d3ed15630dea90",
+      "reason": "Copy decision-time reservation and admission facts only on explicit opt-in; preserve control, deadlines and valid-choice application."
+    },
+    "src/runtime/starship_restored_native.py": {
+      "current_sha256": "7995be5bfc0fc41e5ec9000a1898d435ad7ba14fdf2cdb540c3a9484e7c04959",
+      "previous_sha256": "cd45e7f2e44c71ae57de1e2c3651bd1ac462636146f20c19d3825b880f542885",
+      "reason": "Forward a source-bound explicit return-context flag only after actual origin; preserve the default composition."
+    },
+    "src/runtime/starship_restored_native_verifier.py": {
+      "current_sha256": "c3bd3fc33c647746f7264c7224763ffc8866ca9515b60302d5d1b089bdc25fd2",
+      "previous_sha256": "2752d33feade3cadd1c2707c5617c6315dd1a74f9c6702ce663defc503f8d9d8",
+      "reason": "Independently reconstruct opt-in facts and effects from actual saved reservation and admission; preserve legacy verdicts."
+    }
+  },
+  "source_scope": "all_old_sources_exact_except_reviewed_return_projection_pairs",
+  "valid_model_choices_preserved": true
+}

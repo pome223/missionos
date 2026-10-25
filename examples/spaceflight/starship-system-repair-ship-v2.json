@@ -1,0 +1,57 @@
+{
+  "schema": "missionos.starship_system_repair_ship.v2",
+  "registered_on": "2026-10-18",
+  "purpose": "One production shared concurrent mission from surface release through healthy v5 ascent, actual booster split and fixedwaterreturn, 26actualdeployments, Shipreturn. No saved state initializes the flight. No AI/providers/cameras/faults/approval path; this is physical integration preflight, not allfeatures MissionOS demonstration.",
+  "ascent": {
+    "record": "output/starship-system-repair-20261018/ascent-v2/healthy/record.json.gz",
+    "raw_sha256": "194c7c8640ae4b57804b65e95f0f770c48a8e752677d26d1d76c5938bf2e1057",
+    "gzip_sha256": "3fda460ba6e65602c42d28950ffbc8d7c59b8ee45df0067d981aa13bceab2a1c",
+    "source_commit": "c583e0f8addef6e2dfa7391f9911bbbd191072ac",
+    "plan_sha256": "0144d74f62b83498a6a385d35673c565e5fcaaeb2bb302c109a81a62d8eeedc0",
+    "case_id": "healthy"
+  },
+  "limits": {
+    "maximum_trials": 1,
+    "per_trial_wall_s": 600.0,
+    "cohort_wall_s": 650.0,
+    "duration_s": 7500.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "fixed_inputs": {
+    "expected_policy": "coast_orbit_v5",
+    "release_count": 26,
+    "first_release_after_orbit_gate_s": 45.0,
+    "return_after_orbit_gate_s": 1800.0,
+    "old39casequalification_borrowed": false,
+    "release_limit": 26,
+    "bounded_ship_flaps": true,
+    "application": "wind_trim_state_return_v2",
+    "comparison_only": true
+  },
+  "unchanged": "Start from the same original surface/profile; finite actuators, mass, fuel, engines and all gate limits unchanged. Reuse shared AscentController, actual separation, cooperative clock scheduler, release_payload and ReturnController. Old R2/suffix records are comparators only, never input states.",
+  "acceptance": "Independent fullrecord consistency and exact concurrent separation continuity first. Report actual26releases and strictShip+existing10kmwatergoals separately; no borrowed39case qualification. Also compare measured first/final ascent gate states and Booster samples/contact with previously frozen records without propagating them. Validphysicalnegative ends this onecohort; numericalfailure invalid.",
+  "stop": "One-use source/environment/input-bound claim; invalidrecord, numericalexception, source/input/environmentchange, timeout/output/diskbreach stopswithoutretry. Validnegativeendsonecase. Do not addcandidates, altercontrols or rerun inthiscohort.",
+  "output": "output/starship-system-repair-20261018/whole-physical-v2",
+  "cleanup": "Keeporiginals; archive/hash/restoreverifybeforefuturedeletion. NoDocker/models/publicpush/merge.",
+  "scope": "whole_physical",
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "ascent_settings": {
+    "policy": "coast_orbit_v5",
+    "finite_mode": true,
+    "shutdowns": [],
+    "stack_pitch_offset_deg": 0.0,
+    "ship_pitch_offset_deg": 0.0,
+    "objectives": {
+      "first_burn_perigee_m": -20000.0,
+      "first_burn_apogee_m": 300000.0,
+      "insertion_altitude_m": 275000.0,
+      "final_perigee_m": 220000.0,
+      "minimum_apogee_headroom_m": 50000.0
+    }
+  }
+}

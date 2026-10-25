@@ -1,0 +1,313 @@
+{
+  "automatic_retry": false,
+  "backend": {
+    "executable_sha256": "92019a8331209d7247702193bbdfbe359807d7ee1df92566fcf31935f6b273d4",
+    "machine": "arm64",
+    "numpy": "2.4.6",
+    "platform": "darwin",
+    "python": "3.11.13 (main, Jun  3 2025, 18:38:25) [Clang 17.0.0 (clang-1700.0.13.3)]",
+    "scipy": "1.17.1"
+  },
+  "bounds": {
+    "automatic_retry": false,
+    "maximum_new_flights": 0,
+    "maximum_provider_calls": 0,
+    "minimum_free_bytes": 10737418240,
+    "per_cell_s": 420.0,
+    "total_s": 1800.0
+  },
+  "cases": [
+    {
+      "cell_id": "fixture-N-0",
+      "cell_passed": true,
+      "contact": {
+        "body_rate_rad_s": 0.004309112954422373,
+        "propellant_kg": 55504.83985890632,
+        "speed_mps": 4.379569977257833,
+        "tilt_deg": 2.366868509660885
+      },
+      "domain": {
+        "ascent_condition": "O0",
+        "controller_capability_factor": 1.0,
+        "fault_family": "nominal",
+        "plant_capability_factor": 1.0,
+        "released_count": 13,
+        "retained_count": 13,
+        "return_candidate_id": "next_orbit",
+        "sensor_gain": 1.0
+      },
+      "independent_check_sha256": "ec06165f693bee390b13a7a6470d532b6e11a8828ed802613775fdf917bbb743",
+      "point": {
+        "actuator_history_sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243",
+        "history": {
+          "canonical_bytes": 51235624,
+          "chunk_limit_bytes": 33554432,
+          "chunks": [
+            {
+              "canonical_bytes": 33552732,
+              "first_time_s": 2120.4499999999975,
+              "last_time_s": 6707.699999999997,
+              "row_count": 18350,
+              "sha256": "a09e97de20143104ffb9e9f8669757f741e01345481fe5e7938326d048aee680",
+              "start_row": 0,
+              "stop_row": 18350
+            },
+            {
+              "canonical_bytes": 17682893,
+              "first_time_s": 6707.949999999997,
+              "last_time_s": 9126.449999999997,
+              "row_count": 9675,
+              "sha256": "88f480cc2253da00d08b2204439564c0bde13f56e0c8af28c1ba0fbaee298409",
+              "start_row": 18350,
+              "stop_row": 28025
+            }
+          ],
+          "row_count": 28025,
+          "schema": "missionos.starship_final_qualification_chunked_history.v1",
+          "sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243"
+        },
+        "inventory_sha256": "82c6c186593cf0420a20f6b87fa896b4a09c0cf4edd82d29579e8647c0816ac2",
+        "released_count": 13,
+        "retained_count": 13,
+        "schema": "missionos.starship_final_qualification_chunked_point.v2",
+        "state_sha256": "a7847789b0bd036080caae9b95a1955578325b5c64f3def363fe209fccc6a53b",
+        "time_s": 9126.449999999997,
+        "vehicle_sha256": "4e1afbf37cdf392228ee07a4530d84fda454f0c74a0c457c0617aaedd75d557b"
+      },
+      "record_sha256": "be51aa13ee6b0b80f2fbea3bd3771829edde849aabe6f44398ac1669dde9398f"
+    },
+    {
+      "cell_id": "fixture-T-1",
+      "cell_passed": true,
+      "contact": {
+        "body_rate_rad_s": 0.0017565492810755882,
+        "propellant_kg": 51209.4542719174,
+        "speed_mps": 3.4590307330290666,
+        "tilt_deg": 1.47722919538368
+      },
+      "domain": {
+        "ascent_condition": "O0",
+        "controller_capability_factor": 0.8000296165136251,
+        "fault_family": "return_propulsion_80",
+        "plant_capability_factor": 0.8,
+        "released_count": 13,
+        "retained_count": 13,
+        "return_candidate_id": "next_orbit",
+        "sensor_gain": 1.0
+      },
+      "independent_check_sha256": "7759f8efd08d16ab348051fdc7af883bbf6c92ab2bf010829f9e06c9db52307e",
+      "point": {
+        "actuator_history_sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243",
+        "history": {
+          "canonical_bytes": 51235624,
+          "chunk_limit_bytes": 33554432,
+          "chunks": [
+            {
+              "canonical_bytes": 33552732,
+              "first_time_s": 2120.4499999999975,
+              "last_time_s": 6707.699999999997,
+              "row_count": 18350,
+              "sha256": "a09e97de20143104ffb9e9f8669757f741e01345481fe5e7938326d048aee680",
+              "start_row": 0,
+              "stop_row": 18350
+            },
+            {
+              "canonical_bytes": 17682893,
+              "first_time_s": 6707.949999999997,
+              "last_time_s": 9126.449999999997,
+              "row_count": 9675,
+              "sha256": "88f480cc2253da00d08b2204439564c0bde13f56e0c8af28c1ba0fbaee298409",
+              "start_row": 18350,
+              "stop_row": 28025
+            }
+          ],
+          "row_count": 28025,
+          "schema": "missionos.starship_final_qualification_chunked_history.v1",
+          "sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243"
+        },
+        "inventory_sha256": "4c5a56b4cecd45cc8bb154c5fb535017f7e162f4c048ce4870a3b18749a49701",
+        "released_count": 13,
+        "retained_count": 13,
+        "schema": "missionos.starship_final_qualification_chunked_point.v2",
+        "state_sha256": "a7847789b0bd036080caae9b95a1955578325b5c64f3def363fe209fccc6a53b",
+        "time_s": 9126.449999999997,
+        "vehicle_sha256": "4e1afbf37cdf392228ee07a4530d84fda454f0c74a0c457c0617aaedd75d557b"
+      },
+      "record_sha256": "cf490a9b9f701b86fcfd8366ee73c4fd774404625132d69a66591d66aa93f26c"
+    },
+    {
+      "cell_id": "fixture-A-2",
+      "cell_passed": true,
+      "contact": {
+        "body_rate_rad_s": 0.004309112954422373,
+        "propellant_kg": 55504.83985890632,
+        "speed_mps": 4.379569977257833,
+        "tilt_deg": 2.366868509660885
+      },
+      "domain": {
+        "ascent_condition": "O0",
+        "controller_capability_factor": 1.0,
+        "fault_family": "return_sensor_gain_80",
+        "plant_capability_factor": 1.0,
+        "released_count": 13,
+        "retained_count": 13,
+        "return_candidate_id": "next_orbit",
+        "sensor_gain": 0.8
+      },
+      "independent_check_sha256": "4cc7598947c8c4ace807d743c440dd69ab19e4bcf27aeef978ee3b98b8e7fde3",
+      "point": {
+        "actuator_history_sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243",
+        "history": {
+          "canonical_bytes": 51235624,
+          "chunk_limit_bytes": 33554432,
+          "chunks": [
+            {
+              "canonical_bytes": 33552732,
+              "first_time_s": 2120.4499999999975,
+              "last_time_s": 6707.699999999997,
+              "row_count": 18350,
+              "sha256": "a09e97de20143104ffb9e9f8669757f741e01345481fe5e7938326d048aee680",
+              "start_row": 0,
+              "stop_row": 18350
+            },
+            {
+              "canonical_bytes": 17682893,
+              "first_time_s": 6707.949999999997,
+              "last_time_s": 9126.449999999997,
+              "row_count": 9675,
+              "sha256": "88f480cc2253da00d08b2204439564c0bde13f56e0c8af28c1ba0fbaee298409",
+              "start_row": 18350,
+              "stop_row": 28025
+            }
+          ],
+          "row_count": 28025,
+          "schema": "missionos.starship_final_qualification_chunked_history.v1",
+          "sha256": "2e0ee55dc3e9e9d2dd81c7a1c62dab004b39d695bdf28aae6123f2fc4e06a243"
+        },
+        "inventory_sha256": "a89166a0e84af6905c6de8133d63ffdf870e8b715096421093c6885eae52551a",
+        "released_count": 13,
+        "retained_count": 13,
+        "schema": "missionos.starship_final_qualification_chunked_point.v2",
+        "state_sha256": "a7847789b0bd036080caae9b95a1955578325b5c64f3def363fe209fccc6a53b",
+        "time_s": 9126.449999999997,
+        "vehicle_sha256": "4e1afbf37cdf392228ee07a4530d84fda454f0c74a0c457c0617aaedd75d557b"
+      },
+      "record_sha256": "72a1bb4c03d27abf12a49e865bfacbfc19adaef82b84e2c15b8d52cbea79759c"
+    },
+    {
+      "cell_id": "live-T-3",
+      "cell_passed": true,
+      "contact": {
+        "body_rate_rad_s": 0.0017565492810755882,
+        "propellant_kg": 51209.4542719174,
+        "speed_mps": 3.4590307330290666,
+        "tilt_deg": 1.47722919538368
+      },
+      "domain": {
+        "ascent_condition": "O0",
+        "controller_capability_factor": 0.8000296165136251,
+        "fault_family": "return_propulsion_80",
+        "plant_capability_factor": 0.8,
+        "released_count": 13,
+        "retained_count": 13,
+        "return_candidate_id": "next_orbit",
+        "sensor_gain": 1.0
+      },
+      "independent_check_sha256": "39d9be3c2a2840c072bd7cd62f436954baf353882a011c3272242aee97b5c151",
+      "point": {
+        "actuator_history_sha256": "cf216eb42ad2ea7d4a79507991bd61d31c2eb674e7d83e1d5f2ddfe55535e13c",
+        "history": {
+          "canonical_bytes": 51310577,
+          "chunk_limit_bytes": 33554432,
+          "chunks": [
+            {
+              "canonical_bytes": 33552799,
+              "first_time_s": 2110.1999999999975,
+              "last_time_s": 6697.449999999997,
+              "row_count": 18350,
+              "sha256": "660ba6225de47803b401e5e63fd6ccb38fc1f7aa0866e61ae22fc731053a7896",
+              "start_row": 0,
+              "stop_row": 18350
+            },
+            {
+              "canonical_bytes": 17757779,
+              "first_time_s": 6697.699999999997,
+              "last_time_s": 9126.449999999997,
+              "row_count": 9716,
+              "sha256": "29778fe1f4d77a62edee14ddc0f018bdd7ff12495fb765d848c3196221614433",
+              "start_row": 18350,
+              "stop_row": 28066
+            }
+          ],
+          "row_count": 28066,
+          "schema": "missionos.starship_final_qualification_chunked_history.v1",
+          "sha256": "cf216eb42ad2ea7d4a79507991bd61d31c2eb674e7d83e1d5f2ddfe55535e13c"
+        },
+        "inventory_sha256": "a89166a0e84af6905c6de8133d63ffdf870e8b715096421093c6885eae52551a",
+        "released_count": 13,
+        "retained_count": 13,
+        "schema": "missionos.starship_final_qualification_chunked_point.v2",
+        "state_sha256": "a7847789b0bd036080caae9b95a1955578325b5c64f3def363fe209fccc6a53b",
+        "time_s": 9126.449999999997,
+        "vehicle_sha256": "4e1afbf37cdf392228ee07a4530d84fda454f0c74a0c457c0617aaedd75d557b"
+      },
+      "record_sha256": "f907858b44300d1ebabf07cb64f945e4ebaafb188d972bc0ce5c9831611e1679"
+    }
+  ],
+  "certificate_sha256": "0deea6687fd99cca4ec1a3505ae54c963fa4469df2b997d2f9e258e1e5c6d2a1",
+  "continuous_uncertainty_envelope_verified": false,
+  "elapsed_s": 996.7676865421236,
+  "encoding": {
+    "logical_history_streamed_without_omission": true,
+    "maximum_history_rows": 100000,
+    "maximum_metadata_chunk_descriptor_bytes": 33554432,
+    "maximum_record_bytes": 536870912,
+    "point_schema": "missionos.starship_final_qualification_chunked_point.v2"
+  },
+  "flown_source_commit_labels": [
+    "81c22072b925681e5c1335e4e05cd46655c34b34"
+  ],
+  "flown_source_manifest_sha256": "e83f3a1a58b0977bb71e21a83461d1b34ddfe13d9f902b77b641ccac65defd02",
+  "legacy39_refreshed": false,
+  "local_contract_checks": {
+    "python311": 81,
+    "python313": 81
+  },
+  "new_flights": 0,
+  "normal_runtime_admission": false,
+  "original_primary_record_plan_and_receipt_pins_unchanged": true,
+  "original_source_labels_rewritten": false,
+  "physical_recovery_certified": false,
+  "preservation": {
+    "all_files_actually_extracted_and_hash_mode_mtime_checked": true,
+    "archive_bytes": 178240,
+    "archive_sha256": "71baa8752e13cf78ff90ffe15afc713ce5b4e079b73ab5bd0c8aa6c25f02012a",
+    "file_count": 20,
+    "logical_bytes": 1731357,
+    "new_flights": 0,
+    "originals_retained": true,
+    "provider_calls": 0,
+    "qualification_checks_repeated_during_preservation": 0,
+    "restored_certificate_matches": true,
+    "schema": "missionos.starship_qualification_preservation_verified.v1",
+    "verified_at_utc": "2026-10-24T00:53:10.966070+00:00"
+  },
+  "preserved_previous_v1_stop": true,
+  "provider_calls": 0,
+  "qualification_complete": true,
+  "real_human_review_verified": false,
+  "real_input_smoke": {
+    "chunks": 2,
+    "raw_sha256": "cf490a9b9f701b86fcfd8366ee73c4fd774404625132d69a66591d66aa93f26c",
+    "rows": 28025
+  },
+  "registered_attempts": 1,
+  "registration_sha256": "6defb789da1c56c149c5b1ff616f1fe41da492c41b4fa8d60179e35333d3d9e9",
+  "schema": "missionos.starship_final_chunked_qualification_reviewed_result.v1",
+  "scope": "ship_return_exact_model_points_only",
+  "verification_source_commit": "c6c7d9761231945a8d3cd589ae6be6dba96bf41c",
+  "verification_source_sha256": {
+    "scripts/qualify_starship_final_saved.py": "e2ca25f6773540567816f6eb178c6b10503e5246e0e311b88970a93a0d87981b",
+    "scripts/starship_final_qualification_chunks.py": "8c9a4defadea5cec28a2c837beada59cf788a6b086cd20693205072c0366e6df"
+  }
+}

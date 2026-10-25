@@ -1,0 +1,226 @@
+{
+  "added_sources": {
+    "src/runtime/starship_restored_return_review.py": "91720340eaec45f3e6bce0dae8106136449f011856b664c92cba355cff05eb70"
+  },
+  "automatic_retry": false,
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "id": "O0_combined",
+      "scenario": "combined"
+    }
+  ],
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "evidence_pins_ready": true,
+  "fixture_prerequisite": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-review-fixture-v1-plan.json",
+        "sha256": "f1e93ea1b63d1298ca41e91f70302230afb02e1f31f03be1a61f06bc6a1e8f88"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-review-fixture-v1-result.json",
+        "sha256": "68051e0cb73cf6f3b787f98b593361ef1f8a8e14c5dc80fd2c1fcf5950ef6927"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-review-fixture-v1-saved-review.json",
+        "sha256": "af74859fee42d684344dccc02a673a50115c4c3363f7fba80f2fb357c09cf9a5"
+      }
+    },
+    "plan_sha256": "556246ed7bfdf83c6f1e485747980944574fb5c3dada6570120d91b1de498528",
+    "source_commit": "76bdef21128f2b0f972759bda9806bf74dde7383"
+  },
+  "fixture_review_objectives": {
+    "explicit_jev_delegation_is_not_policy_trigger": true,
+    "minimum_completed_policy_review_count": 1,
+    "minimum_policy_triggered_count": 1,
+    "unresolved_policy_review_count": 0
+  },
+  "initialization": "fresh_ground_actual_inventory_new_independent_copy_predictions",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "positive_to_nonpositive_unsupported_zero_to_zero_allowed",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v1",
+    "subdivisions": 2
+  },
+  "interpretation": "One combined condition only; previous valid contrary judgment and no-contact result remain negative. A registered Rules review policy may request DeepSeek review within the original deadline; it is neither explicit Jev delegation nor approval. Confidence and choice margin are uncalibrated signals. Valid contrary DeepSeek choices remain valid negatives; no retry or action override.",
+  "limits": {
+    "cohort_wall_s": 2000.0,
+    "maximum_concurrent_copy_forecasts": 2,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 1,
+    "minimum_free_bytes": 10737418240,
+    "per_trial_wall_s": 1800.0,
+    "prefix_horizon_s": 7500.0,
+    "total_horizon_s": 16000.0,
+    "workers": 1
+  },
+  "maximum_host_record_bytes": 536870912,
+  "mission_authority_granted": false,
+  "mode": "live",
+  "objectives": {
+    "actual_released_count": 13,
+    "actual_retained_count": 13,
+    "not_model_answer_constraints": true,
+    "operator_amendment_consistency_verified": true,
+    "physical_success": true,
+    "reservation_change_count": 1,
+    "return_candidate_id": "next_orbit"
+  },
+  "operator_policy": {
+    "actual_request_required": true,
+    "allowed_scope_delta": {
+      "add_commands": [
+        "select_next_orbit"
+      ],
+      "resource_limits": {}
+    },
+    "candidate_sha256_required": true,
+    "choice": "approve",
+    "fresh_resolvable_request_required": true,
+    "kind": "preauthorized_scripted_http_simulation_principal",
+    "may_bypass_rules": false,
+    "may_choose_for_model": false,
+    "observed_state_sha256_required": true,
+    "real_human_review": false,
+    "request_sha256_required": true
+  },
+  "output": "output/starship-restored-ai-20261020/return-review-live-v1",
+  "prior_return_context_live": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-live-v1-plan.json",
+        "sha256": "e81448cc3381342e1eb78b26be2a69730fb9abdf4a027b0c8712f8c4a78dadcd"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-live-v1-result.json",
+        "sha256": "7d946b8e860a7132040b93d60186e9d28722b93b9571ed4819ec48d403628b83"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-return-context-live-v1-saved-review.json",
+        "sha256": "2056178e6b6e38523301456e91c72046a37c0e479d37a02d9e293f50d0702eda"
+      }
+    },
+    "plan_sha256": "28571fd7fb8b5636c0a3dd304c5285512133a926cd321e35ce85229436500528",
+    "source_commit": "70df2fc08f712e71be38a73cffa0535505be81b9"
+  },
+  "providers": {
+    "automatic_retry": false,
+    "deep_reasoning_remaining_s": 150.0,
+    "deepseek_http_timeout_s": 120.0,
+    "deepseek_only_on_explicit_delegation": false,
+    "deepseek_requires_registered_return_review_or_explicit_delegation": true,
+    "deployment_window_s": 35.0,
+    "first": "typesafe",
+    "maximum_instance_calls": null,
+    "original_deadline_may_be_extended": false,
+    "return_window_s": 180.0,
+    "typesafe_http_timeout_s": 30.0
+  },
+  "qualification_refreshed": false,
+  "resource_accounting": {
+    "epoch": "closed_origin",
+    "initial_energy_kwh": 22.0,
+    "initial_modeled_propellant_loss_kg": 0.0,
+    "initial_temperature_k": 295.0,
+    "modeled_loss_kg_per_s": 0.02,
+    "power_kw": 6.0,
+    "warming_k_per_s": 0.001
+  },
+  "return_context_projection": true,
+  "return_review_policy": {
+    "confidence_floor": 0.5,
+    "schema": "missionos.starship_restored_return_review_policy.v1",
+    "selected_action_margin_floor": 0.1
+  },
+  "schema": "missionos.starship_restored_return_review_registration.v1",
+  "source_equivalence": {
+    "src/runtime/starship_restored_coordinator.py": {
+      "current_sha256": "992255dad36123525f0ae2a0254d65c8b80ea66aa88a658eb300841d020aa5d7",
+      "previous_sha256": "764bd67979d9a6e08a80ab60b0e92d6a925bdd3c662d6599ed95809c11980ea0",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    },
+    "src/runtime/starship_restored_decision_pipe.py": {
+      "current_sha256": "60fd6d5b2219390ffceaaed0fd11c5ab5e2bc3f2bf716054b8f2582b6152b290",
+      "previous_sha256": "cff8d220877964ed6d4bad80b9929855907811928a3bb38bcf1c03734b15e8de",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    },
+    "src/runtime/starship_restored_native.py": {
+      "current_sha256": "629da064f95958873c580ca986476a235f9293aacc773ad275dacd718a23ff95",
+      "previous_sha256": "7995be5bfc0fc41e5ec9000a1898d435ad7ba14fdf2cdb540c3a9484e7c04959",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    },
+    "src/runtime/starship_restored_native_host.py": {
+      "current_sha256": "b9657f68c0145f2d0ce7a09520b30731302818cd2f20120e1d61895c31a1ef77",
+      "previous_sha256": "2af7f4b2ab5287076b7d2af3f59a3f761b34dfad062d2aee69df5cca82bae4ee",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    },
+    "src/runtime/starship_restored_native_verifier.py": {
+      "current_sha256": "a6aeaa33135398e8fa674f86e480684aefbc8cb6013f630703389c86752571da",
+      "previous_sha256": "c3bd3fc33c647746f7264c7224763ffc8866ca9515b60302d5d1b089bdc25fd2",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    },
+    "src/runtime/starship_restored_outer.py": {
+      "current_sha256": "24dd2eaa80cf10e92480312239a526f364b4651a1d54c860a55fd0555c1fcff0",
+      "previous_sha256": "392fa85f2f16020aea2a0c4e8b3b348614125cc9b0b989765fdd9a04c9499c55",
+      "reason": "Opt-in source-bound Rules review, including real Client-to-Coordinator binding; preserve default behavior, deadlines, authority and plant."
+    }
+  },
+  "source_scope": "all_previous_sources_exact_except_reviewed_policy_transport_pairs",
+  "valid_model_choices_preserved": true
+}

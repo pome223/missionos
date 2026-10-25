@@ -1,0 +1,39 @@
+{
+  "schema": "missionos.starship_restoration_regressions.v1",
+  "registered_on": "2026-10-18",
+  "scope": "Programme acceptance, not an executable experiment or provider-call approval",
+  "parent_report": "docs/agents/starship-system-repair.md",
+  "plan": "docs/agents/starship-restoration-regressions.md",
+  "baseline_source": "77c151cc38ea99e711eac73ff99d3f1e55feac05",
+  "baseline_whole_plan_sha256": "6096c41d3526f6e90e807e8a5963c101dd34d61ab8f9bbb7d78b02655aafe465",
+  "completion_requires_all": true,
+  "overall_completed": false,
+  "regressions": [
+    {"id":"R1","name":"normal_launch_deploy_ship_return","requires":"actual continuous ground state through26 releases and unchanged Ship contact gates","status":"normal physical baseline recovered; final-source regression pending"},
+    {"id":"R2","name":"booster_recovery_judgment_and_water_entry","requires":"actual AI recovery choice, actual separation state and unchanged water-entry conditions across registered states","status":"nominal physical baseline recovered; AI and varied states pending"},
+    {"id":"R3","name":"M1_return_choice","requires":"notice update, numerical comparison, AI selection, Rules, execution and observation; valid keep accepted","status":"historical evidence only on old state; pending new state"},
+    {"id":"R4","name":"M2_deployment_return_handoff","requires":"actual inventory, retained mass, time, actuator and availability continuity for registered retained counts","status":"retained0 normal baseline recovered; retained13/26 pending"},
+    {"id":"R5","name":"M3_inflight_scope_approval","requires":"request, authenticated operator response, candidate-bound one-use authority, execution and observation","status":"historical test-operator evidence; new route pending; real human review separate"},
+    {"id":"R6","name":"symptom_diagnosis_two_faults","requires":"independent tracking requested by AI and opposite correct responses to propulsion80 and accelerometer_gain80; independent check, one-use execution and contact","status":"historical evidence only on old state; both new-state cases pending"},
+    {"id":"R7","name":"single_all_features_mission_and_video","requires":"one source/run/index covering image, phase AI, notice, meaningful approval and one coherent fault episode; playable synchronized video","status":"not completed"}
+  ],
+  "fidelity_gates": {
+    "ascent_altitude_rmse_m":3000,
+    "ascent_speed_rmse_mps":150,
+    "maximum_rmse_fraction_of_registered_baseline":0.8,
+    "meaning":"accepted engineering gates with original independent missing-data masks, not measurement uncertainty or real-vehicle validation"
+  },
+  "state_coverage_to_register": ["retained_count0/13/26","booster_separation_propellant_minus_and_plus1000kg","representative_engine_shutdowns","notice_timing","reentry_state_variation"],
+  "physical_constants_for_fitting": "forbidden; source-backed model corrections or registered uncertainty require separate provenance-bearing change",
+  "controller_calibration": "allowed with preregistered parameters and separate fitted/non-fitted values",
+  "stage0_owner": "Claude proposed; execution status unconfirmed; Codex will not duplicate runs",
+  "static_trim_owner": "Claude proposed; execution status unconfirmed; Codex will not duplicate runs",
+  "ascent_owner": "Codex",
+  "batch_cap_is_project_completion": false,
+  "prior_negative_records_unchanged": true,
+  "final_order": ["numerical foundation and control repair","fixture regressions","registered native regressions","develop port and final environment freeze","qualification for actual new domain","single final evidence and video"],
+  "hosted_model_calls_in_this_registration":0,
+  "physical_runs_in_this_registration":0,
+  "tower_catch_excluded":true,
+  "public_push_or_merge_authorized":false
+}

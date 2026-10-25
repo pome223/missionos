@@ -1,0 +1,89 @@
+{
+  "schema": "missionos.starship_propulsion_step2a_registration.v2",
+  "registered_on": "2026-10-18",
+  "status": "registered_software_revision_before_verification",
+  "stage1_acceptance_commit": "56b8f465",
+  "input_sha256": {
+    "src/runtime/starship_propulsion_reference.py": "d68cfb15a1e6f72162f577c702c674c6cd14f9dda2c67a5c71958c1bc35c4c89",
+    "scripts/check_starship_propulsion_reference.py": "a36671f2e6ef3829f77a917df509056a481512ff1eda26597fa959724b7f69f2",
+    "tests/contract/test_starship_propulsion_reference.py": "eedce1e2f91379d364dbbfa4d8a0ca6973640d6981a89491d6045fa20db1ba83",
+    "examples/spaceflight/starship-propulsion-reference-fixture.json": "1868290c3bd37e2cbba9182339a4700394f4591cdfb7f15620946efdbac879c2",
+    "docs/assets/starship-reference-v2-20261018/reference.json": "eefdd1b147a13d371e87c2b861fc69d57b0ea6c497e679e9f67d2f15b26229c7",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5"
+  },
+  "objective": "verify fixed-operating-point pressure/thrust/Isp/mass-flow consistency; do not infer unpublished Raptor parameters",
+  "source_findings_before_bench": {
+    "reported_variant_ratings_tf": {
+      "SL": 250,
+      "RVac": 275
+    },
+    "same_engine_pressure_curve_from_variant_difference": false,
+    "missing": [
+      "same-engine matched-pressure thrust/Isp anchors",
+      "Raptor3 nozzle exit area",
+      "measured mass flow and throttle/transient map"
+    ],
+    "source_gap_is_not_resolved_by_synthetic_bench": true,
+    "sources": [
+      "https://www.spacex.com/updates/starship-v3",
+      "https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/rocket-thrust-equation/",
+      "https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/specific-impulse/"
+    ]
+  },
+  "bench_cases": {
+    "synthetic_fixed_operating_points": 4,
+    "ambient_pressures_pa": [
+      0,
+      50000,
+      101325
+    ],
+    "reported_performance_rows": 12,
+    "steady_nozzle_pairs": 2,
+    "changes_allowed": "none after execution; data are synthetic dimensional fixtures, not Raptor inputs"
+  },
+  "acceptance": [
+    "anchor force and Isp reproduced at reference pressure",
+    "ambient-pressure variation leaves mass flow unchanged at fixed operating point",
+    "force difference equals fixed nozzle area times pressure difference",
+    "separately supplied full/partial points retain same fixed-nozzle pressure correction",
+    "reject unsupported pressure, invalid finite/domain inputs and nonpositive/overflow outputs",
+    "CLI refuses existing output without overwriting"
+  ],
+  "budgets": {
+    "bench_invocations": 1,
+    "maximum_bench_wall_s": 30,
+    "maximum_output_bytes": 1048576,
+    "sixdof_rollouts": 0,
+    "mission_provider_calls": 0,
+    "unit_and_failure_path_checks": "focused algebraic/CLI checks allowed; not flight experiments",
+    "bench_invocation_definition": "one fresh positive runtime verification report for corrected software; focused unit and refusal-path checks are additionally allowed and logged. No flight or tuning trial."
+  },
+  "outcome_rules": [
+    {
+      "when": "bench algebra or record invalid",
+      "then": "preserve failure; stop stage2a; do not activate curve or rerun as success"
+    },
+    {
+      "when": "bench passes and primary Raptor parameter gaps persist",
+      "then": "close2a with known activation gap after software review; any2b ascent fit is conditional on frozen constant-thrust/common-Ship-Isp assumptions and is not evidence identifying true guidance or propulsion"
+    },
+    {
+      "when": "new source or alternative physical assumptions proposed",
+      "then": "separate source-bound registration/approval before activation; never fit unknown area/Isp to desired ascent"
+    }
+  ],
+  "flight_activation": {
+    "enabled": false,
+    "Engine_or_loads_or_controller_changed": false,
+    "nominal_profile_changed": false,
+    "reason": "Raptor inputs and consistent controller/sensor/fault capability mappings not established; steady bench is not a flight map"
+  },
+  "qualification_refreshed": false,
+  "preserve_originals": true,
+  "parent_registration": {
+    "path": "examples/spaceflight/starship-propulsion-step2a-registration.json",
+    "sha256": "7cf8996d1d9028e71d6bc8c8b75a5e33f64c63f95c650c343c19e30128d63b5b"
+  },
+  "revision_reason": "C5 review fixes: enforce complete4point/2pair matrix and add CLI regression tests; preserve primary errors when report output fails. No operating point/pressure/threshold/flight parameter changed.",
+  "fixture_interpretation": "Independent synthetic dimensional points only; not a physically validated throttle map. Pressure bands do not establish full-flow/no-separation limits of any real nozzle."
+}

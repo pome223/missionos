@@ -1,0 +1,54 @@
+{
+  "schema": "missionos.starship_system_repair_ascent.v2",
+  "registered_on": "2026-10-18",
+  "purpose": "Second structural repair diagnostic: firstburn targets a coast ellipse with radial-velocity/feedforward guidance instead of altitude flattening. This is not goal tuning within v1 or realflight reproduction.",
+  "parent": "examples/spaceflight/starship-system-repair-ascent-v1.json",
+  "closed_cohorts_unchanged": true,
+  "policy": "coast_orbit_v5",
+  "objectives": {
+    "first_burn_perigee_m": -20000.0,
+    "first_burn_apogee_m": 300000.0,
+    "insertion_altitude_m": 275000.0,
+    "final_perigee_m": 220000.0,
+    "minimum_apogee_headroom_m": 50000.0
+  },
+  "objective_provenance": "Fixed engineering coastellipse, not an inferred Flight14 state. Its300km apogee exceeds final220km perigee plus50km geometricheadroom before flight. Firstburn rp/apogee and correct orbital radial feedforward replace the v1altitudeflattening law; masses/fuel/reserves/missionfinalgate unchanged.",
+  "offsets": {
+    "stack_pitch_offset_deg": 0.0,
+    "ship_pitch_offset_deg": 0.0
+  },
+  "cases": [
+    {
+      "id": "healthy",
+      "shutdowns": []
+    },
+    {
+      "id": "fixed_outages",
+      "shutdowns": [
+        {
+          "engine_name": "booster_main_32",
+          "time_s": 76.0
+        },
+        {
+          "engine_name": "ship_main_3",
+          "time_s": 437.0
+        }
+      ]
+    }
+  ],
+  "outage_limits": "Same representative simulator identities as priorv3;76s user-specified,437s midpoint of observed436-438sRVacdisplaytransition;notobservedphysicalIDs/failuretransients.",
+  "limits": {
+    "maximum_trials": 2,
+    "per_trial_wall_s": 300.0,
+    "cohort_wall_s": 700.0,
+    "duration_s": 1537.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0
+  },
+  "acceptance": "Actualcoastellipse and finalboundorbit>=220km, fullstate/actuator/26payloadcontinuity, unchangedreserve, eventtiming and noextra mainburnaftergoal. Validnegative remainsnegative, not realFlight14qualification or returnauthority.",
+  "stop": "One-use source/environment-bound claim; invalidrecord, numericalexception, source/input/environmentchange, timeout, output/disk breach stops cohort without retry/resume. Do not add candidates or tune goals in thiscohort.",
+  "output": "output/starship-system-repair-20261018/ascent-v2",
+  "cleanup": "Keep all sources, input/environment hashes and original outputs; archive/hash/restoreverify before future deletion. No Docker resources. No public push/merge."
+}

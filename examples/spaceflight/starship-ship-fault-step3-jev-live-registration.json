@@ -1,0 +1,209 @@
+{
+  "schema": "missionos.ship_fault_step3_registration.v1",
+  "stage": 3,
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "prior_request_file": "docs/assets/starship-ship-fault-step2-20261014/request-2.json",
+  "physical_fault": {
+    "kind": "landing_engine_derate",
+    "actual_factor": 0.8,
+    "retained_count": 0,
+    "from_step1_frozen_condition": true
+  },
+  "sensing": "Same registered stage-2 accelerometer, per-seed bias, throttle/availability telemetry and quantized fuel gauge, seed 0; estimator consumes only arrived samples. No fault label enters a model request. Ideal kinematics remain a limitation.",
+  "application": {
+    "delay_after_complete_request_s": 600.0,
+    "change": "one replacement of only model-vehicle landing-engine limits; actual plant remains unchanged",
+    "deadline_after_issue_s": 900.0,
+    "planning_wall_limit_s": 598.0,
+    "time_semantics": "Measured prediction/check/model wall duration must fit the fixed 600-second reserved coast interval. Physical actual-plant integration advances through that whole interval with the unchanged controller, then consumes the receipt at the first scheduled control step. This is a finite simulator workflow, not hard-real-time flight certification."
+  },
+  "independent_check": {
+    "process": "separate credential-free Python process, strict JSON",
+    "checks": [
+      "registered actual file SHA and installed backend",
+      "authority/profile/inventory hashes",
+      "causal telemetry re-estimation and estimate ID",
+      "request snapshot and observation match",
+      "application deadline and allowed phase",
+      "prediction inputs/switches and independently reconstructed contact arithmetic",
+      "every control step ordered and uses assumed model; every physical step uses plant",
+      "controller witness marker/phase/audited time",
+      "one-use receipt consumed at fresh current state"
+    ],
+    "claim": "independent contract and arithmetic checks; shared-model forecasts are not independent physical-model validation"
+  },
+  "fallback": {
+    "missing_or_invalid_model_judgment": "adopt numeric point estimate only through the same passed guard and preapproved scope",
+    "valid_continue_judgment": "retain judgment; do not override merely to obtain a successful landing",
+    "guard_failed_or_late": "no adoption; retain nominal execution and dangerous/unresolved outcome, with no safe-return claim"
+  },
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "comparison": "Reuse saved assumed-100%/actual-80% no-intervention flight (9.16575255358686 m/s); no Rules-score comparison and no new comparator rollout. Do not extrapolate from one state or tune the scenario after live results.",
+  "reused_forecast_file": "output/ship-capability-step3-20261015/reviewed-forecast-cache.json.gz",
+  "forecast_producer_reference_file": "output/ship-capability-step3-20261015/source/src/runtime/starship_ship_capability_control.py",
+  "forecast_producer_contract_sha256": "e02db8a5988b060d9922a40a8275bf0075cb2ee9022681660aa0064f94b6ad67",
+  "external_payload_scope": {
+    "destinations": [
+      "https://api.typesafe.ai/v1/systemone",
+      "https://api.deepseek.com/chat/completions"
+    ],
+    "content": "Synthetic kinematics and fuel gauge, arrived acceleration-derived capability estimate/band, prepared return previews, action-effect descriptions and numerical evidence IDs. No fault truth, source code, private task data, personal data or secret values."
+  },
+  "experiment_id": "ship-capability-step3-jev-live-20261015",
+  "registration_file": "examples/spaceflight/starship-ship-fault-step3-jev-live-registration.json",
+  "status": "registered_after_successful_zero_model_escalation_preflight_awaiting_exact_plan_approval",
+  "base_commit": "9fa3441bdf2695b44c79ddc121c475f95c895f4b",
+  "inputs": [
+    {
+      "path": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+      "sha256": "a5b95b17ce46c27689c4db45a80dd7fb5f41cae6efc765fbab0e600610cff621"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step2-registration.json",
+      "sha256": "3ec1a89f27f4ffeb754de208fc8c22d1c39bb28199fe2824a11ad8f5c717a1b1"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step2-20261014/request-2.json",
+      "sha256": "3ee35d863e13e31959be0bff748176e5058a7764ceee7b2a72cd42a65e95762a"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step2-20261014/combined-summary.json",
+      "sha256": "e43bca334210d1d99202d387247ee5cb903b08b60be365276542b7c3062335f3"
+    },
+    {
+      "path": "docs/assets/starship-ship-capability-matrix-20261014/assumed_100pct_actual_80pct-sixdof.json.gz",
+      "sha256": "a08bdad0a36363feaef70ae476f4419771d9837c8462a2550acbb29e274d32fa"
+    },
+    {
+      "path": "docs/assets/starship-ship-capability-matrix-20261014/assumed_100pct_actual_100pct-sixdof.json.gz",
+      "sha256": "b3bbccf7bfc9ea4be16f26e4a41b2c979114feb12c8a24259ef95adfe3d6045e"
+    },
+    {
+      "path": "output/ship-capability-step3-20261015/reviewed-forecast-cache.json.gz",
+      "sha256": "07dd025cc7bc2e9028d909eb2c557b1db5136494acdc602cab076685a611edc5"
+    },
+    {
+      "path": "output/ship-capability-step3-20261015/source/src/runtime/starship_ship_capability_control.py",
+      "sha256": "a84e206220c4906fef1a0f606fb1a8700196fe33115f3a50e77b25aa44bcf349"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/forecast-producer-equivalence.json",
+      "sha256": "3e60ca57e4f11f35e725846d70e53e49142fc9ed28fdfaa65c54bae5dc80513a"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/preflight-summary.json",
+      "sha256": "811e2061cfa8061b37cac5590724c480aa6157490e4792984657d013b5326d6d"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/reviewed-live-summary.json",
+      "sha256": "f797613955a4611a38ff924712e58a7f0b4e4f4c96f4b7d334f5d00ba42606b0"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/stream-diagnostic-summary.json",
+      "sha256": "8c970bddde871f7427ff47893ea47d2a1fea0ae8969d04cab72a786721ddcc86"
+    },
+    {
+      "path": "docs/assets/starship-ship-fault-step3-20261015/jev-primary-preflight-summary.json",
+      "sha256": "7948f83246fd8ca4afcfe9ece843e63d8e3cabe9ea622c1c64bec356b274af84"
+    },
+    {
+      "path": "examples/spaceflight/starship-ship-fault-step3-jev-preflight-registration.json",
+      "sha256": "56cd65bbb421fc975f2e560c80b9c0c38cc3b703979749100287b845d16da898"
+    }
+  ],
+  "cases": [
+    "fault_live"
+  ],
+  "planning_routing": "jev_primary_optional_deepseek_v1",
+  "execution_mode": "live",
+  "external_model_requests_allowed": true,
+  "prior_regression_file": "docs/assets/starship-ship-fault-step3-20261015/reviewed-live-summary.json",
+  "prior_regression_scope": "Historical normal and no-response flights, not rerun on this routing source; old DeepSeek failure retained.",
+  "numerical_preparation": {
+    "new_predictions": 0,
+    "scope": "Exact earlier three estimated-band forecast records only; no cold forecast path is admitted.",
+    "points": [
+      "band_low",
+      "point_estimate",
+      "band_high"
+    ]
+  },
+  "provider_configuration": {
+    "jev_model": "jev-1.13.0",
+    "jev_decision_s": 35.0,
+    "jev_transport_s": 30.0,
+    "deepseek_model": "deepseek-flash",
+    "deepseek_decision_s": 150.0,
+    "deepseek_transport_s": 120.0,
+    "reasoning_effort": "low",
+    "thinking_enabled": true,
+    "maximum_output_tokens": 16384,
+    "maximum_model_calls": null,
+    "retries": 0,
+    "raw_reasoning_recorded": false
+  },
+  "request_routing": {
+    "burn_anomaly": "Existing v1 Jev advisory; excluded from AI planning completion.",
+    "complete_fault": "Jev receives three native choices and all comparison material. Direct physical choices are final; only explicit request_deep_reasoning asks DeepSeek. No forced adoption or implicit service substitution.",
+    "missing_judgment": "Checked preapproved fallback; missing Jev never implicitly calls DeepSeek."
+  },
+  "headroom": {
+    "reserved_coast_s": 600.0,
+    "planning_wall_limit_s": 598.0,
+    "guard_max_s": 45.0,
+    "application_margin_s": 2.0,
+    "minimum_before_jev_s": 82.0,
+    "minimum_before_optional_deepseek_s": 197.0,
+    "minimum_before_guard_s": 47.0,
+    "rule": "All measured prediction/cache, model, optional credentials, HTTP/IPC and guard work must fit the reservation. No deadline extension or automatic retry."
+  },
+  "budgets": {
+    "maximum_new_6dof_rollouts": 1,
+    "maximum_prediction_wall_s": 180.0,
+    "maximum_case_wall_s": 600.0,
+    "maximum_cohort_wall_s": 660.0,
+    "maximum_output_bytes": 134217728,
+    "minimum_free_space_bytes": 5368709120,
+    "maximum_model_calls": null,
+    "retries": 0
+  },
+  "pass_conditions": [
+    "Exactly one actual-plant faulty 6DOF suffix with no new forecasts, same previously fixed origin, fault, estimator, contact limits and no-intervention comparator.",
+    "A real valid final Jev or explicitly delegated DeepSeek adoption must bind to the guard request, positive plan event, one-use consumed decision ID and unchanged physical plant; then the saved flight must satisfy all contact gates without fallback.",
+    "A valid continuation is respected even if contact fails. Escalation alone, model failure, checked fallback or response received after the deadline does not complete AI adoption.",
+    "Advisory Jev monitoring, routing choices, final planning choices, provider attempts and native/citation evidence are reported separately. No replay or threshold/scenario adjustment after the result."
+  ],
+  "result_actions_ordered": [
+    {
+      "when": "source/input/backend drift, invalid physical record or resource/deadline failure",
+      "next": "Stop and retain records; no retry."
+    },
+    {
+      "when": "Jev chooses valid continuation",
+      "next": "Retain the choice and physical outcome even if unsuccessful. Do not replace it with DeepSeek or fallback to obtain a pass."
+    },
+    {
+      "when": "Jev explicitly requests DeepSeek",
+      "next": "Invoke only within registered headroom. Failed/missing delegated output uses checked fallback but cannot count as AI completion."
+    },
+    {
+      "when": "real final adoption, guard, one-use application and contact gates all pass without fallback",
+      "next": "Complete Step 3 only for this fixed synthetic faulty-return state; report the matched no-intervention outcome and the limits."
+    }
+  ],
+  "authorization": "This single new hosted-model fault flight requires fresh explicit user approval of the prepared plan SHA. The earlier request authorized routing implementation and the zero-model preflight, not automatic hosted execution.",
+  "physical_execution": false,
+  "nominal_certificate_admits_faults": false,
+  "held_out_success_rate": null,
+  "mission_call_count_cap_added": false,
+  "extra_execution_requires_user_approval": true,
+  "end_preservation": "Preserve new source/plan and all original failures; restore gzip/hash-check raw faulty flight, guard and decision records. Do not delete evidence or retry an unsuccessful case.",
+  "preflight_result_file": "docs/assets/starship-ship-fault-step3-20261015/jev-primary-preflight-summary.json",
+  "required_preflight_plan_sha256": "c0baa29a63df4ec79831892d6fc3ca6ac1a46017b26fe9f63d9526e8bf8f96e8",
+  "authorization_payload": "Only synthetic flight observations, estimates, uncertainty and numerical comparisons/action effects are sent to the registered Jev endpoint and optionally DeepSeek. No source, private databases, physical truth label, personal data or secret value is part of the model input."
+}

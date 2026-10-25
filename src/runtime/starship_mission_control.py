@@ -27,6 +27,7 @@ import uuid
 from .starship_replanning import SCENARIOS as M1_SCENARIOS, SCOPE as M1_SCOPE
 from .starship_m2_control import SCENARIOS as M2_SCENARIOS, SCOPE as M2_SCOPE
 from .starship_m3_live import SCENARIOS as M3_SCENARIOS, SCOPE as M3_SCOPE
+from .starship_visual_contract import SCENARIOS as VISUAL_SCENARIOS, SCOPE as VISUAL_SCOPE, MODE_ENV as VISUAL_MODE_ENV
 from .starship_flight import SCENARIOS
 from .starship_mission_director import SCENARIOS as MANAGED_SCENARIOS, MODE_ENV as DIRECTOR_MODE_ENV, SCOPE as DIRECTOR_SCOPE
 from .starship_sixdof_catalog import (
@@ -47,6 +48,7 @@ CATALOG = (
     *M1_SCENARIOS,
     *M2_SCENARIOS,
     *M3_SCENARIOS,
+    *VISUAL_SCENARIOS,
 )
 PLAN_TTL_S = 900
 APPROVAL_TTL_S = 300
@@ -129,6 +131,9 @@ def _read(path: Path) -> dict:
 
 
 def _sources(scenario: str) -> dict:
+    if scenario in VISUAL_SCENARIOS:
+        from .starship_visual_contract import sources
+        return sources()
     if scenario in M3_SCENARIOS:
         from .starship_m3_live import sources
 
@@ -170,6 +175,9 @@ def worker_environment() -> dict[str, str]:
 def process_environment(plan: dict) -> dict[str, str]:
     """Only the Jev observer broker may receive its own provider credential."""
     env = worker_environment()
+    if plan["scenario"] in VISUAL_SCENARIOS:
+        if os.environ.get(VISUAL_MODE_ENV, "off") != "fixture" or plan["mission_envelope"]["mode"] != "fixture":
+            raise StarshipMissionError("visual_fixture_configuration_changed")
     if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
         from src.intelligence.starship_m2_broker import require_live_configuration
         try:
@@ -474,6 +482,17 @@ class StarshipMissionService:
                 )
             except ValueError as exc:
                 raise StarshipMissionError(failure) from exc
+        if scenario in VISUAL_SCENARIOS:
+            from .starship_visual_contract import plan_fields
+            from .starship_return_feasibility import readiness
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason:
+                raise StarshipMissionError(reason)
+            try:
+                plan.update(plan_fields(os.environ.get(VISUAL_MODE_ENV, "off"),
+                                        VISUAL_SCENARIOS[scenario], plan["source_sha256"]))
+            except ValueError as exc:
+                raise StarshipMissionError("visual_fixture_not_configured") from exc
         plan["sha256"] = _digest(plan)
         state = {"status": "awaiting_approval", "plan": plan, "approval": None,
                  "execution": {}, "planner_invocation": result.get("invocation", {}),
@@ -520,6 +539,9 @@ class StarshipMissionService:
                 grant["booster_recovery"] = plan["booster_recovery"]
             if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
                 grant["scope"] = M3_SCOPE if plan["scenario"] in M3_SCENARIOS else M2_SCOPE
+                grant["mission_envelope"] = plan["mission_envelope"]
+            if plan["scenario"] in VISUAL_SCENARIOS:
+                grant["scope"] = VISUAL_SCOPE
                 grant["mission_envelope"] = plan["mission_envelope"]
             if plan["scenario"] in M1_SCENARIOS:
                 grant["scope"] = M1_SCOPE
@@ -580,7 +602,9 @@ class StarshipMissionService:
             or grant["consumed_by_run"] != consumed_by_run
             or grant["scope"]
             != (
-                M3_SCOPE
+                VISUAL_SCOPE
+                if plan["scenario"] in VISUAL_SCENARIOS
+                else M3_SCOPE
                 if plan["scenario"] in M3_SCENARIOS
                 else M2_SCOPE
                 if plan["scenario"] in M2_SCENARIOS
@@ -616,6 +640,12 @@ class StarshipMissionService:
             raise StarshipMissionError("approval_binding_expired_or_consumed")
         if plan["source_sha256"] != _plan_sources(plan):
             raise StarshipMissionError("approved_source_changed")
+        if plan["scenario"] in VISUAL_SCENARIOS:
+            from .starship_visual_contract import visual_contract
+            from .starship_return_feasibility import readiness
+            _, _, reason = readiness(_read(REPO / SIXDOF_PROFILE))
+            if reason or plan["mission_envelope"] != visual_contract(VISUAL_SCENARIOS[plan["scenario"]]):
+                raise StarshipMissionError(reason or "visual_authority_not_current")
         if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
             from .starship_return_feasibility import readiness
             if plan["scenario"] in M3_SCENARIOS:
@@ -1128,7 +1158,7 @@ class StarshipMissionService:
                     else:
                         result_status = "verified" if receipt["verification_passed"] else "failed"
                         if (
-                            state["plan"]["scenario"] in (*M1_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS)
+                            state["plan"]["scenario"] in (*M1_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS, *VISUAL_SCENARIOS)
                             and result_status == "verified"
                             and not receipt["verification"].get("case_accepted", False)
                         ):
@@ -1203,6 +1233,38 @@ def execute_worker(state_dir: Path, run_id: str, *, inflight_fds=(None, None, No
                    {"DEEPSEEK_API_KEY", "TYPESAFE_API_KEY", "GOOGLE_APPLICATION_CREDENTIALS", "JEV_API_KEY"} - allowed_keys):
                 raise StarshipMissionError("provider_credentials_in_worker")
             output = run_dir / "results"
+            if plan["scenario"] in VISUAL_SCENARIOS:
+                from .starship_visual_verifier import verify
+                _write(run_dir / "authority.json", plan["mission_envelope"])
+                args = [sys.executable, str(REPO / "scripts/run_starship_visual_observation.py"),
+                        "--approve-simulation", "--fixture-smoke", "--case", plan["simulation"]["case"],
+                        "--authority-file", str(run_dir / "authority.json"),
+                        "--run-id", run_id, "--output-dir", str(output)]
+                code = _run_simulator(args, timeout=plan["simulation"]["maximum_wall_time_s"])
+                result["simulator_process_returncode"] = code
+                if code not in (0, 2, 3):
+                    raise StarshipMissionError("visual_simulator_process_failed")
+                study = _read(output / "study.json")
+                if plan["source_sha256"] != _sources(plan["scenario"]):
+                    raise StarshipMissionError("visual_execution_source_changed")
+                verdict = verify(study, expected_authority=plan["mission_envelope"],
+                                 expected_sources=plan["source_sha256"], expected_run_id=run_id,
+                                 artifact_dir=output)
+                if code == 2:
+                    verdict["passed"] = verdict["case_accepted"] = False
+                    verdict["issues"].append("visual_worker_reported_failure")
+                _write(output / "verification.json", verdict)
+                from .starship_visual_runner import write_report
+                write_report(output, study, verdict)
+                result.update(verification=verdict, verification_passed=verdict["passed"],
+                              artifact_sha256={name: sha256((output / name).read_bytes()).hexdigest()
+                                               for name in ARTIFACT_NAMES},
+                              ended_at_epoch_s=service.clock(),
+                              process_role="credential_free_visual_fixture_worker",
+                              simulator_provider_credentials_present=False)
+                result["signature"] = service._signature(result)
+                _write(run_dir / "result.json", result)
+                return 0 if verdict["passed"] else 2
             if plan["scenario"] in (*M2_SCENARIOS, *M3_SCENARIOS):
                 from .starship_replanning import source_hashes as return_sources
                 is_m3 = plan["scenario"] in M3_SCENARIOS

@@ -1,0 +1,147 @@
+{
+  "schema": "missionos.starship_fidelity_acceptance_registration.v1",
+  "registered_on": "2026-10-18",
+  "status": "proposed_gates_registered_before_execution; user_acceptance_pending; no_runner",
+  "source_of_request": "User relayed Claude review recommendations; quoted approval example is not human acceptance.",
+  "frozen_inputs_sha256": {
+    "docs/assets/starship-reference-v1-20261018/reference.json": "162c8deafb8e850f85e97e67d244f6e0d06e2504342ffc3961eca2555387aaca",
+    "examples/spaceflight/starship-ascent-path-registration.json": "21868b9434c8c4f24276e851db545c2bda71ccbc768c96ef76aa27b31c9ef356",
+    "docs/assets/starship-flight14-telemetry-20261017/booster_return.csv": "c0ad296231c5e7a6c4677d705b258adf23fd51669a797290cace34952eeafb45"
+  },
+  "authority": {
+    "physics_execution_authorized": false,
+    "mission_provider_calls_authorized": false,
+    "reference_acceptance_record": null,
+    "normal_certificate_revalidated": false
+  },
+  "ascent_fit_gates": {
+    "elapsed_s_inclusive": [
+      0,
+      491
+    ],
+    "bin_width_s": 5,
+    "bin_origin_s": 0,
+    "metric": "sqrt(equal mean of nonempty five-second-bin mean squared errors); separate frozen altitude/speed masks; all point residuals also reported",
+    "altitude_rmse_m_max": 3000,
+    "speed_rmse_mps_max": 150,
+    "both_maximum_rmse_fraction_of_new_source_baseline": 0.8,
+    "speed_frame_assumption": "surface_relative_not_operator_confirmed",
+    "altitude_points_after_proposed_quarantine": 145,
+    "speed_points": 442,
+    "classification": "engineering_targets_not_measurement_uncertainties"
+  },
+  "non_fitted_booster_gates": {
+    "stage": "2b_selected_actual_separation_continuation",
+    "basis": "previously_seen_processed_display_and_derived_estimates; not blind or independent model validation",
+    "candidate_lock": "Freeze selected candidate ID, source, profile and fit results hashes BEFORE computing/scoring booster outcomes. These gates do not rank or select candidates.",
+    "altitude_maximum": {
+      "processed_display_maximum_m": 98900,
+      "display_plateau_elapsed_s": [
+        240,
+        245
+      ],
+      "source_lines_inclusive": [
+        45,
+        50
+      ],
+      "engineering_target_m": 99000,
+      "maximum_absolute_residual_m": 10000,
+      "metric": "absolute difference between simulated pre-first-contact maximum altitude and engineering target; preserve numerical peak resolution and displayed-maximum limitation",
+      "pass_interval_m_inclusive": [
+        89000,
+        109000
+      ],
+      "not_a_precise_measurement_of_true_apex": true
+    },
+    "descending_40000m_crossing": {
+      "source_rows": [
+        {
+          "line": 158,
+          "elapsed_s": 353,
+          "displayed_altitude_m": 40900
+        },
+        {
+          "line": 159,
+          "elapsed_s": 354,
+          "displayed_altitude_m": 39900
+        }
+      ],
+      "derived_linear_crossing_elapsed_s": 353.9,
+      "reference_elapsed_interval_s": [
+        353,
+        354
+      ],
+      "maximum_distance_to_reference_interval_s": 15,
+      "pass_interval_elapsed_s_inclusive": [
+        338,
+        369
+      ],
+      "metric": "max(353-t_crossing, t_crossing-354, 0)",
+      "selection": "first downward crossing of40000m after the pre-first-contact altitude maximum; bracket by finite physical samples and interpolate linearly; no extrapolation",
+      "missing_crossing_or_unresolved_record": "fail_or_invalid_as_applicable; never substitute predicted/contact time",
+      "reference_is_derived_display_crossing_not_observed_exact_event": true
+    },
+    "joint_gate": "both numeric gates must pass for these non-fitted checks to pass; report baseline and selected candidate separately; physical recovery acceptance remains independently required",
+    "unchanged_recovery_gate": "keep registered contact speed, tilt, body rate, reserves and record validity requirements; timing agreement does not make an impact successful recovery",
+    "contact_time_approx_415_420s": "report only until separately evidenced/registered; do not treat rounded zero altitude as precise contact",
+    "failure_action": "preserve failed or mixed downstream check; no candidate reselection, grid expansion, retuning or repeat to match these values",
+    "later_stage_data_use": "if stage2c fits these values, they cease to be non-fitted for2c onward; do not replace stage2b results"
+  },
+  "adjustable_parameter_limit": {
+    "maximum_independent_scalars_per_calibration_stage": 6,
+    "stage2b_scope": "whole stage including stack/Ship pitch, cutoff and two-stage insertion; not6per subsystem",
+    "count_each": [
+      "searched pitch angle or offset",
+      "movable knot time",
+      "searched cutoff threshold/time",
+      "searched insertion burn start/duration",
+      "searched insertion direction component"
+    ],
+    "tied_parameters": "one shared scalar counts once only when tying equation and all fixed knot times are frozen before execution",
+    "required_before_execution": [
+      "parameter name and unit",
+      "baseline value",
+      "finite candidate values or fixed bounded grid",
+      "fixed functional family and knot count",
+      "list of fixed constants and source hashes",
+      "computed independent scalar count no greater than6"
+    ],
+    "no_hidden_dof": "Do not hide adjustable gains, schedules or coefficients behind a functional family selector or fixed-parameter label. New discretionary parameters require separate registration, never result-dependent changes.",
+    "source_based_physics": "stage2a sourced inputs are frozen, not fit variables; mass, thrust and geometry must not be moved to improve residuals",
+    "old_registration_audit": {
+      "free_scalars": [
+        "stack_pitch_offset_deg",
+        "ship_pitch_offset_deg"
+      ],
+      "count": 2,
+      "fixed_cutoff_elapsed_s": 491,
+      "knot_times_fixed": true,
+      "old_registration_unchanged_and_superseded": true
+    }
+  },
+  "execution_budget": "No execution by this supplement. Preserve existing stage ceilings until a separately source/environment-bound runner registration fixes exact runs/time before execution; no result-dependent increase.",
+  "frame_consistency_note": {
+    "reviewer_supplied_display_speed_kmh": [
+      26100,
+      26400
+    ],
+    "reviewer_supplied_inertial_speed_kmh": 27860,
+    "arithmetic_speed_difference_mps_interval": [
+      405.55555555555554,
+      488.88888888888886
+    ],
+    "evidence_class": "reviewer_numbers_not_reextracted; qualitative_consistency_only",
+    "limitation": "Velocity frame transformation depends on position, direction and rotation, not subtraction of one scalar rotation speed. Exact contemporaneous altitude/state and display semantics have not been established; working assumption remains conditional.",
+    "primary_transform_reference": "https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/req/rotation.html#State%20transformations"
+  },
+  "video_fidelity_requirements": {
+    "permanent_simulation_label": true,
+    "per_phase_fit_nonfit_unverified_known_difference_labels": true,
+    "final_source_residuals_and_coverage_required": true,
+    "reuses_old_audit_numbers_as_current_fidelity": false,
+    "fit_gates_parameter_count_and_nonfit_results_visible": true,
+    "reference_frame_and_missingness_limits_visible": true
+  },
+  "new_sixdof_runs": 0,
+  "new_mission_provider_calls": 0
+}

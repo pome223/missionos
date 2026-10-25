@@ -297,6 +297,23 @@ def _ascent(study, rows):
 
 def _handoff(study):
     handoff, run, profile, trace = (study[k] for k in ("handoff", "prefix_run", "profile", "trace"))
+    if "unified_composition" in study:
+        from .starship_unified_contract import validate_composition
+        from .starship_m2_contract import validate_deployment_origin
+        from .starship_visual_verifier import validate_visual_origin
+        comp = validate_composition(study["unified_composition"])
+        _require(study["authority"] == comp["authority"]["prefix_authority"], "unified_prefix_authority")
+        _require(run["visual_observation"]["authority"] == comp["visual_authority"], "unified_prefix_visual_binding")
+        from .starship_trouble_engine import manifest_digest
+        _require(run["trouble"]["manifest_sha256"] == manifest_digest(comp["prefix_faults"]), "unified_prefix_fault_binding")
+        if handoff is None:
+            _require(type(study["handoff_error"]) is str and bool(study["handoff_error"]), "missing_handoff_reason")
+            return False
+        _require(study["handoff_error"] is None, "unified_handoff_error")
+        validate_deployment_origin(profile, comp["authority"]["m2_authority"], handoff, run,
+                                   visual_authority=comp["visual_authority"])
+        validate_visual_origin(comp["visual_authority"], comp["authority"]["m2_authority"], handoff, run, trace=trace)
+        return True
     if handoff is None:
         _require(type(study["handoff_error"]) is str and bool(study["handoff_error"]), "missing_handoff_reason")
         return False

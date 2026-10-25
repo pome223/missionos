@@ -9,16 +9,29 @@ from .starship_mission_director import MissionDirector, contract, digest
 class M3Directors:
     """Route only prefix operations; never merge one body's grant into another."""
 
-    def __init__(self, ship_envelope, booster_envelope, tracker, *, fixture_decider=None, run_id, mode="fixture", mailbox=None):
+    def __init__(self, ship_envelope, booster_envelope, tracker, *, fixture_decider=None, run_id, mode="fixture", mailbox=None, visual_runtime=None):
         if (digest(ship_envelope) != digest(contract(mode))
                 or digest(booster_envelope) != digest(contract(mode, splashdown=True))):
             raise ValueError("m3_body_authority_not_registered")
         if mode == "live" and (fixture_decider is not None or mailbox is None):
             raise ValueError("m3_live_directors_require_phase_mailboxes")
         root = Path(mailbox) if mailbox is not None else None
-        self.ship = ObservedDeploymentDirector(ship_envelope, tracker,
+        options = {}
+        ship_class = ObservedDeploymentDirector
+        if visual_runtime is not None:
+            from .starship_visual_director import VisualDeploymentDirector, VisualRuntime
+            from .starship_unified_contract import validate_composition
+            comp = validate_composition(visual_runtime.composition)
+            if (type(visual_runtime) is not VisualRuntime or mode != "fixture"
+                    or visual_runtime.authority != comp["visual_authority"]
+                    or ship_envelope != comp["authority"]["m2_authority"]["deployment_authority"]
+                    or booster_envelope != comp["authority"]["prefix_authority"]["booster_authority"]):
+                raise ValueError("m3_visual_body_authority_binding")
+            ship_class, options = VisualDeploymentDirector, {"visual_runtime": visual_runtime}
+        self.visual_runtime = visual_runtime
+        self.ship = ship_class(ship_envelope, tracker,
             fixture_decider=fixture_decider, run_id=run_id + "-deployment",
-            mailbox=root / "deployment" if mode == "live" else None)
+            mailbox=root / "deployment" if mode == "live" else None, **options)
         self.booster = MissionDirector(booster_envelope, fixture_decider=fixture_decider,
                                       run_id=run_id + "-booster",
                                       mailbox=root / "booster" if mode == "live" else None)
@@ -81,3 +94,8 @@ class M3Directors:
 
     def finish_booster(self):
         return self.booster.finish()
+
+    def visual_command(self, command, row):
+        if self.visual_runtime is None:
+            raise ValueError("m3_visual_command_without_composition")
+        return self.ship.visual_command(command, row)

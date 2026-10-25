@@ -9,6 +9,7 @@ or model wait; between decisions the numerical simulation may run accelerated.
 from copy import deepcopy
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict
+from hashlib import sha256
 import json
 from pathlib import Path
 import time
@@ -28,7 +29,7 @@ from .starship_replanning import (
 )
 from .starship_replanning_verifier import admit, metrics, wait_reasons, fresh_match
 from .starship_mission_director import publish
-from .starship_artifacts import write_verified_input
+from .starship_artifacts import write_verified_checkpoint, write_verified_input
 from .starship_orbital_window import (
     CONFIG as WINDOW_CONFIG, decision_window, reserved_decision_s, prepared_reasoning_eligible,
 )
@@ -37,6 +38,16 @@ HANDOFF_TIME_S = 1000.7000000000407
 
 
 def prediction_job(job):
+    forecast_timeout_s = 180.
+    if len(job) == 8:
+        *job, forecast_timeout_s = job
+        if type(forecast_timeout_s) not in (int, float) or forecast_timeout_s != 300.:
+            raise ValueError("invalid_registered_forecast_resource_profile")
+    compact_artifacts = False
+    if len(job) == 7:
+        *job, compact_artifacts = job
+        if type(compact_artifacts) is not bool:
+            raise ValueError("invalid_forecast_artifact_mode")
     origin, profile, when, scheduled, destination, integration_scale = job
     profile = deepcopy(profile)
     for field in ("powered_dt_s", "coast_dt_s"):
@@ -46,7 +57,7 @@ def prediction_job(job):
         raise TimeoutError("m1_forecast_wall_deadline")
 
     signal.signal(signal.SIGALRM, expired)
-    signal.setitimer(signal.ITIMER_REAL, 180.0)
+    signal.setitimer(signal.ITIMER_REAL, forecast_timeout_s)
     try:
         result = forecast(
             origin,
@@ -58,7 +69,15 @@ def prediction_job(job):
     finally:
         signal.setitimer(signal.ITIMER_REAL, 0.0)
     path = Path(destination)
-    result = write_verified_input(path, result)
+    if compact_artifacts:
+        # The checkpoint writer verifies the saved compressed bytes and returns
+        # their decoded JSON. Keep prediction identity tied to the exact same
+        # uncompressed serialization used by legacy forecast artifacts.
+        result = write_verified_checkpoint(path, result)
+        prediction_sha256 = json.loads(path.read_bytes())["json_sha256"]
+    else:
+        result = write_verified_input(path, result)
+        prediction_sha256 = sha256(path.read_bytes()).hexdigest()
     compact = {
         "origin": origin,
         "integration_scale": integration_scale,
@@ -66,7 +85,7 @@ def prediction_job(job):
         "outcome": result["outcome"],
         "return_time_s": when,
         "wall_time_s": result["wall_time_s"],
-        "prediction_sha256": __import__("hashlib").sha256(path.read_bytes()).hexdigest(),
+        "prediction_sha256": prediction_sha256,
         "coast": [
             {
                 k: s[k]
@@ -88,7 +107,8 @@ def prediction_job(job):
 
 class ReplanningExecutor:
     def __init__(
-        self, profile, envelope, case, output, *, mailbox=None, run_id="standalone", deployment=None
+        self, profile, envelope, case, output, *, mailbox=None, run_id="standalone", deployment=None,
+        composition=None
     ):
         self.p, self.envelope, self.case = profile, envelope, case
         if "orbital_planning_window" in envelope:
@@ -104,6 +124,14 @@ class ReplanningExecutor:
         self.deployment = deepcopy(deployment)
         self.deployment_binding = None
         self.retained_count = 0
+        self.compact_artifacts = False
+        if composition is not None:
+            from .starship_unified_contract import validate_composition
+            composition = validate_composition(composition)
+            if (deployment is None or deployment["authority"] != composition["authority"]["m2_authority"]
+                    or deployment.get("visual_authority") != composition["visual_authority"]
+                    or envelope != composition["return_authority"] or envelope["mode"] != "fixture"):
+                raise ValueError("unified_return_resource_authority_binding")
         if deployment is None:
             self.launch = simulate(
                 profile, return_policy="trimmed_state_terminal_v4", duration_s=HANDOFF_TIME_S
@@ -117,13 +145,18 @@ class ReplanningExecutor:
             from .starship_m2_contract import validate_deployment_origin
 
             context = validate_deployment_origin(
-                profile, deployment["authority"], deployment["handoff"], deployment["launch"]
+                profile, deployment["authority"], deployment["handoff"], deployment["launch"],
+                visual_authority=deployment.get("visual_authority"),
             )
             if (
-                envelope != deployment["authority"]["return_authority"]
+                envelope != (composition["return_authority"] if composition is not None
+                             else deployment["authority"]["return_authority"])
                 or case != deployment["authority"]["return_case"]
             ):
                 raise ValueError("m2_return_authority_mismatch")
+            # Only a validated visual deployment enables compact duplicates.
+            # Neither a profile field nor an arbitrary caller flag grants it.
+            self.compact_artifacts = deployment.get("visual_authority") is not None
             self.launch = deepcopy(deployment["launch"])
             self.retained_count = context["retained_count"]
             self.deployment_binding = {
@@ -138,8 +171,10 @@ class ReplanningExecutor:
                 )
             }
             # An exact execution state resumes here. Never install predicted state.
-            write_verified_input(self.output / "deployment-handoff.json", deployment)
-        write_verified_input(self.output / "launch-checkpoint.json", self.launch)
+            save_checkpoint = write_verified_checkpoint if self.compact_artifacts else write_verified_input
+            save_checkpoint(self.output / "deployment-handoff.json", deployment)
+        save_checkpoint = write_verified_checkpoint if self.compact_artifacts else write_verified_input
+        save_checkpoint(self.output / "launch-checkpoint.json", self.launch)
         self.s = dyn.state_from_dict(self.launch["final_state"])
         self.origin = asdict(self.s)
         cutoff = next(
@@ -636,7 +671,13 @@ class ReplanningExecutor:
             variants = [(o, 1.0) for o in uncertainty_origins(observed)] + [(observed, 0.5)]
             for origin, scale in variants:
                 target = self.output / f"forecast-{self.forecast_count + len(jobs)}.json"
-                jobs.append((origin, self.p, self.times[name], self.scheduled, str(target), scale))
+                job = (origin, self.p, self.times[name], self.scheduled, str(target), scale)
+                bound_job = job + (True,) if getattr(self, "compact_artifacts", False) else job
+                if self.envelope.get("resource_profile") == "unified_forecast_300_v1":
+                    if self.envelope["forecast_timeout_s"] != 300. or not self.compact_artifacts:
+                        raise ValueError("unified_forecast_resource_binding")
+                    bound_job += (300.,)
+                jobs.append(bound_job)
         self.forecast_count += len(jobs)
         pool = None
         operation_start, wall_start = self.s.time_s, time.monotonic()

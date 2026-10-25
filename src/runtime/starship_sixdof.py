@@ -542,6 +542,41 @@ def _rk4(y: list[float], vehicle: Vehicle6DOF, command: Command6DOF,
     return out
 
 
+class _FuelDepletionCrossing(Exception):
+    """Private RK4 trial bracket; never a completed physical endpoint."""
+    def __init__(self, y, vehicle, command, available, dt, time_s, *,
+                 subdivisions, completed_substeps, fuel_before, fuel_after):
+        if (type(subdivisions) is not int or subdivisions not in (2, 4, 8)
+                or type(completed_substeps) is not int
+                or not 1 <= completed_substeps <= subdivisions):
+            raise ValueError("invalid_refined_fuel_crossing_bracket")
+        for value in (y[13], dt, time_s, fuel_before, fuel_after):
+            _finite(value, "refined fuel bracket")
+        if not (dt > 0 and y[13] > 0 and 0 < fuel_before <= y[13]
+                and (fuel_after < 0 or completed_substeps < subdivisions and fuel_after == 0)):
+            raise ValueError("invalid_refined_fuel_crossing_bracket")
+        self._binding = (id(y), id(vehicle), id(command), id(available), dt, time_s)
+        self.subdivisions, self.completed_substeps = subdivisions, completed_substeps
+        self.fuel_before, self.fuel_after = fuel_before, fuel_after
+        super().__init__("refined_fuel_depletion_crossing_requires_outer_root")
+
+    def validate(self, y, vehicle, command, available, dt, time_s):
+        if (type(self) is not _FuelDepletionCrossing
+                or self._binding != (id(y), id(vehicle), id(command), id(available), dt, time_s)):
+            raise ValueError("refined_fuel_crossing_not_current_trial")
+
+
+def _fuel_trial(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+                force, torque, gradient, time_s):
+    """Only an exact typed event can mark a rejected trial without a state."""
+    try:
+        return _rk4(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+                    force, torque, gradient, time_s), False
+    except _FuelDepletionCrossing as event:
+        event.validate(y, vehicle, command, available, dt, time_s)
+        return None, True
+
+
 def step(state: State6DOF, vehicle: Vehicle6DOF, command: Command6DOF, dt_s: float, *,
          gravity: bool = True, j2: bool = True, atmosphere: bool = True,
          external_force_body_n: Vector = ZERO, external_torque_body_nm: Vector = ZERO,
@@ -585,22 +620,28 @@ def step(state: State6DOF, vehicle: Vehicle6DOF, command: Command6DOF, dt_s: flo
             maximum = min(maximum, vehicle.wind.gust_period_s/32)
         angular_dt = 0.1/max(env.norm(tuple(y[10:13])), 1e-12)
         dt = min(remaining, maximum, angular_dt)
-        trial = _rk4(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+        trial, crossing = _fuel_trial(y, vehicle, command, available, dt, gravity, j2, atmosphere,
                      external_force_body_n, external_torque_body_nm, gravity_gradient, state.time_s+elapsed)
-        if trial[13] < 0:
+        if crossing or trial[13] < 0:
+            refined_bracket = crossing
             # Find first empty-tank endpoint using the same continuous RHS.
             low, high = 0.0, dt
             for _ in range(50):
                 mid = (low+high)/2
-                candidate = _rk4(y, vehicle, command, available, mid, gravity, j2, atmosphere,
+                candidate, crossing = _fuel_trial(y, vehicle, command, available, mid, gravity, j2, atmosphere,
                                  external_force_body_n, external_torque_body_nm, gravity_gradient, state.time_s+elapsed)
-                if candidate[13] >= 0:
+                refined_bracket = refined_bracket or crossing
+                if not crossing and candidate[13] >= 0:
                     low = mid
                 else:
                     high = mid
             dt = max(low, 1e-14)
-            trial = _rk4(y, vehicle, command, available, dt, gravity, j2, atmosphere,
+            trial, crossing = _fuel_trial(y, vehicle, command, available, dt, gravity, j2, atmosphere,
                          external_force_body_n, external_torque_body_nm, gravity_gradient, state.time_s+elapsed)
+            if crossing or refined_bracket and trial[13] < 0:
+                # An event earlier than a representable accepted low endpoint
+                # remains a finite numerical refusal, never a reset/zero-time loop.
+                raise ValueError("refined_fuel_root_endpoint_not_representable")
             trial[13] = 0.0
         elif trial[13] < 1e-12:
             trial[13] = 0.0

@@ -63,7 +63,7 @@ def budget(authority):
 def run_simulation(
     profile, case, output, *, mode="fixture", authority=None, mailbox=None, run_id="m2-fixture",
     concurrent_prefix=False, inflight_runtime=None, expected_prefix_authority=None,
-    inflight_outer_authority=None, inflight_binding=None
+    inflight_outer_authority=None, inflight_binding=None, visual_runtime=None
 ):
     """Run once and persist negative outcomes and partial failures alike."""
     if type(concurrent_prefix) is not bool:
@@ -124,12 +124,21 @@ def run_simulation(
 
     authority = m2_contract(mode, case) if authority is None else authority
     validate_worker_input(authority, mode=mode, case=case, run_id=run_id, mailbox=mailbox)
+    if visual_runtime is not None:
+        from .starship_visual_contract import validate_authority
+        from .starship_visual_director import VisualRuntime
+        if (type(visual_runtime) is not VisualRuntime or concurrent_prefix or mode != "fixture"
+                or visual_runtime.run_id != run_id
+                or validate_authority(visual_runtime.authority)["m2_authority"] != authority):
+            raise ValueError("visual_runtime_authority_binding")
     if inflight_runtime is not None:
         from .starship_inflight_executor import validate_inflight_executor_contract
         validate_inflight_executor_contract(inflight_runtime["inflight"], authority["return_authority"],
                                             run_id=run_id+"-return")
     output.mkdir(parents=True, mode=0o700)
     source_provider = sources
+    if visual_runtime is not None:
+        from .starship_visual_contract import sources as source_provider
     if concurrent_prefix:
         from .starship_m3_fixture import sources as source_provider
         if m3_control:
@@ -201,13 +210,19 @@ def run_simulation(
             tracker = DeploymentTracker(profile["payload"]["count"], digest(authority))
             from src.intelligence.starship_mission_director import fixture_decision
 
-            director = ObservedDeploymentDirector(
+            director_class, director_kwargs = ObservedDeploymentDirector, {}
+            if visual_runtime is not None:
+                from .starship_visual_director import VisualDeploymentDirector
+                director_class = VisualDeploymentDirector
+                director_kwargs = {"visual_runtime": visual_runtime}
+            director = director_class(
                 authority["deployment_authority"],
                 tracker,
                 mailbox=Path(mailbox) / "deployment" if mode == "live" else None,
                 fixture_decider=fixture_decision if mode == "fixture" else None,
                 run_id=run_id + "-deployment",
                 response_fault=authority["deployment_response_fault"],
+                **director_kwargs,
             )
             sites = ReturnSites.from_dict(
                 json.loads((ROOT / "examples/spaceflight/starship-return-sites-model-test.json").read_text()),
@@ -217,11 +232,17 @@ def run_simulation(
             study["runtime"]["deployment_started"] = True
             launch = simulate(profile, mission_director=director,
                               mission_case=authority["deployment_case"], return_sites=sites,
-                              duration_s=authority["checkpoint_time_s"])
+                              duration_s=authority["checkpoint_time_s"],
+                              **({"visual_runtime": visual_runtime} if visual_runtime is not None else {}))
+            if visual_runtime is not None:
+                launch["visual_observation"] = visual_runtime.finish()
             launch = write_verified_input(output / "deployment-run.json", launch)
             study["deployment_run"] = launch
             if director.pending.get("ship"):
                 raise ValueError("m2_unconfirmed_deployment_command")
+            if visual_runtime is not None:
+                visual_runtime.require_inventory_ready(launch["final_state"]["time_s"],
+                                                       launch["outcome"]["payload_released_count"])
             handoff = tracker.freeze(launch["final_state"], digest(profile))
             handoff = write_verified_input(output / "handoff.json", handoff)
             study["handoff"] = handoff
@@ -235,7 +256,8 @@ def run_simulation(
             continuation_output,
             run_id=run_id + "-return",
             mailbox=Path(mailbox) / "return" if mode == "live" else None,
-            deployment={"authority": authority, "handoff": handoff, "launch": launch},
+            deployment={"authority": authority, "handoff": handoff, "launch": launch,
+                        **({"visual_authority": visual_runtime.authority} if visual_runtime is not None else {})},
             **executor_options,
         )
         study["runtime"]["continuation_started"] = True
@@ -275,9 +297,9 @@ def run_simulation(
                     "message":"host_attempt_ledger_unavailable", "retry_performed":False}
         study["runtime"]["wall_time_s"] = time.monotonic() - started
         study["runtime"]["sources_unchanged"] = source_provider() == frozen_sources and return_sources() == inner_sources
-        # The M3 outer study embeds these complete values. Preserve nested
+        # The M3/visual outer study embeds these complete values. Preserve nested
         # checkpoints losslessly without storing another uncompressed copy.
-        save_checkpoint = write_verified_checkpoint if concurrent_prefix else write_verified_input
+        save_checkpoint = write_verified_checkpoint if concurrent_prefix or visual_runtime is not None else write_verified_input
         if study["return_study"] is not None:
             study["return_study"] = save_checkpoint(output / "return-study.json", study["return_study"])
         study = save_checkpoint(output / "study.json", study)

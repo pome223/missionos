@@ -1,0 +1,27 @@
+{
+  "schema": "missionos.starship_reference_selection.v2",
+  "status": "accepted_for_bounded_engineering_evaluation",
+  "created_on": "2026-10-18",
+  "immutable_parent": {
+    "path": "docs/assets/starship-reference-v1-20261018/reference.json",
+    "sha256": "162c8deafb8e850f85e97e67d244f6e0d06e2504342ffc3961eca2555387aaca"
+  },
+  "acceptance_record": {
+    "path": "docs/assets/starship-reference-v2-20261018/acceptance.json",
+    "sha256": "4318ca69bfbfb5767315c553f9d27bc67a35a0fb3ffa70484abafe9d3ebddef8"
+  },
+  "acceptance_supplement": {
+    "path": "examples/spaceflight/starship-fidelity-acceptance-registration.json",
+    "sha256": "8109b95cf3b9331c70971aaba89e015a321ec645e335bc394082fc3ac8395781"
+  },
+  "data_handling": {
+    "original_csvs_preserved": true,
+    "quarantine_source": "docs/assets/starship-reference-v1-20261018/data-quality.json",
+    "mask": "exclude the11 declared wrong-body altitude fields, without filling values; speed mask unchanged",
+    "altitude_points": 145,
+    "speed_points": 442
+  },
+  "authority": "accepted reference definition, not physical qualification or flight dispatch",
+  "new_physics_runs": 0,
+  "mission_provider_calls": 0
+}

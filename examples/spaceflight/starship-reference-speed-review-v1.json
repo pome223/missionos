@@ -1,0 +1,66 @@
+{
+  "schema": "missionos.starship_reference_speed_review.v1",
+  "registered_on": "2026-10-18",
+  "status": "registered_before_frame_review",
+  "trigger": "v3 saved residual/source review found abrupt processed speed changes; missing leading digits is an unconfirmed hypothesis, not grounds to remove points",
+  "source_url": "https://www.spacex.com/launches/starship-flight-14",
+  "broadcast_url": "https://x.com/i/broadcasts/1qxvvenMPMQxB",
+  "broadcast_offset_s": 2150.5,
+  "source_csv": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+  "source_csv_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+  "frames": [
+    {
+      "id": "S01",
+      "mission_elapsed_s": 77,
+      "requested_broadcast_s": 2227.5
+    },
+    {
+      "id": "S02",
+      "mission_elapsed_s": 80,
+      "requested_broadcast_s": 2230.5
+    },
+    {
+      "id": "S03",
+      "mission_elapsed_s": 83,
+      "requested_broadcast_s": 2233.5
+    },
+    {
+      "id": "S04",
+      "mission_elapsed_s": 84,
+      "requested_broadcast_s": 2234.5
+    },
+    {
+      "id": "S05",
+      "mission_elapsed_s": 88,
+      "requested_broadcast_s": 2238.5
+    },
+    {
+      "id": "S06",
+      "mission_elapsed_s": 90,
+      "requested_broadcast_s": 2240.5
+    }
+  ],
+  "review_fields": [
+    "visible mission clock",
+    "body labels",
+    "displayed speed/altitude or unreadable",
+    "seek/clock mismatch",
+    "comparison to preserved processed CSV"
+  ],
+  "limits": {
+    "maximum_targets": 6,
+    "maximum_acquisition_attempts_per_target": 2,
+    "maximum_storage_bytes": 268435456,
+    "sixdof_runs": 0,
+    "hosted_model_calls": 0
+  },
+  "decision_rules": [
+    "preserve raw images, clock, hashes and old CSV unchanged",
+    "do not infer missing digits, interpolate or correct from model residuals",
+    "if display differs, distinguish seek/filter offsets, OCR/body error and public telemetry anomaly; remain uncertain if unavailable",
+    "any changed accepted reference or mask requires a separate version before further calibration; prior v3 results keep original gates/masks",
+    "not blind or an estimate of population OCR error rate"
+  ],
+  "output": "output/starship-system-repair-20261018/speed-reference-review-v1",
+  "cleanup": "retain originals; hash/archive/restore before deletion; no public push, no whole-broadcast copy"
+}

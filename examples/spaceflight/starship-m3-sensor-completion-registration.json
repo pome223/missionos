@@ -1,0 +1,71 @@
+{
+  "schema": "missionos.starship_m3_sensor_completion_registration.v1",
+  "revision": 3,
+  "goal": "Finish PR #259 on its unchanged runtime: one supplemental fixture then three new live missions. Stop Starship feature additions at that boundary.",
+  "runtime_plan_sha256": "816950f0b0fd3ce3e2219dc0b48ec152bf41a03d042bdf51adc6ae704830ff2e",
+  "runtime_registration": "examples/spaceflight/starship-m3-sensor-registration-v2.json",
+  "runtime_source_commit": "9f7129d30d7fb0974241308b3bf2dfbf134a03c7",
+  "runtime_source_files": 126,
+  "reused_preflights": [
+    {
+      "case_id": "normal",
+      "original_verification_sha256": "3c30ba6e0e813a6edbe367e35df313eb99b8a96171b09d8f882c6070680da4f1",
+      "conditions": "All runtime source/backend hashes match; independent verifier rerun on preserved full record and host captures; original evidence tree content hashes unchanged."
+    },
+    {
+      "case_id": "propulsion_80",
+      "original_verification_sha256": "da8bbe0fcca5f1fa5038b363b08767016e88ad7ee31b3623eff986f02a2f30b8",
+      "conditions": "All runtime source/backend hashes match; independent verifier rerun on preserved full record and host captures; original evidence tree content hashes unchanged."
+    }
+  ],
+  "supplement_preflight": {
+    "cases": [
+      "sensor_gain_80"
+    ],
+    "maximum_new_flights": 1,
+    "hosted_model_calls": 0,
+    "requires": "New explicit approval of the exact completion-plan hash. The interrupted v2 attempt remains failed and is not overwritten."
+  },
+  "live": {
+    "cases": [
+      "normal",
+      "propulsion_80",
+      "sensor_gain_80"
+    ],
+    "maximum_new_flights": 3,
+    "maximum_attempts_per_case": 1,
+    "requires": "Successful independent reuse of both completed preflights plus passed new sensor preflight, then separate explicit approval of the exact completion-plan hash.",
+    "provider_policy": "Original Jev plus explicitly delegated DeepSeek; no persistent DeepSeek call-count cap.",
+    "fault_success": "passed physical verification AND ai_control_completed true; a checked fallback is recorded separately, not counted as completed AI control."
+  },
+  "limits": {
+    "maximum_wall_time_s_per_flight": 1800,
+    "maximum_output_bytes_per_flight": 1073741824,
+    "minimum_free_bytes_during_flight": 5368709120,
+    "minimum_free_bytes_before_each_flight": 21474836480,
+    "maximum_stage_wall_time_s": 5400,
+    "maximum_stage_output_bytes": 3221225472,
+    "maximum_sensor_forecasts_per_fault_flight": 6,
+    "maximum_forecast_workers": 2,
+    "automatic_retry": false
+  },
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "failure_policy": "Stop on first invalid, interrupted, unsuccessful or live fault without completed AI control. Preserve it and every not-started case. No retry, model resend, threshold/source change or substitute flight under this registration.",
+  "no_new_features": [
+    "visual/M3 image routing (#260)",
+    "tower catch",
+    "multiple flights per day",
+    "new fault kinds or initial states"
+  ],
+  "ci_policy": "CI billing restriction is reported separately. No billing change, automatic CI retry, merge or publication is authorized by this registration.",
+  "retention": {
+    "output": "output/starship-m3-sensor-completion-20261016",
+    "original_v2_retained": true,
+    "physical_execution_authorized": false
+  }
+}

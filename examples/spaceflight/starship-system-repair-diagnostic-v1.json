@@ -1,0 +1,38 @@
+{
+  "schema": "missionos.starship_system_repair_diagnostic.v1",
+  "registered_on": "2026-10-18",
+  "basis": "Direct user request to repair the whole system rather than accept capability regression. Previous finite cohorts remain closed and immutable.",
+  "parent_negative_commit": "9e2effc3f785e46b9e79902ce69be72a5f27ab52",
+  "scope": "Source fixes and saved-state static diagnostics first; no hosted model, hardware or qualification authority.",
+  "preserve": [
+    "old successful records",
+    "all negative records and registrations",
+    "masses and fuel/reserves",
+    "contact acceptance gates",
+    "actual state/actuator/payload continuity"
+  ],
+  "static_trim_diagnostic": {
+    "maximum_evaluations": 2,
+    "maximum_wall_time_s": 120,
+    "source_record": "docs/assets/starship-ship-fidelity-v1-20261018/baseline-record.json.gz",
+    "gzip_sha256": "4f46c4d741addcf33eba246e2199f39054de9170dae05dddf9941c1963aa7afb",
+    "sample_selection": "nearest saved ballistic_return sample to97700m and60000m; earliest index on tie; nointerpolation",
+    "goal": "Re-evaluate existing static trim using actual saved state and actual vehicle; record why root is unavailable and do not assign predicted states to plant.",
+    "state_variants": 0,
+    "plant_advances": 0,
+    "retry": false
+  },
+  "source_repair_boundaries": {
+    "ascent": "explicit distinct first-burn and final-insertion objectives; default legacy/v2/v3 unchanged; no finalgate relaxation",
+    "booster": "infeasible fuel-exhausted forecast cannot masquerade as feasible stopping height; explicitbounded fallback request",
+    "ship": "record every statictrim failure and its measured context; preserve actual pose/flap dynamics",
+    "numerics": "separate controller polling/allocator horizon from physical substeps; preserve old dt_scale results and labels"
+  },
+  "new_sixdof_cohort": {
+    "status": "not_registered_not_started;freeze repaired source and a separate finite physical diagnostic before any integration",
+    "hosted_model_calls": 0
+  },
+  "termination": "static solver timeout, source/hash mismatch or invalidrecord stops without retry; persistent source record remains untouched",
+  "outputs": "output/starship-system-repair-20261018/static-trim",
+  "cleanup": "retain source/results and rawrecords; compress and restoreverify before any future deletion; no Dockerresources"
+}

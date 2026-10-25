@@ -1,0 +1,208 @@
+{
+  "schema": "missionos.starship_booster_fidelity_registration.v1",
+  "experiment_id": "starship-booster-fidelity-v1-20261018",
+  "registered_on": "2026-10-18",
+  "status": "preregistered_before_any_stage2c_plant_step",
+  "source_freeze_commit": null,
+  "authority": {
+    "basis": "Direct user: final Stage2b retry once; preserve negative and proceed to Stage2c. Existing finite closeout request continues.",
+    "local_sixdof_scope": "Exactly baseline1 plus fixed six candidates after code, pure contract checks and clean committed source/environment plan. One explicit CLI claim; no resume or extra flight.",
+    "hosted_model_calls_authorized": false,
+    "physical_execution_authorized": false,
+    "public_push_or_merge_authorized": false,
+    "normal_certificate_revalidated": false
+  },
+  "scope": "One exact inherited actual separation. Exposed guidance timing experiment, not SpaceX flight software, validated hardware, catch, AI trial or final mission.",
+  "seed_record": {
+    "path": "docs/assets/starship-ascent-final-retry-v3-20261018/baseline-seed-record.json.gz",
+    "sha256": "a077b9f70be35f879c08dfa6a50da1a52417808fc0b386eccf76ac06bd396427"
+  },
+  "seed_plan": {
+    "path": "docs/assets/starship-ascent-final-retry-v3-20261018/execution-plan.json",
+    "sha256": "a49c4b391bacb89666a524e6011ba616b4a383f592bf1a75b34b12581736a884"
+  },
+  "seed_separation_sha256": "76a73bd6d2a3dc52d5f48407add59184a712cc970abfd3e318455ab958d6cdcc",
+  "seed_case_id": "B0",
+  "seed_ascent_fit_passed": false,
+  "seed_selection_rule": "Immutable v3 fallback B0 locked before booster. Do not replace by an altitude/booster winner.",
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "docs/agents/starship-flight14-research.json": "db18f14d2248e29e76e60f6952db8f33cadb3c6db13a56e585cde1fb876a20bb",
+    "docs/assets/starship-flight14-telemetry-20261017/booster_return.csv": "c0ad296231c5e7a6c4677d705b258adf23fd51669a797290cace34952eeafb45",
+    "docs/assets/starship-reference-v2-20261018/reference.json": "eefdd1b147a13d371e87c2b861fc69d57b0ea6c497e679e9f67d2f15b26229c7",
+    "docs/assets/starship-ascent-final-retry-v3-20261018/selection.json": "3648c0a31ce516b776a6400a0b4ff14ad9d73cfb6c6c41d5e53edc1e1ceef204",
+    "docs/assets/starship-ascent-final-retry-v3-20261018/execution-receipt.json": "3854a375f1ab045bc980a19ded2bfd66013d4d686b863ad482a72485da746a9d"
+  },
+  "baseline": {
+    "id": "B0",
+    "guidance_policy": "fixed_v1",
+    "fidelity_settings": null
+  },
+  "candidate_policy": "fidelity_schedule_v1",
+  "candidate_grid": [
+    {
+      "id": "C01",
+      "boostback_velocity_tau_s": 25.0,
+      "landing_ignition_margin_m": 150.0
+    },
+    {
+      "id": "C02",
+      "boostback_velocity_tau_s": 25.0,
+      "landing_ignition_margin_m": 300.0
+    },
+    {
+      "id": "C03",
+      "boostback_velocity_tau_s": 25.0,
+      "landing_ignition_margin_m": 600.0
+    },
+    {
+      "id": "C04",
+      "boostback_velocity_tau_s": 35.0,
+      "landing_ignition_margin_m": 150.0
+    },
+    {
+      "id": "C05",
+      "boostback_velocity_tau_s": 35.0,
+      "landing_ignition_margin_m": 300.0
+    },
+    {
+      "id": "C06",
+      "boostback_velocity_tau_s": 35.0,
+      "landing_ignition_margin_m": 600.0
+    }
+  ],
+  "adjustable_parameters": {
+    "independent_scalar_count": 2,
+    "maximum_accepted_independent_scalars_per_stage": 6,
+    "no_additional_search": true
+  },
+  "fixed_policy": {
+    "boostback_open_s": 147.0,
+    "boostback_latest_cutoff_s": 187.0,
+    "opening_is_not_forced_ignition": "Actual separation then measured alignment/reserve guards still required; record lateness.",
+    "landing_reserve_kg": 60000.0,
+    "maximum_landing_engines": 13,
+    "guidance_family": "existing site_return_v3 measured-drag spool/fuel preview, position-feedback landing, impact mitigation if fuel-infeasible",
+    "control": "shared actual measured TVC allocation, spooldown authority retained; coast PD limited by configured RCS torque/inertia. No attitude/velocity/fault/actuator state reset.",
+    "original_profile_unchanged": true,
+    "original_physics_and_mass_propellant_unchanged": true,
+    "original_default_guidance_unchanged": true,
+    "duration_s": 1200.0,
+    "tower_catch_excluded": true
+  },
+  "source_limits": {
+    "official_url": "https://www.spacex.com/launches/starship-flight-14",
+    "schedule_class": "published_approximate_plan_not_observed_flight_timing",
+    "reported_boostback_reignition": "31 of33, exact IDs and switch times unknown",
+    "reported_landing_reignition": "11 of13 then5 to3; exact IDs/times/throttle unknown",
+    "model_discrepancy": "Actual inherited main32 failed; candidate requests up to33 boostback and13 gimballed landing, actual availability32/13. Do not invent extra unavailable flags to match counts.",
+    "one_km_ignition": "Not established by primary source. Processed CSV shows altitude2.95km at396s/2.5km at398s. Do not force1km plus396s.",
+    "curves": "Processed broadcast OCR/rolling median, unknown display latency/datum; surface-speed working assumption. Previously seen data, not blind holdout.",
+    "propulsion": "Stage2a Raptor pressure/Isp identification remains unavailable; constant thrust/common Isp frozen."
+  },
+  "timing_fit": {
+    "targets": {
+      "booster_boostback_ignition_command": 147.0,
+      "booster_boostback_cutoff_command": 187.0,
+      "booster_landing_burn_requested": 396.0
+    },
+    "maximum_individual_error_s": 15.0,
+    "aggregation": "mean_absolute_error",
+    "tie_break": "registered_id",
+    "missing_events": "timing_inadmissible_valid_negative",
+    "timing_pass_is_not_physical_return_pass": true,
+    "planned_landing_end_s": 421.0,
+    "planned_landing_end_used_for_ranking": false,
+    "nonranked_end_note": "No invented landing-end command: separately show contact time versus planned421, never rank contact outcome."
+  },
+  "non_fitted_curve": {
+    "file": "docs/assets/starship-flight14-telemetry-20261017/booster_return.csv",
+    "elapsed_s_inclusive": [
+      246.0,
+      369.0
+    ],
+    "source_lines_inclusive": [
+      51,
+      174
+    ],
+    "expected_altitude_points": 124,
+    "expected_speed_points": 115,
+    "expected_altitude_bins": 25,
+    "expected_speed_bins": 25,
+    "bin_width_s": 5.0,
+    "interpolation": "linear finite brackets <=2.1s; no extrapolation",
+    "masks": "each finite field independently; no fill/quarantine/new smoothing/timeoffset search",
+    "curve_used_for_ranking": false,
+    "incomplete_coverage": "physical early termination is valid negative, report missing metrics; unexplained nonphysical gaps are invalid and stop"
+  },
+  "non_fitted_booster_check": {
+    "apex_target_m": 99000.0,
+    "apex_tolerance_m": 10000.0,
+    "descending_height_m": 40000.0,
+    "descending_observed_interval_s": [
+      353.0,
+      354.0
+    ],
+    "descending_maximum_interval_distance_s": 15.0,
+    "used_for_ranking": false,
+    "classification": "previously_seen_processed_display_derived_engineering_check_not_blind_validation"
+  },
+  "physical_acceptance": {
+    "unchanged": true,
+    "contact_speed_limit_mps": 5.0,
+    "contact_tilt_limit_deg": 10.0,
+    "contact_rate_limit_rad_s": 0.05,
+    "return_site_tolerance_m": 1000.0,
+    "source": "unchanged profile booster_return defaults; actual contact point speed vs COM speed distinguished",
+    "catch_success_inferred": false,
+    "not_selected_by_contact_result": true
+  },
+  "budgets": {
+    "maximum_rollouts": 7,
+    "per_case_wall_s": 300.0,
+    "cohort_wall_s": 2400.0,
+    "workers": 1,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "maximum_models": 0
+  },
+  "execution_order": [
+    "B0",
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+    "C05",
+    "C06"
+  ],
+  "execution_binding": [
+    "clean committed source",
+    "all starship runtime, runner, verifier, registration, inputs and environment hashed before one claim",
+    "same seed state/profile every case",
+    "sanitized worker environment without provider/approval secrets",
+    "watchdog deadline/storage/source checks",
+    "gzip saved and JSON restored before independent saved verification; no extra plant step for verification"
+  ],
+  "stop_rules": [
+    "Any invalid record/numerical/source/environment/handoff error stops all; no automatic resume/retry",
+    "300s per case,2400s whole,2GiBoutput,10GiBfree enforced",
+    "Valid physical negative continues only the predeclared remaining grid",
+    "No threshold, actuator, engine-count, mass, propellant, aero or gain tuning after results",
+    "After7 attempts, close Stage2c with observed limitations; no further Stage2c calibration"
+  ],
+  "outcome_rules": {
+    "timing_candidate": "Only if all3command errors<=15s choose lowest mean absolute error; tieID. Inspect nonfit/physical outcomes only after selection.",
+    "no_timing_candidate": "selected_id null, Stage2c negative; preserve baseline plus all failed candidates. Do not select by contact or descent curve.",
+    "timing_only": "If timing fits but descent/apex/contact fail, retain failure separately. Do not call vehicle validated or recovery successful.",
+    "next_stage": "Prepare separate finite Stage2d from actual valid Ship state and compatible assumptions, not an invented successful booster trajectory. No native AI trials or qualification now."
+  },
+  "retention": {
+    "output_directory": "output/starship-booster-fidelity-v1-20261018/cohort",
+    "reviewed_small_artifacts": "docs/assets/starship-booster-fidelity-v1-20261018",
+    "raw_private_archive": "output/starship-ascent-closure-20261018",
+    "full_member_hash_mode_and_sample_restore_required": true,
+    "delete_originals": false
+  },
+  "new_sixdof_runs": 0,
+  "new_mission_provider_calls": 0
+}

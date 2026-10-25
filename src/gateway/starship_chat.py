@@ -18,6 +18,7 @@ from src.runtime.starship_sixdof_catalog import SIXDOF_SCENARIOS
 from src.runtime.starship_mission_director import SCENARIOS as MANAGED_SCENARIOS
 from src.runtime.starship_m2_control import SCENARIOS as M2_SCENARIOS
 from src.runtime.starship_m3_live import SCENARIOS as M3_SCENARIOS
+from src.runtime.starship_visual_contract import SCENARIOS as VISUAL_SCENARIOS
 
 
 def _deepseek_call_limit(scope):
@@ -107,6 +108,13 @@ def _response(text: str, action: str, result: dict, session_id: str) -> dict:
                     f"Jev最大{scope['maximum_jev_calls']}回、{_deepseek_call_limit(scope)}。"
                     "モデルは低水準の姿勢・推力制御を行いません。判断待ちも共有時計で飛行を進め、実行直前の制約と後続観測を確認します。"
                     "計画の承認・モデルの応答・操作の採用・帰還結果は別々に記録します。"
+                    "\n" + "\n".join(plan["limitations"])
+                )
+            elif plan.get("backend") == "starship_visual_deployment_return":
+                response["message"] += (
+                    "\n画像観測fixture: /approve は数値異常後の保留、画像判断2回、追加観測1回、"
+                    "確定在庫からの帰還を承認します。正常時も撮影し、画像送信は異常時だけです。"
+                    "外部モデルAPIは0回。実HTTPの固定応答で制御経路を確認します。"
                     "\n" + "\n".join(plan["limitations"])
                 )
             elif plan.get("backend") == "starship_deployment_return_continuation":
@@ -299,7 +307,7 @@ def maybe_handle_starship_chat(payload: Mapping[str, Any], *, expected_scenario:
         raw = raw.get("text", raw.get("instruction", ""))
     text = raw.strip() if isinstance(raw, str) else ""
     explicit = (expected_scenario is not None or "starship" in text.lower() or "スターシップ" in text
-                or any(scenario in text.lower() for scenario in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS))
+                or any(scenario in text.lower() for scenario in (*SIXDOF_SCENARIOS, *MANAGED_SCENARIOS, *M2_SCENARIOS, *M3_SCENARIOS, *VISUAL_SCENARIOS))
                 or (bool(payload.get("starship_context")) and any(
                     marker in text.lower() for marker in ("6dof", "sixdof", "6自由度", "六自由度", "六軸", "6軸", "キャッチ", "catch", "姿勢連続"))))
     command = COMMANDS.get(text)

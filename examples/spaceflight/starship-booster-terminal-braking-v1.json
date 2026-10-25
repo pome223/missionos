@@ -1,0 +1,263 @@
+{
+  "acceptance": {
+    "booster": "unchanged_pinned_splashdown_goal;actual_separation_and_concurrent_clock_required",
+    "settled_insertion": {
+      "bound": true,
+      "maximum_apogee_m": 600000.0,
+      "maximum_body_rate_rad_s": 5.0,
+      "minimum_perigee_m": 220000.0,
+      "minimum_propellant_kg": 75000.0,
+      "shutdown_settle_s": 5.0
+    },
+    "ship": {
+      "maximum_body_rate_rad_s": 0.02,
+      "maximum_contact_speed_mps": 5.0,
+      "maximum_tilt_deg": 5.0,
+      "minimum_propellant_kg": 28000.0,
+      "nonoverlapping_descending_contact": true,
+      "release_count": 26
+    }
+  },
+  "capture_contract": {
+    "boundary_origin": "existing legacy fin activation boundary",
+    "capture_reporting": {
+      "is_flight_acceptance": false,
+      "maximum_full_attitude_error_deg": 5.0,
+      "maximum_rate_error_rad_s": 0.003
+    },
+    "comparison": "Nominal H0 reference is a design input. No generalization claim.",
+    "handoff": "sticky first pressure>50 after actual boostback cutoff, even if capture incomplete",
+    "pressure_boundary_pa": 50.0,
+    "reference": "desired q/rate/alpha only; no r/v/fuel/actualactuator state initialization",
+    "reference_raw_source_sha256": "ca52b1bde4ec0214087aac82cf07a3e8e19a57ab192e154d5b2dd62e4eef27fe",
+    "reference_sha256": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9"
+  },
+  "capture_impulse_contract": {
+    "application": "subtract horizontal predicted thrust impulse from legacydesiredhorizontal then reapply existing700m/s cap before velocityerror/cutoff",
+    "assumed_cutoff": "current time at each BB control evaluation",
+    "force": "physical maxthrust times physical minimumthrottle; immediate ideal request approximation",
+    "mass": "actual current mass minus ideal min-throttle center flow; no actual mass/state assignment",
+    "no_observed_velocity_bias": true,
+    "not_trajectory_admission": true,
+    "omitted_dynamics": [
+      "actual finite spool and gimbal",
+      "shutdowntail",
+      "early capture completion",
+      "gravity and atmosphere; compensates thrust impulse only"
+    ],
+    "orientation": "same desired-only reference, mapped from prospective cutoff; no actual future data",
+    "policy_id": "prospective_capture_impulse_compensation_v1",
+    "prospective_duration_s": 15.0,
+    "quadrature_dt_s": 0.25,
+    "selection": "first actualavailable installed center among0..2"
+  },
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "H0",
+      "parent": {
+        "gzip_sha256": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+        "raw_sha256": "ca52b1bde4ec0214087aac82cf07a3e8e19a57ab192e154d5b2dd62e4eef27fe",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz"
+      }
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "id": "O0",
+      "parent": {
+        "gzip_sha256": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244",
+        "raw_sha256": "49609b8c43bddeca41f9697096cd6ece0e1f56580b272ebbe0b36849f95c5019",
+        "record": "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz"
+      }
+    }
+  ],
+  "control_contract": {
+    "faulty": "A15s prospective ideal min-throttle center impulse is a local control feedforward, not achieved motion or admission. It uses actual current mass, installed available first center, physical Isp/thrust/minthrottle and desired-only reference orientation; no observed outcome bias. Finite pulse ends by actual v8guards; no state reset.",
+    "healthy": "Exact legacy commands and guide; all new corrections inactive.",
+    "policy_id": "availability_terminal_recovery_v1",
+    "scope": "Actual outage only. Restorev8boundedcapturepulse andsame-referenceTVCtail plus signedresidualRCS,50Pa handoff. Before legacyBBvelocityerror, subtract newly predicted capture horizontal impulse from desiredhorizontal, then recap700m/s. Keep original highq legacy vertical law above10km geodetic altitude; below use registered8m/s2 energy law. New horizontal lead only at or below1km; all priorabove1km commands unchanged."
+  },
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "design": "terminal-braking-v11",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "horizontal_braking_contract": {
+    "activation": "actual unavailable main and original landing phase and actual geodetic altitude<=1000m",
+    "contact_limits_changed": false,
+    "current_acceleration": "horizontal projection of actual current thrust+aero bodyforce rotated through actual q divided by actual mass",
+    "hardware_limits_changed": false,
+    "kind": "causal current-force control lead, approximate, not achieved motion or stopping guarantee",
+    "lead_horizon_s": "2 divided by existing attitude_frequency_rad_s",
+    "maximum_activation_altitude_m": 1000.0,
+    "omitted": [
+      "future attitude and finite actuator response",
+      "gravity/Coriolis/curvature horizontal terms"
+    ],
+    "profile_horizontal_velocity_tau_s": "unchanged above1km and for healthy/default/oldsettings",
+    "request": "predicted_vh=actual_vh+lead*current_acceleration; uncapped_a=-predicted_vh/2; preserve existing15deg cap against requested vertical force",
+    "selected_horizontal_velocity_tau_s": 2.0
+  },
+  "initialization": "exact_original_fullrecord_booster_separation_only",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json": "266e48a70404d7c84a3e7f421da4c3e20451e76f422f8e8c3996c15685e39bce",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json": "2d71dcfbf4a96246583671a259ccae9c88bf4b842a6a5b66bd6aa199e36dc59e",
+    "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json": "ac3afec3dd186c9766a3467b5d11ca61a2e54107161cab39f50ade427c8c962a",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "output/starship-system-repair-20261018/state-mission-v1/H0/record.json.gz": "a51823b16fc92ac9303d4b771463bf48caa18db34f97b3a5488ee40e082b302a",
+    "output/starship-system-repair-20261018/state-mission-v1/O0/record.json.gz": "676cd30bab65fa610ac6d9ae1085dd0722c9d0a06266931ab51db0fe9d36d244"
+  },
+  "interpretation": {
+    "gate": "Only two accepted saved-separation repair results from this same source/environment/profile/settings open a separate fresh-ground whole stage.",
+    "invalid_or_budget": "Stop entire stage on source/profile/site/goal/environment changes, invalid record, numerical or serialization/save/restore errors, output/disk/wall breach; no retry/resume.",
+    "new_design": "Diagnose preserved artifacts, then register a new sourcebound design if needed. Trial caps do not close the restoration project.",
+    "valid_negative": "Preserve unchanged negative and finish other registered case; do not tune or rerun within this design.",
+    "whole_success": "Report Ship, Booster, deployment and whole physical success separately. No AI/allfeatures/qualification claims."
+  },
+  "limits": {
+    "cohort_wall_s": 1500.0,
+    "duration_s": 1200.0,
+    "hosted_model_calls": 0,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 2,
+    "minimum_free_bytes": 10737418240,
+    "nested_sixdof_forecasts": 0,
+    "per_trial_wall_s": 600.0,
+    "workers": 1
+  },
+  "output": "output/starship-system-repair-20261018/booster-terminal-braking-v1",
+  "powered_capture_contract": {
+    "completion": "actual measured fullq/rate gate, no ideal assignment",
+    "incomplete": "record timeout/reserve/noavailablecenter and end pulse, no retry",
+    "is_contact_acceptance": false,
+    "main_prefix_count": 1,
+    "main_throttle": "installed center physical minimum .4; do not modify hardware",
+    "maximum_attitude_error_deg": 1.0,
+    "maximum_duration_s": 15.0,
+    "maximum_rate_error_rad_s": 0.001,
+    "minimum_propellant_kg": 75000.0,
+    "shutdown": "main OFF request after pulse, reference-tracked real tail while currentgimbalcapacity>physicalRCS, actual spool not erased",
+    "time_step": "Use unchanged powered_dt when actual pulse commands power, unchanged coast_dt otherwise; shorten current step at the fixed 15s guard, never integrate ON past the guard."
+  },
+  "producer": {
+    "plan": "docs/assets/starship-system-repair-20261018/state-mission-v1-plan.json",
+    "result": "docs/assets/starship-system-repair-20261018/state-mission-v1-result.json",
+    "source_commit": "a8b2d8db3bf674c7df6fc919d45894e158b3232c",
+    "verification": "docs/assets/starship-system-repair-20261018/state-mission-v1-verification.json"
+  },
+  "purpose": "Keep v10 actual water-area/reserve/vertical improvements; below1km only, anticipate current lateral thrust/aero acceleration to compensate finite attitude lag and arrest horizontal contact velocity. Preserve all physical/acceptance gates and test actual finite results before fresh-ground whole pair.",
+  "rationale": "v10 meets normal speed, pose, rate, reserve and water area but horizontal7.600m/s exceeds3 and total7.683 exceeds5. Savedactualforce/pose lag causes lateral overshoot after velocity reverses. New lead beginsat1km, changes no earlier motion; τ2/lead are declared controller assumptions before execution.",
+  "registered_on": "2026-10-20",
+  "residual_capture_contract": {
+    "actual_jet_request": "subtract actual main once, clip to available signed jet capacities, add main back for existing measured allocator to subtract once. Recenter mains through actual finite actuators; command all mainsOFF and hold actual fins.",
+    "braking_budget": "direction=-I*quaternion_error_axis; intersect actual signed jet box. If feedforward outside box set a_stop=0 and ff_feasible=false. a_stop shapes closing speed only, not the rate-correction acceleration clip.",
+    "claims": "current-state heuristic, not stopping guarantee, admission, qualification or achieved capture",
+    "feedforward": "I*(reference alpha - omega cross referenceomega)+gyro-aero-gravitygradient-actualmainmoment",
+    "old_default": "Preserve old v6/v7 default command and receipt arithmetic; newly source-bound execution records have their own source identity. Only this explicit setting selects the residual law.",
+    "total_acceleration": "reference feedforward+raw rate correction clipped to unchanged configured .03 component limits"
+  },
+  "retention": "Keep source plans/claims/logs, original H0/O0 successes/negatives and all new outputs; archive/hash/readback/representative restore before later separately authorized cleanup. No public push, merge, Docker or worktree cleanup.",
+  "schema": "missionos.starship_booster_outage_repair_registration.v1",
+  "scope_limits": [
+    "AI/image/symptom diagnosis/inflight approval/tower catch/arbitrary faults/qualification/develop/video are not included.",
+    "A valid original O0 negative is an admissible separation source; it is not required to have succeeded physically.",
+    "Contact is model geometry and controlled water-entry envelope only, not water response/postcontact support/real SpaceX qualification."
+  ],
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "stage": "separation",
+  "terminal_descent_contract": {
+    "activation": "actualfault and original landing phase and actual geodetic altitude<=10000m",
+    "available_main_prefix_maximum": 3,
+    "clearance": "actual finite cylinder hull clearance, never nominal COMaltitude",
+    "contact_target": "0.75 times unchanged maximum downward speed",
+    "feedback": "existing landing_velocity_tau_s",
+    "feedforward": "-a*measured_COM_vertical_speed/reference_speed for nonnegative clearance; approximate because hull clearance rate includes angular and moving-CoM terms",
+    "gate_changes": false,
+    "horizontal": "unchanged velocity damping and15deg cap",
+    "net_reference_deceleration_mps2": 8.0,
+    "no_powered_preparation": false,
+    "not_a_stopping_guarantee": true,
+    "parameter_kind": "new explicit controller design assumption; not plant authority or calibrated physical value",
+    "policy_id": "clearance_energy_descent_v1",
+    "reference": "negative sqrt(v_contact²+2*a*max(clearance,0))"
+  },
+  "unchanged": [
+    "Pinned physical profile, hardware, inputmasses, thrust/Isp/fuel, integrationstepvalues and allcontact/reserve/watergates",
+    "Healthy exact control and guide",
+    "V8finite15s/75t/1deg/.001captureguards,actualshutdowntail,signedresidualRCSand50Pa handoff",
+    "Legacyhighpressure guide above10km; horizontaldamping15deg and3centerprefix; low-altitudevertical explicitlyreplaced",
+    "No actualstate assignment, hostedmodels, nested6DOF forecasts, towercatch, qualificationrefresh or publicrelease",
+    "V10actualwholepre1kmcontrolrequests unchanged; only low-altitude horizontal current-force lead is new."
+  ]
+}

@@ -1,0 +1,350 @@
+{
+  "schema": "missionos.starship_restored_fixture_registration.v2",
+  "cases": [
+    {
+      "id": "H0_nominal_0",
+      "condition": "H0",
+      "retained_count": 0,
+      "candidate_id": "nominal",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_nominal_0",
+      "condition": "O0",
+      "retained_count": 0,
+      "candidate_id": "nominal",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_nominal_13",
+      "condition": "O0",
+      "retained_count": 13,
+      "candidate_id": "nominal",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_nominal_26",
+      "condition": "O0",
+      "retained_count": 26,
+      "candidate_id": "nominal",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_next_0",
+      "condition": "O0",
+      "retained_count": 0,
+      "candidate_id": "next_orbit",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_next_13",
+      "condition": "O0",
+      "retained_count": 13,
+      "candidate_id": "next_orbit",
+      "pending_simulation_s": 0.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_nominal_0_pending",
+      "condition": "O0",
+      "retained_count": 0,
+      "candidate_id": "nominal",
+      "pending_simulation_s": 2.0,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    }
+  ],
+  "limits": {
+    "maximum_trials": 7,
+    "per_trial_wall_s": 1200.0,
+    "cohort_wall_s": 10000.0,
+    "prefix_horizon_s": 7500.0,
+    "return_horizon_s": 16000.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "control_settings": {
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_terminal_alignment": false,
+    "shutdown_tail_only": true,
+    "low_pressure_reference_capture": true,
+    "powered_reference_capture": true,
+    "residual_authority_capture": true,
+    "energy_terminal_descent": true,
+    "planned_capture_impulse_compensation": true,
+    "terminal_horizontal_braking": true
+  },
+  "input_sha256": {
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "output": "output/starship-restored-ai-20261020/fixture-v2",
+  "numerics_result": "docs/assets/starship-system-repair-20261018/restored-numerics-fix-v1-result.json",
+  "numerics_plan_sha256": "9cd04f53f02523b63018cdc3a11adc042cc92b2230892f1277332ba3708a6e11",
+  "initialization": "fresh_ground_actual_closed_inventory_only",
+  "qualification_refreshed": false,
+  "mission_authority_granted": false,
+  "scope": "Experimental fixed responses only; no models, forecasts, image or fault diagnosis, hardware, tower catch, refreshed qualification or operational authority.",
+  "interpretation": {
+    "passed": "Proceed only inside accepted actual inventory and candidate combinations after separate AI registration.",
+    "physical_negative": "Preserve valid negative; finish remaining declared cases once; do not claim restored M1-M3 or start native dependent case.",
+    "invalid_or_resource_stop": "Stop cohort. No retry or resume; preserve raw evidence before a separately registered fix.",
+    "latency_fixture": "Two simulation seconds of pending at each release decision; not a native provider latency measurement.",
+    "old_baseline": "H0 and O0 normal 26-release repaired numerical flights remain separate evidence; this tests the new actual-state composition.",
+    "robustness": "Same fixed initial state family and one design scenario; not independent robustness or real-flight validation."
+  },
+  "ship_contact_gates": {
+    "maximum_point_speed_mps": 5.0,
+    "maximum_tilt_deg": 5.0,
+    "maximum_body_rate_rad_s": 0.02,
+    "minimum_propellant_kg": 28000.0,
+    "nonoverlapping_descending_contact": true
+  },
+  "booster_contact_gates": "unchanged fixed splashdown goal; 10 km model experimental area; no water/structure support claim",
+  "clock_policy": "Actual settled cutoff+45 release schedule, cutoff+1800 nominal; next orbit uses actual closed-origin period; no physical resets or predicted execution state.",
+  "reason_for_seven_cases": "H0/O0 source compatibility, actual 0/13/26 retained mass, next-orbit with 0/13 for combined M2/M3, and pending latency before native; each once before any native trial.",
+  "prior_registration": {
+    "path": "examples/spaceflight/starship-restored-fixture-v1.json",
+    "sha256": "a6c56e751e8ecc5b3e05e76411f03a3b3677b5368c6473173e57b957aa9a86c5",
+    "executed": false
+  },
+  "amendment_reason": "Precondition changes only to the separately registered diagnostic guard fix. Old stopped b048 cohort is never admitted as passed; same seven fixed-response cases, limits, source pinning, physical gates and no models."
+}

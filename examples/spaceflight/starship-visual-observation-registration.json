@@ -1,0 +1,14 @@
+{
+  "schema": "missionos.starship_visual_registration.v1",
+  "cases": ["normal", "delayed_confirmation", "primary_occluded", "retained_payload", "missing_frames", "unknown_inventory"],
+  "mode": "fixture",
+  "maximum_hosted_model_calls": 0,
+  "maximum_runs_per_case_per_frozen_source": 1,
+  "transport": "real_loopback_http_scripted_choices",
+  "renderer": "numpy_triangle_perspective_zbuffer_v1",
+  "physics": "existing_atomic_rigid_payload_release",
+  "camera_scope": "two_registered_synthetic_internal_bay_cameras_single_selected_target",
+  "claim_scope": "production_control_and_evidence_boundaries_not_native_model_efficacy",
+  "failure_policy": "preserve_result_no_automatic_retry",
+  "physical_execution_authorized": false
+}

@@ -1,0 +1,216 @@
+{
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "expected_candidate_id": "next_orbit",
+      "expected_retained_count": 0,
+      "explicit_delegation": true,
+      "id": "O0_scope_amendment"
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "expected_candidate_id": "next_orbit",
+      "expected_retained_count": 13,
+      "explicit_delegation": true,
+      "id": "O0_combined"
+    }
+  ],
+  "cohort_revision": 5,
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "evidence_pins_ready": true,
+  "host_poll_interval_s": 0.01,
+  "initialization": "fresh_ground_no_forecast_state_installation",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "positive_to_nonpositive_unsupported_zero_to_zero_allowed",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v1",
+    "subdivisions": 2
+  },
+  "limits": {
+    "cohort_wall_s": 8000.0,
+    "hosted_model_calls": 0,
+    "maximum_concurrent_copy_forecasts": 2,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 2,
+    "minimum_free_bytes": 10737418240,
+    "per_trial_wall_s": 1800.0,
+    "prefix_horizon_s": 7500.0,
+    "total_horizon_s": 16000.0,
+    "workers": 1
+  },
+  "maximum_observation_age_s": 5.0,
+  "mission_authority_granted": false,
+  "mode": "fixture",
+  "model_calls": 0,
+  "new_case_ids": [
+    "O0_scope_amendment",
+    "O0_combined"
+  ],
+  "operations": "exact_previous_v4_case_definitions_no_recalibration",
+  "operator": "explicit_scripted_http_fixture_principal",
+  "output": "output/starship-restored-ai-20261020/native-fixture-v5",
+  "prior_v4": {
+    "accepted_four_case_evidence": false,
+    "assets": {
+      "composition": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v4-composition.json",
+        "sha256": "bf7952099a502d567fd99474f1e4a255c028ef4ba2251929bc67d6589e9091f9"
+      },
+      "new_result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v4-new-result.json",
+        "sha256": "7e5116290beca3fde716d8b0b23a7394faa816f6dc2025678c7c5fa366732328"
+      },
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v4-plan.json",
+        "sha256": "d48a2c0c58146d002ac4e37d0c4fbcbaaface5a9e9f183ce952dd375947d5387"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v4-saved-review.json",
+        "sha256": "fa202252e7473be01073dbceb0d287737b3131d51e7ffce41faeb200f2a9a3aa"
+      }
+    },
+    "old_cohort_resumed": false,
+    "plan_sha256": "6ee03ead6c59434f74704650e62f1674f831acdf0a66f4781a83e27428d6282b",
+    "source_commit": "27c23a8625c823c186d37233ac379d574a7b6dd4"
+  },
+  "qualification_refreshed": false,
+  "resource_accounting": {
+    "epoch": "closed_origin",
+    "initial_energy_kwh": 22.0,
+    "initial_modeled_propellant_loss_kg": 0.0,
+    "initial_temperature_k": 295.0,
+    "modeled_loss_kg_per_s": 0.02,
+    "power_kw": 6.0,
+    "warming_k_per_s": 0.001
+  },
+  "resource_monitor_interval_s": 1.0,
+  "retained_case_ids": [
+    "H0_normal",
+    "O0_deployment_change"
+  ],
+  "retained_h0_assets": {
+    "corrected_review": {
+      "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v3-H0-corrected-saved-review.json",
+      "sha256": "ebddfb19ea77ff1d029da209f0d030827d08617f5a2504cbbd9538ba8a84c941"
+    },
+    "plan": {
+      "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v3-stopped-plan.json",
+      "sha256": "edef69c435f429147361bdd27c8fed853564407347576eae8f693bbed551d6db"
+    },
+    "stop": {
+      "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v3-stopped.json",
+      "sha256": "679c9dc7d4d03e1e2a52562938bd21d8049f3a37afb768003a5a700797070453"
+    },
+    "stopped_review": {
+      "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v3-stopped-review.json",
+      "sha256": "83029f6a22d15b67453eb8d65f4babdd8b30f6e560efa8c1ce5f89fd82a7dd4a"
+    },
+    "verification": {
+      "path": "docs/assets/starship-system-repair-20261018/restored-native-fixture-v3-H0-corrected-verification.json",
+      "sha256": "45130fc766ea8695e59737d6e9035307b8971220f417036c75a3f3d7a18a87e2"
+    }
+  },
+  "schema": "missionos.starship_restored_native_remaining_registration.v1",
+  "source_equivalence": {
+    "src/runtime/starship_restored_coordinator.py": {
+      "current_sha256": "5922ce26a3a1efbc0fcee42e9c89c4bad8e1b2d0821162de78d3ed15630dea90",
+      "previous_sha256": "ec927698d9719ba2f6ef1848104e8f7d2dd498f6f267ba951d7618106ad7a7e0",
+      "reason": "fresh_actual_observation_reacquired_and_flushed_after_admission_before_approval_request"
+    },
+    "src/runtime/starship_restored_return.py": {
+      "current_sha256": "08e10ded1d4f3e4270ef3116a2bb05c95bd910dd4143bdac8490b82a7f604483",
+      "previous_sha256": "25efad683d1d0fd13a9e09cb20c8b58e9c3964acfacf26a1d1dc754ceb442e10",
+      "reason": "actual_paused_yielded_state_reacquisition_only_no_control_step_or_dt_change"
+    }
+  }
+}

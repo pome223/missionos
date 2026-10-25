@@ -1,0 +1,259 @@
+{
+  "automatic_retry": false,
+  "cases": [
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "id": "O0_deployment_notice",
+      "scenario": "deployment_notice"
+    },
+    {
+      "ascent_settings": {
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "finite_mode": true,
+        "insertion_options": {
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02,
+          "maximum_burn_duration_s": 60.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_restart_time_s": 4000.0,
+          "shutdown_settle_s": 5.0
+        },
+        "objectives": {
+          "final_perigee_m": 220000.0,
+          "first_burn_apogee_m": 300000.0,
+          "first_burn_perigee_m": -20000.0,
+          "insertion_altitude_m": 275000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "policy": "state_insertion_v7",
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "stack_pitch_offset_deg": 0.0
+      },
+      "condition": "O0",
+      "id": "O0_combined",
+      "scenario": "combined"
+    }
+  ],
+  "control_settings": {
+    "energy_terminal_descent": true,
+    "low_pressure_reference_capture": true,
+    "planned_capture_impulse_compensation": true,
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_reference_capture": true,
+    "powered_terminal_alignment": false,
+    "residual_authority_capture": true,
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "shutdown_tail_only": true,
+    "terminal_horizontal_braking": true
+  },
+  "evidence_pins_ready": true,
+  "final_case_ids": [
+    "O0_deployment_notice",
+    "O0_combined"
+  ],
+  "fixture_prerequisite": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-fixture-v1-plan.json",
+        "sha256": "1d5fd33109aa4a522842895acdfc76bad1a039d1e079308930d01fe6c2a3f20f"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-fixture-v1-result.json",
+        "sha256": "02127cda26f515af963475cc3ba7a48bc89d722ffeeeb4333c3cbaa4b8c61350"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-intent-fixture-v1-saved-review.json",
+        "sha256": "907a2c5189d5c53002a72347feea0f07a130168be01ae084cc1bdecb0f687117"
+      }
+    },
+    "plan_sha256": "92154fbade85bc22691b71f6ee201a1b0a4bba699f60372f08a09fc9f06d8676",
+    "source_commit": "45217b43c98e2cdb04030be8e75f34489abfcdbd"
+  },
+  "goal_is_authority": false,
+  "initialization": "fresh_ground_actual_inventory_and_new_copy_forecasts",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73"
+  },
+  "integration_policy": {
+    "experimental": true,
+    "fuel_zero_inside_inner_step": "positive_to_nonpositive_unsupported_zero_to_zero_allowed",
+    "held_command_policy": "existing_outer_commands_no_inner_recompute",
+    "mission_authority_granted": false,
+    "qualification_refreshed": false,
+    "schema": "missionos.starship_restored_integration_policy.v1",
+    "subdivisions": 2
+  },
+  "interpretation": "Targeted missing goal-work follow-up only. Judgment validity, operational goal outcome, physical contact and scripted approval are separate facts; no previous flight is rerun or relabelled.",
+  "limits": {
+    "cohort_wall_s": 4000.0,
+    "maximum_concurrent_copy_forecasts": 2,
+    "maximum_output_bytes": 2147483648,
+    "maximum_trials": 2,
+    "minimum_free_bytes": 10737418240,
+    "per_trial_wall_s": 1800.0,
+    "prefix_horizon_s": 7500.0,
+    "total_horizon_s": 16000.0,
+    "workers": 1
+  },
+  "maximum_host_record_bytes": 536870912,
+  "mission_authority_granted": false,
+  "mode": "live",
+  "operational_intent": {
+    "evaluation_point": "closed_inventory",
+    "generation": 0,
+    "intent_class": "desired_outcome_not_authority",
+    "intent_id": "retain_pending_payloads",
+    "issuer": "registered_operations",
+    "objective": {
+      "comparison": "gte",
+      "metric": "inventory.retained_count",
+      "unit": "count",
+      "value": 13
+    },
+    "schema": "missionos.operational_intent.v1",
+    "trigger": {
+      "phase": "deployment",
+      "released_count": 13
+    }
+  },
+  "operator_policy": {
+    "actual_request_required": true,
+    "allowed_scope_delta": {
+      "add_commands": [
+        "select_next_orbit"
+      ],
+      "resource_limits": {}
+    },
+    "candidate_sha256_required": true,
+    "choice": "approve",
+    "fresh_resolvable_request_required": true,
+    "kind": "preauthorized_scripted_http_simulation_principal",
+    "may_bypass_rules": false,
+    "may_choose_for_model": false,
+    "observed_state_sha256_required": true,
+    "real_human_review": false,
+    "request_sha256_required": true
+  },
+  "output": "output/starship-restored-ai-20261020/intent-live-v1",
+  "prior_live": {
+    "assets": {
+      "plan": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-live-v1-plan.json",
+        "sha256": "253882f828915b0cdbfef9b716c1cff1f36bd66f2c7d05bc37f11ceda5d65050"
+      },
+      "result": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-live-v1-result.json",
+        "sha256": "f0f4cd523fcb53f2e13c1a2099925b74d865cc2d209a4f470bed976cfad3ba49"
+      },
+      "saved_review": {
+        "path": "docs/assets/starship-system-repair-20261018/restored-native-live-v1-saved-review.json",
+        "sha256": "206a93b6b8d76e36f89af88e83cbb7e7eda4d20e63b3c978d8be60569d89323a"
+      }
+    },
+    "plan_sha256": "6b68e846b43e758e7b527b1e454360f701873411bca4d5ce514d3c9555ee10bd",
+    "source_commit": "b9ad1ae0559b56c013c7e3861f4103e8f9572a3e"
+  },
+  "providers": {
+    "automatic_retry": false,
+    "deep_reasoning_remaining_s": 150.0,
+    "deepseek_http_timeout_s": 120.0,
+    "deepseek_only_on_explicit_delegation": true,
+    "deployment_window_s": 35.0,
+    "first": "typesafe",
+    "maximum_instance_calls": null,
+    "original_deadline_may_be_extended": false,
+    "return_window_s": 180.0,
+    "typesafe_http_timeout_s": 30.0
+  },
+  "qualification_refreshed": false,
+  "resource_accounting": {
+    "epoch": "closed_origin",
+    "initial_energy_kwh": 22.0,
+    "initial_modeled_propellant_loss_kg": 0.0,
+    "initial_temperature_k": 295.0,
+    "modeled_loss_kg_per_s": 0.02,
+    "power_kw": 6.0,
+    "warming_k_per_s": 0.001
+  },
+  "schema": "missionos.starship_restored_intent_registration.v1",
+  "source_equivalence": {
+    "src/intelligence/starship_restored_agent.py": {
+      "current_sha256": "16c6dded07b4fe951fa9b2d2af23c0079e8053e6ec88d757bc9601efaf0ca273",
+      "previous_sha256": "5aaef95ce213276a06d43520e272bc321a531ff2f6134a928490c1bb35f9fd7c",
+      "reason": "Project typed goal and conditional inventory effects to the model; retain unchanged legacy request behavior."
+    },
+    "src/runtime/starship_restored_decision_pipe.py": {
+      "current_sha256": "cff8d220877964ed6d4bad80b9929855907811928a3bb38bcf1c03734b15e8de",
+      "previous_sha256": "8184259bb3b8fe61bb87dace39e1a3bad2a088690c08ba2054b90671882f97d2",
+      "reason": "Require v2 intent source identity to match the original inherited-pipe binding before delivery."
+    },
+    "src/runtime/starship_restored_deployment.py": {
+      "current_sha256": "a69b4d3901b0c19d653d3b244b6dbe20371ffddd5cde3034427830636084c21e",
+      "previous_sha256": "e69dcdf908f631eb8cc746056a54c8c85b646ad2b01aa6a4005f6ce978846fa4",
+      "reason": "Bind typed intent to the real release checkpoint; preserve both valid deployment actions and the original decision deadline."
+    },
+    "src/runtime/starship_restored_native_verifier.py": {
+      "current_sha256": "2752d33feade3cadd1c2707c5617c6315dd1a74f9c6702ce663defc503f8d9d8",
+      "previous_sha256": "ae1a1df44b88162e307eef0cb276ee8394cf4939fc16bfc48e012c5c3e89ae75",
+      "reason": "Independently reconstruct v2 checkpoint, effects and final receipt-derived goal outcome; leave legacy verdicts unchanged."
+    },
+    "src/runtime/starship_restored_operations.py": {
+      "current_sha256": "ed61e116c7f284fab7e029d2b4431417e7d8e4c9754c3c523d399aa749dd4935",
+      "previous_sha256": "650816a7be24a42f6f8f81ea9c59d51b1a8cc7902a63cb16d8c475d2a684a00d",
+      "reason": "Explicit opt-in operations v2 carries a registered desired inventory outcome separately from notice prose."
+    }
+  },
+  "source_scope": "all_original_sources_exact_except_explicit_reviewed_intent_pairs",
+  "valid_model_choices_preserved": true
+}

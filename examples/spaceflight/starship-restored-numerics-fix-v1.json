@@ -1,0 +1,371 @@
+{
+  "schema": "missionos.starship_restored_numerics_fix_registration.v1",
+  "cases": [
+    {
+      "id": "H0_s2",
+      "condition": "H0",
+      "subdivisions": 2,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "H0_s4",
+      "condition": "H0",
+      "subdivisions": 4,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_s1",
+      "condition": "O0",
+      "subdivisions": 1,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_s2",
+      "condition": "O0",
+      "subdivisions": 2,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    },
+    {
+      "id": "O0_s4",
+      "condition": "O0",
+      "subdivisions": 4,
+      "ascent_settings": {
+        "policy": "state_insertion_v7",
+        "finite_mode": true,
+        "stack_pitch_offset_deg": 0.0,
+        "ship_pitch_offset_deg": 0.0,
+        "shutdowns": [
+          {
+            "engine_name": "booster_main_32",
+            "time_s": 76.0
+          },
+          {
+            "engine_name": "ship_main_3",
+            "time_s": 437.0
+          }
+        ],
+        "objectives": {
+          "first_burn_perigee_m": -20000.0,
+          "first_burn_apogee_m": 300000.0,
+          "insertion_altitude_m": 275000.0,
+          "final_perigee_m": 220000.0,
+          "minimum_apogee_headroom_m": 50000.0
+        },
+        "control_options": {
+          "first_burn_only_bias": true,
+          "moving_reference_tracking": false
+        },
+        "insertion_options": {
+          "maximum_restart_time_s": 4000.0,
+          "maximum_burn_duration_s": 60.0,
+          "shutdown_settle_s": 5.0,
+          "maximum_radial_speed_mps": 20.0,
+          "maximum_attitude_error_deg": 5.0,
+          "maximum_body_rate_rad_s": 0.02
+        }
+      }
+    }
+  ],
+  "limits": {
+    "maximum_trials": 5,
+    "per_trial_wall_s": 1200.0,
+    "cohort_wall_s": 5000.0,
+    "duration_s": 7500.0,
+    "maximum_output_bytes": 2147483648,
+    "minimum_free_bytes": 10737418240,
+    "workers": 1,
+    "hosted_model_calls": 0,
+    "nested_sixdof_forecasts": 0
+  },
+  "control_settings": {
+    "schema": "missionos.booster_terminal_recovery_settings.v1",
+    "policy_id": "availability_terminal_recovery_v1",
+    "powered_terminal_alignment": false,
+    "shutdown_tail_only": true,
+    "low_pressure_reference_capture": true,
+    "powered_reference_capture": true,
+    "residual_authority_capture": true,
+    "energy_terminal_descent": true,
+    "planned_capture_impulse_compensation": true,
+    "terminal_horizontal_braking": true
+  },
+  "comparison_thresholds": {
+    "maximum_ecef_distance_m": 100.0,
+    "maximum_contact_time_difference_s": 1.0,
+    "maximum_contact_speed_difference_mps": 0.1,
+    "maximum_propellant_difference_kg": 100.0
+  },
+  "critical_event_fields": {
+    "initial_state": [],
+    "stage_separation": [],
+    "ascent_screen_engine_unavailable": [
+      "shutdown.engine_name"
+    ],
+    "ascent_screen_first_cutoff_command": [
+      "next_phase"
+    ],
+    "ascent_screen_restart_command": [
+      "next_phase"
+    ],
+    "ascent_screen_final_cutoff_command": [
+      "termination",
+      "next_phase"
+    ],
+    "state_insertion_settled_handoff": [
+      "next_phase"
+    ],
+    "state_insertion_settled_gate_unreached": [],
+    "orbit_cutoff_command": [],
+    "orbit_not_reached": [],
+    "payload_released": [],
+    "return_requested": [],
+    "deorbit_ignition_command": [],
+    "deorbit_cutoff_command": [],
+    "retained_return_terminal_trigger": [],
+    "flip_and_landing_command": [],
+    "booster_return_start": [],
+    "booster_boostback_ignition_command": [],
+    "booster_boostback_cutoff_command": [],
+    "booster_powered_slew_command": [],
+    "booster_landing_burn_requested": [],
+    "surface_contact": [],
+    "low_speed_surface_contact": [],
+    "surface_impact": [],
+    "angular_rate_envelope_exceeded": [],
+    "time_limit": [],
+    "numerical_failure": [],
+    "booster_powered_reference_capture_status": [
+      "request.status"
+    ],
+    "booster_reference_capture_handoff": [
+      "capture_met"
+    ],
+    "ascent_screen_physical_failure": [
+      "termination",
+      "next_phase"
+    ]
+  },
+  "diagnostic_thresholds_are_assumptions": true,
+  "profile": "examples/spaceflight/starship-sixdof-profile.json",
+  "site_catalog": "examples/spaceflight/starship-return-sites-model-test.json",
+  "goal": "examples/spaceflight/starship-splashdown-goal.json",
+  "input_sha256": {
+    "docs/assets/starship-system-repair-20261018/booster-h0-desired-reference-v1.json": "6ba2ba9cfab490b2b457395cff7a053f16ef02218c04fb3b531bf9a213d418c9",
+    "examples/spaceflight/starship-return-sites-model-test.json": "7ec9976388f5ced8ce4353f06093680472ea47584c9c4419568598ce1488f1e6",
+    "examples/spaceflight/starship-sixdof-profile.json": "4a0bebe69c97978daeabe7f16a4b30a1b69864a75668217106b1ca0ef4439df5",
+    "examples/spaceflight/starship-splashdown-goal.json": "384261817181940f1ce8e365897c9399246ad144ebd385472d9e0332204c6f73",
+    "output/starship-system-repair-20261018/state-mission-v12/H0/record.json.gz": "e3b8b3de5a8dc81661f9f5a4ed3f2bf2bc4983bbd61f50f1e82f5ad54f6fc30b",
+    "output/starship-system-repair-20261018/state-mission-v12/O0/record.json.gz": "42345dd49a08b7859f843d7da75a5b278af2e49eaa25e3d8f60ff49948aec2b2",
+    "output/starship-system-repair-20261018/restored-numerics-v1/plan.json": "b048c82f0355d919a69ec8fb315f7a1f6016b1ca31c318b714cf42c2427b151f",
+    "output/starship-system-repair-20261018/restored-numerics-v1/execution.claim": "0a7be58c333ddbe0ab089a86711dc70f8a80cb8352f674f7598488d349f803cf",
+    "output/starship-system-repair-20261018/restored-numerics-v1/stop.json": "6c64992fa049b3e230cc43627f63a1000526dfba889a112d0346f6b642eee8aa",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/started.json": "2cc1631f861cc89a7e0ef639624791bb9a80ed6c0aae601e5318188834ad03ec",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/worker.claim": "2cc1631f861cc89a7e0ef639624791bb9a80ed6c0aae601e5318188834ad03ec",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/worker.log": "7fb37ad56ef459924cadb944aced6e744a10bff879ce5b30e0fc2f3c9b764020",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/record.json.gz": "a45de0130229f535e2cc661ac81553c14ac5e59a3abbce21fca127884cc2bf22",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/result.json": "abac13b8948daeab65b172b488ae6bca513405dd10b7abe173bb6ffae98a4f22",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/verification.json": "a8dabb7ac6158e132c40fb3230a4f1aff5f4cebab49fb9555a79d1935f8e1eb0",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/started.json": "5bf20aadd19f2740ec9d112b5914d26e8338aa69496ea6c7a3d967f98a6e7e3c",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/worker.claim": "5bf20aadd19f2740ec9d112b5914d26e8338aa69496ea6c7a3d967f98a6e7e3c",
+    "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/baseline-comparison.json": "57cc60dafe75626a3a80846a39769ff26620d08ddee60b3a3aaf540761387e64"
+  },
+  "baselines": {
+    "H0": {
+      "gzip_sha256": "e3b8b3de5a8dc81661f9f5a4ed3f2bf2bc4983bbd61f50f1e82f5ad54f6fc30b",
+      "raw_sha256": "f20dc5854c62eb37115f5130d009993b4606e70d21b07f7593831cbb79aaead9",
+      "record": "output/starship-system-repair-20261018/state-mission-v12/H0/record.json.gz"
+    },
+    "O0": {
+      "gzip_sha256": "42345dd49a08b7859f843d7da75a5b278af2e49eaa25e3d8f60ff49948aec2b2",
+      "raw_sha256": "228bb55d533d0132b5f2b15722ec8258a1e3d363f9f0e8cf8a086f9fb1c0f9ab",
+      "record": "output/starship-system-repair-20261018/state-mission-v12/O0/record.json.gz"
+    }
+  },
+  "baseline_source_commit": "579f8a667e61f7414e5848e02fd67e8378308dbe",
+  "output": "output/starship-system-repair-20261018/restored-numerics-fix-v1",
+  "previous_cohort": {
+    "source_commit": "b772b192e19234566d245e58a25c085a33434961",
+    "plan": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/plan.json",
+      "sha256": "b048c82f0355d919a69ec8fb315f7a1f6016b1ca31c318b714cf42c2427b151f"
+    },
+    "execution_claim": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/execution.claim",
+      "sha256": "0a7be58c333ddbe0ab089a86711dc70f8a80cb8352f674f7598488d349f803cf"
+    },
+    "stop": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/stop.json",
+      "sha256": "6c64992fa049b3e230cc43627f63a1000526dfba889a112d0346f6b642eee8aa"
+    },
+    "failed_started": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/started.json",
+      "sha256": "2cc1631f861cc89a7e0ef639624791bb9a80ed6c0aae601e5318188834ad03ec"
+    },
+    "failed_worker_claim": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/worker.claim",
+      "sha256": "2cc1631f861cc89a7e0ef639624791bb9a80ed6c0aae601e5318188834ad03ec"
+    },
+    "failed_worker_log": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s2/worker.log",
+      "sha256": "7fb37ad56ef459924cadb944aced6e744a10bff879ce5b30e0fc2f3c9b764020"
+    },
+    "failed_case_id": "H0_s2",
+    "failed_attempt_preserved": true,
+    "old_cohort_remains_stopped": true
+  },
+  "retained_case": {
+    "id": "H0_s1",
+    "record": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/record.json.gz",
+    "gzip_sha256": "a45de0130229f535e2cc661ac81553c14ac5e59a3abbce21fca127884cc2bf22",
+    "raw_sha256": "5ccb98ed143d3032f4433182af203a8476fe26bfc3f716dd817de655df5cacf5",
+    "result": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/result.json",
+      "sha256": "abac13b8948daeab65b172b488ae6bca513405dd10b7abe173bb6ffae98a4f22"
+    },
+    "verification": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/verification.json",
+      "sha256": "a8dabb7ac6158e132c40fb3230a4f1aff5f4cebab49fb9555a79d1935f8e1eb0"
+    },
+    "started": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/started.json",
+      "sha256": "5bf20aadd19f2740ec9d112b5914d26e8338aa69496ea6c7a3d967f98a6e7e3c"
+    },
+    "worker_claim": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/worker.claim",
+      "sha256": "5bf20aadd19f2740ec9d112b5914d26e8338aa69496ea6c7a3d967f98a6e7e3c"
+    },
+    "baseline_comparison": {
+      "path": "output/starship-system-repair-20261018/restored-numerics-v1/H0_s1/baseline-comparison.json",
+      "sha256": "57cc60dafe75626a3a80846a39769ff26620d08ddee60b3a3aaf540761387e64"
+    }
+  },
+  "qualification_refreshed": false,
+  "mission_authority_granted": false,
+  "interpretation": {
+    "old_cohort": "Remains stopped. Its failed H0_s2 is preserved, not converted into a pass.",
+    "five_new_trials": "H0_s2 is a new execution after a diagnostic-only fix; remaining four were not attempted in the stopped cohort. Each once.",
+    "retained": "H0_s1 is fully rechecked from exact saved bytes on its old source; default RK4 path and all physical/helper source bytes unchanged. No flight is repeated.",
+    "invalid": "Stop, preserve actual sampled progress and any saved full record. No resume or automatic retry.",
+    "negative": "Keep valid physical/numerical negatives and finish remaining declared cases once. Do not start native dependent trials.",
+    "pass": "All six physical gates and all registered convergence comparisons must pass; result includes both old and new source/plan identities.",
+    "ai": "Models and nested forecasts zero; no restored AI-control claim."
+  }
+}

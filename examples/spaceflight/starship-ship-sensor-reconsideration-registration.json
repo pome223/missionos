@@ -1,0 +1,163 @@
+{
+  "schema": "missionos.ship_sensor_reconsideration_registration.v1",
+  "experiment_id": "ship-sensor-reconsideration-20261015",
+  "status": "registered_before_new_protocol_preflight_and_live; live_awaits_exact_plan_approval",
+  "base_commit": "00baa3edacd9fac30982f18b3c76fccf998efb0d",
+  "origin_file": "docs/assets/starship-ship-fault-screen-20261014/origin.json",
+  "cases": [
+    {
+      "case_id": "trial-1",
+      "physical_factor": 0.8,
+      "accelerometer_gain": 1.0
+    },
+    {
+      "case_id": "trial-2",
+      "physical_factor": 1.0,
+      "accelerometer_gain": 0.8
+    }
+  ],
+  "blind_payload": "Case labels, actual capability, sensor gain and fault identity are excluded from all AI requests. Two counterfactual hypothesis tables are shown identically, as discrete experimental evidence not live true-state forecasts.",
+  "sensing": {
+    "accelerometer": "Existing step2 noise/bias/gauge/latency, seed0, with registered gain on specific-force signal; no plant maximum enters estimator.",
+    "tracking": {
+      "velocity_frame": "ECI",
+      "velocity_noise_sigma_mps": 0.01,
+      "position_noise_sigma_m": 10.0,
+      "explicit_request_latency_s": 30.0,
+      "model_allowance": 0.01,
+      "basis": "Synthetic engineering trial assumptions, not actual Starship specifications. Velocity differences and modeled gravity, independent of accelerometer stream; nominal telemetry only."
+    },
+    "offline_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19
+    ]
+  },
+  "switch": {
+    "time": "complete deorbit-burn request +600s, first scheduled control step",
+    "factor": "only numeric accelerometer point estimate; model never supplies a number",
+    "physical_plant_repaired": false,
+    "minimum_work_reserve_s": 47.0,
+    "measured_wall_plus_acquisition_latency_limit_s": 598.0
+  },
+  "physics_screen": {
+    "new_runs": 0,
+    "reuse": "Exact four original screen records from source fb0b01e5, matched compressed/raw hashes and original saved verification; no preflight or live flight reused."
+  },
+  "calibration_gate": "From saved screen telemetry, 20 seeds for each actual case plus healthy gain1 control: independent tracking band contains physical value, detects thrust deficit, and disagrees with biased accelerometer only in sensor-fault case. This is offline verification, no new propagation.",
+  "counterfactual_evidence": "Exact source/record hashes and discrete point assumptions frozen after screens, before AI. Not nominal39-case fault qualification, continuous guarantee or independent physical model.",
+  "decision_policy": {
+    "first": "Jev chooses continue, adopt, independent tracking or explicit DeepSeek delegation. No forced tracking, confidence-based replacement or model-provided capability number.",
+    "physical_actions": "Both continuation and adoption must pass the same independently checked physical-evidence boundary before a one-use scheduled decision. No selected true-case record is supplied; all four conditional screen records are checked against the available tracking band.",
+    "rejected_choice": "A denied physical choice remains recorded. The model receives only structured failed-check feedback and may reconsider at most once per observation stage. A second rejection ends admission; no success-directed replacement or further model retry.",
+    "after_tracking": "A genuinely delivered independent observation is supplied only after a causal request plus 30 simulated seconds. A guard rejection may yield one further Jev decision, and DeepSeek only by explicit delegation.",
+    "missing": "Retain the existing preapproved fallback and mark any fallback as not AI completion. Both fallback physical choices undergo the same v2 guard. No universal safe-return claim."
+  },
+  "independent_check": "Credential-free separate process recomputes numeric estimates, chronology and all four source-bound conditional counterfactual records. It checks every observation-compatible record for the selected physical action, independent of hidden scenario label. This shares the simulator physics; it is not an independent physical model.",
+  "contact_limits": {
+    "speed_mps": 5.0,
+    "tilt_deg": 5.0,
+    "body_rate_rad_s": 0.02,
+    "reserve_kg": 28000.0
+  },
+  "model_configuration": {
+    "jev_model": "jev-1.13.0",
+    "jev_transport_s": 30.0,
+    "jev_decision_s": 35.0,
+    "deepseek_model": "deepseek-flash",
+    "deepseek_transport_s": 120.0,
+    "deepseek_decision_s": 150.0,
+    "thinking_enabled": true,
+    "reasoning_effort": "low",
+    "maximum_output_tokens": 16384,
+    "maximum_model_calls": null,
+    "retries": 0,
+    "raw_reasoning_recorded": false
+  },
+  "preflight": {
+    "flights": 2,
+    "hosted_requests": 0,
+    "policy": "Fresh production Gateway HTTP, credential-free guard and full6DOF for both cases. Fixture requests tracking, then deliberately chooses the incompatible physical action. Rejection feedback reaches Jev, explicit DeepSeek delegation chooses the corroborated physical action. Require exactly one retained rejection and one final admission per flight."
+  },
+  "live": {
+    "flights": 2,
+    "retries": 0,
+    "approval": "Prepared plan hash must receive separate explicit user approval before any hosted request or new live flight. No current live approval is claimed.",
+    "completion": "Registered cases once each. Actual AI chooses observations and actions, receives guard feedback if rejected, and may reconsider once per observation stage. Preserve every original choice, denial and outcome. Contact failure, missing tracking, fallback or unresolved result is unmet and never rerun for success."
+  },
+  "budgets": {
+    "maximum_new_physics_runs": 4,
+    "maximum_screen_wall_s": 180.0,
+    "maximum_preflight_case_wall_s": 600.0,
+    "maximum_live_case_wall_s": 600.0,
+    "maximum_active_execution_wall_s": 2400.0,
+    "maximum_output_bytes": 536870912,
+    "minimum_free_bytes": 5368709120,
+    "new_online_forecasts": 0,
+    "maximum_preflight_stage_wall_s": 1200.0,
+    "maximum_live_stage_wall_s": 1200.0
+  },
+  "authorization": {
+    "user_request": "続けて (current guard-reconsideration implementation scope)",
+    "scope": "Implementation, prior screen/calibration reuse, and two fresh zero-model protocol preflight flights are authorized. Two live flights require a new explicit approval of the prepared exact plan; no original or repair authorization is reused."
+  },
+  "interpretation": [
+    "No new physics before this registration and protocol source are committed. Freeze source, backend and numerical evidence before each new cohort.",
+    "If prior record/source/kernel hashes or numerical registration differ, stop without propagation. Only four screen records and the 60-row calibration may be reused; old preflight/live results do not validate this protocol.",
+    "The preflight intentionally submits one bad physical choice in each case. Require recorded rejection, actual feedback request, explicit Jev-to-DeepSeek delegation, final admission and unchanged contact gates. Failure stops before hosted calls.",
+    "Live requires separate exact-plan user approval, then two cases once each. An invalid or exhausted-budget record stops the cohort. A valid unsuccessful judgment is preserved, not retried or silently replaced.",
+    "Passing both scoped live cases confirms AI observation, judgment, independent admission and execution in these two synthetic conditions. Guard-feedback reconsideration is demonstrated only where an actual rejection, delivered feedback and a subsequent new judgment are recorded. No held-out performance, fault robustness or hardware certification is claimed."
+  ],
+  "retention": {
+    "durable_output": "output/ship-sensor-reconsideration-20261015",
+    "raw_private": true,
+    "portable_summary_in_git": true,
+    "compress_and_restore_hash_verify": true,
+    "delete_originals": false
+  },
+  "guard_reconsideration": true,
+  "reuse_evidence_directory": "output/ship-sensor-diagnosis-20261015",
+  "prior_evidence_file": "docs/assets/starship-ship-sensor-diagnosis-20261015/saved-record-verification.json",
+  "prior_evidence_sha256": "5e87757bd23f42d6866fb974b8c704985a13ad4830c27fec58145fb613b6fdc5",
+  "orchestration_changed_source_files": [
+    "scripts/run_starship_ship_sensor_diagnosis.py",
+    "src/intelligence/starship_ship_sensor_agent.py",
+    "src/runtime/starship_ship_sensor_control.py",
+    "src/runtime/starship_ship_sensor_guard.py",
+    "tests/contract/test_starship_ship_sensor_agent.py",
+    "tests/contract/test_starship_ship_sensor_control.py",
+    "tests/contract/test_starship_ship_sensor_guard.py"
+  ],
+  "preflight_authorized_by_current_user_request": true,
+  "additional_execution_requires_user_approval": true,
+  "live_case_ids": [
+    "trial-1",
+    "trial-2"
+  ],
+  "additional_source_files": [
+    "examples/spaceflight/starship-ship-sensor-reconsideration-registration.json",
+    "tests/contract/test_starship_ship_sensor_reconsideration_runner.py",
+    "scripts/smoke_starship_ship_sensor_reconsideration.py"
+  ],
+  "prior_summary_files_sha256": {
+    "screen-summary.json": "7ed2cc6e6ce88acdaea6a244dcdfb14ecdf1379a1dcc8c1fe2d532da5bbb1a2b",
+    "calibration.json": "9f65181f62cc1c93c2b78a56c828f69131905b6792c39e67fd7ddeb4df3ab667"
+  }
+}

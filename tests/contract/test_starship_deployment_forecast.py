@@ -63,14 +63,16 @@ def test_notice_stop_is_later_confirmed_without_changing_director_rules():
     assert director.records[0]["response"]["model_inference_invoked"] is False
 
 
-def test_authority_is_fixed_fixture_only_and_physical_certificate_still_matches():
+def test_authority_is_fixed_fixture_only_and_old_certificate_cannot_admit_public_port():
     with pytest.raises(ValueError, match="unknown_m2_handoff_fixture"):
         authority("live")
     grant = authority("normal")
     assert grant["maximum_model_calls"] == 0
     assert grant["ship_return_dispatch_authorized"] is False
     profile = json.loads((ROOT / "examples/spaceflight/starship-sixdof-profile.json").read_text())
-    assert readiness(profile, check_backend=False)[2] is None
+    certificate, _, reason = readiness(profile, check_backend=False)
+    assert certificate is None
+    assert reason == "return_qualification_source_mismatch"
 
 
 def test_failed_producer_preserves_observation_prefix(monkeypatch, tmp_path):

@@ -1,0 +1,229 @@
+{
+  "schema": "missionos.starship_reference_speed_review.v2",
+  "registered_on": "2026-10-18",
+  "status": "registered_before_new_media_acquisition",
+  "human_authorization": "direct user reply yes following the explicit additional approximately100MB broadcast reading question; not the pasted reviewer text",
+  "parent_registration": "examples/spaceflight/starship-reference-speed-review-v1.json",
+  "parent_partial_preserved": true,
+  "source_url": "https://www.spacex.com/launches/starship-flight-14",
+  "broadcast_url": "https://x.com/i/broadcasts/1qxvvenMPMQxB",
+  "broadcast_offset_s": 2150.5,
+  "source_csv": "docs/assets/starship-flight14-telemetry-20261017/ascent_stack_and_ship.csv",
+  "source_csv_sha256": "092287639e56d0f178efb14684f4c31de218e6d188dec7e29c4ae640dc24eba9",
+  "accepted_reference_unchanged": "docs/assets/starship-reference-v2-20261018/reference.json",
+  "target_selection": "purposive contiguous68..97s around suspected digit/discontinuity region; not a blind sample or population error-rate estimate",
+  "frames": [
+    {
+      "id": "V2-01",
+      "mission_elapsed_s": 68,
+      "requested_broadcast_s": 2218.5
+    },
+    {
+      "id": "V2-02",
+      "mission_elapsed_s": 69,
+      "requested_broadcast_s": 2219.5
+    },
+    {
+      "id": "V2-03",
+      "mission_elapsed_s": 70,
+      "requested_broadcast_s": 2220.5
+    },
+    {
+      "id": "V2-04",
+      "mission_elapsed_s": 71,
+      "requested_broadcast_s": 2221.5
+    },
+    {
+      "id": "V2-05",
+      "mission_elapsed_s": 72,
+      "requested_broadcast_s": 2222.5
+    },
+    {
+      "id": "V2-06",
+      "mission_elapsed_s": 73,
+      "requested_broadcast_s": 2223.5
+    },
+    {
+      "id": "V2-07",
+      "mission_elapsed_s": 74,
+      "requested_broadcast_s": 2224.5
+    },
+    {
+      "id": "V2-08",
+      "mission_elapsed_s": 75,
+      "requested_broadcast_s": 2225.5
+    },
+    {
+      "id": "V2-09",
+      "mission_elapsed_s": 76,
+      "requested_broadcast_s": 2226.5
+    },
+    {
+      "id": "V2-10",
+      "mission_elapsed_s": 77,
+      "requested_broadcast_s": 2227.5
+    },
+    {
+      "id": "V2-11",
+      "mission_elapsed_s": 78,
+      "requested_broadcast_s": 2228.5
+    },
+    {
+      "id": "V2-12",
+      "mission_elapsed_s": 79,
+      "requested_broadcast_s": 2229.5
+    },
+    {
+      "id": "V2-13",
+      "mission_elapsed_s": 80,
+      "requested_broadcast_s": 2230.5
+    },
+    {
+      "id": "V2-14",
+      "mission_elapsed_s": 81,
+      "requested_broadcast_s": 2231.5
+    },
+    {
+      "id": "V2-15",
+      "mission_elapsed_s": 82,
+      "requested_broadcast_s": 2232.5
+    },
+    {
+      "id": "V2-16",
+      "mission_elapsed_s": 83,
+      "requested_broadcast_s": 2233.5
+    },
+    {
+      "id": "V2-17",
+      "mission_elapsed_s": 84,
+      "requested_broadcast_s": 2234.5
+    },
+    {
+      "id": "V2-18",
+      "mission_elapsed_s": 85,
+      "requested_broadcast_s": 2235.5
+    },
+    {
+      "id": "V2-19",
+      "mission_elapsed_s": 86,
+      "requested_broadcast_s": 2236.5
+    },
+    {
+      "id": "V2-20",
+      "mission_elapsed_s": 87,
+      "requested_broadcast_s": 2237.5
+    },
+    {
+      "id": "V2-21",
+      "mission_elapsed_s": 88,
+      "requested_broadcast_s": 2238.5
+    },
+    {
+      "id": "V2-22",
+      "mission_elapsed_s": 89,
+      "requested_broadcast_s": 2239.5
+    },
+    {
+      "id": "V2-23",
+      "mission_elapsed_s": 90,
+      "requested_broadcast_s": 2240.5
+    },
+    {
+      "id": "V2-24",
+      "mission_elapsed_s": 91,
+      "requested_broadcast_s": 2241.5
+    },
+    {
+      "id": "V2-25",
+      "mission_elapsed_s": 92,
+      "requested_broadcast_s": 2242.5
+    },
+    {
+      "id": "V2-26",
+      "mission_elapsed_s": 93,
+      "requested_broadcast_s": 2243.5
+    },
+    {
+      "id": "V2-27",
+      "mission_elapsed_s": 94,
+      "requested_broadcast_s": 2244.5
+    },
+    {
+      "id": "V2-28",
+      "mission_elapsed_s": 95,
+      "requested_broadcast_s": 2245.5
+    },
+    {
+      "id": "V2-29",
+      "mission_elapsed_s": 96,
+      "requested_broadcast_s": 2246.5
+    },
+    {
+      "id": "V2-30",
+      "mission_elapsed_s": 97,
+      "requested_broadcast_s": 2247.5
+    }
+  ],
+  "acquisition": {
+    "primary_method": "existing yt-dlp public metadata extraction once, bounded HTTP media playlist and only intersecting segments, local ffmpeg still extraction; no browser cookies/login and no whole broadcast",
+    "metadata_command": [
+      "yt-dlp",
+      "--ignore-config",
+      "--no-cache-dir",
+      "--skip-download",
+      "--dump-single-json",
+      "--no-playlist",
+      "--no-progress",
+      "--no-warnings",
+      "--socket-timeout",
+      "15",
+      "--retries",
+      "0",
+      "https://x.com/i/broadcasts/1qxvvenMPMQxB"
+    ],
+    "format_selection": "highest available video height at most720 with required interval estimated media payload fitting90000000bytes; no outcome-based frame source selection",
+    "stream_interval_s": [
+      2216.5,
+      2251.5
+    ],
+    "maximum_metadata_attempts": 1,
+    "maximum_metadata_wall_time_s": 60,
+    "maximum_metadata_stdout_bytes": 6291456,
+    "maximum_media_response_bytes": 90000000,
+    "approximate_total_read_budget_bytes": 100000000,
+    "budget_scope": "Media response bytes counted during download; metadata/header/browser-page overhead reported separately and not represented as precisely metered",
+    "maximum_network_request_s": 30,
+    "maximum_acquisition_wall_time_s": 900,
+    "maximum_storage_bytes": 268435456,
+    "maximum_attempts_per_target": 2,
+    "secondary_frame_offset_s": 0.2,
+    "capture_attempt_rule": "second local frame only if first has unreadable clock/digits; record both, never select for agreement with CSV",
+    "minimum_free_disk_bytes": 10737418240,
+    "retries": 0,
+    "metadata_configuration": "ignore user/system yt-dlp config and disable cache; no cookies, browser auth, or saved credentials"
+  },
+  "read_fields": [
+    "visible mission clock",
+    "visible vehicle label",
+    "displayed speed km/h and altitude km or unreadable",
+    "actual requested decoded timestamp",
+    "hash and dimensions",
+    "comparison with original processed CSV plus timing/filter caveat"
+  ],
+  "decision_rules": [
+    "Stop if source lookup, media budget, clock alignment or storage cannot be verified; preserve failure and do not switch source URL or silently enlarge budget",
+    "Do not infer missing digits from simulator curves or expected smoothness",
+    "A display-versus-filtered-CSV difference is not itself proof of OCR failure",
+    "Transcription comes before source CSV comparison",
+    "Original CSV, accepted referencev2 and old7 calibration records and masks remain unchanged",
+    "A corrected accepted reference requires a separate version and prospective assessment registration; do not rescore old trials as new successes",
+    "Archive manifest/hash/all-content readback and representative frame restore before deletion; retain originals now"
+  ],
+  "limits": {
+    "sixdof_runs": 0,
+    "hosted_model_calls": 0,
+    "new_broadcast_frames_maximum": 60,
+    "public_push_or_merge": false
+  },
+  "output": "output/starship-system-repair-20261018/speed-reference-review-v2"
+}

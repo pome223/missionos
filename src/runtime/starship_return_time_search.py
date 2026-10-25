@@ -147,7 +147,7 @@ def search(actor, *, requested_names=("next_orbit",), cutoff_time_s=None, budget
                 actor.scheduled,
                 str(actor.output / f"forecast-screen-{actor.forecast_count + i}.json"),
                 1.0,
-            )
+            ) + ((True,) if getattr(actor, "compact_artifacts", False) else ())
             for i, off in enumerate(CONFIG["coarse_offsets_s"])
         ]
         actor.forecast_count += len(jobs)

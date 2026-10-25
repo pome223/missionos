@@ -26,7 +26,19 @@ def _parallel(mass: float, lever: sd.Vector) -> sd.Matrix:
 
 
 def _sum_matrices(*matrices: sd.Matrix) -> sd.Matrix:
-    return tuple(tuple(sum(m[i][j] for m in matrices) for j in range(3)) for i in range(3))
+    # Preserve the historical left-to-right float additions. Python 3.12+
+    # compensates builtin sum(), changing serialized retained inertia by a few
+    # ULPs and breaking exact comparison with immutable Python 3.11 records.
+    rows = []
+    for i in range(3):
+        row = []
+        for j in range(3):
+            total = 0
+            for matrix in matrices:
+                total = total+matrix[i][j]
+            row.append(total)
+        rows.append(tuple(row))
+    return tuple(rows)
 
 
 def _matvec(matrix: sd.Matrix, value: sd.Vector) -> sd.Vector:

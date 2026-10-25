@@ -116,11 +116,22 @@ def _wait_live_mailboxes(mailbox, approved, run_id, *, clock=time.monotonic, sle
             sleep(min(.01, deadline-clock()))
 
 
-def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdown=True, run_id="m3-prefix-fixture"):
+def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdown=True, run_id="m3-prefix-fixture",
+               composition=None, visual_runtime=None):
     """One real prefix; caller owns its numerical-run budget and authorization."""
     if type(run_id) is not str or re.fullmatch(r"[A-Za-z0-9_-]{1,128}", run_id) is None:
         raise ValueError("m3_prefix_run_id_invalid")
     approved, output = m3_prefix_contract(case, mode=mode, splashdown=splashdown), Path(output)
+    if composition is not None:
+        from .starship_unified_contract import validate_composition
+        composition = validate_composition(composition)
+        if (mode != "fixture" or not splashdown or case != "orbital_update"
+                or approved != composition["authority"]["prefix_authority"]
+                or visual_runtime is None or visual_runtime.composition != composition
+                or visual_runtime.authority != composition["visual_authority"]):
+            raise ValueError("unified_prefix_composition_binding")
+    elif visual_runtime is not None:
+        raise ValueError("m3_visual_requires_explicit_composition")
     if mode == "live":
         mailbox = Path(mailbox) if mailbox is not None else None
         if mailbox is None or mailbox.is_symlink() or any(not (mailbox/p).is_dir() or (mailbox/p).is_symlink() for p in ("ascent", "booster", "deployment", "return")):
@@ -156,7 +167,7 @@ def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdow
         from .starship_splashdown import SplashdownGoal
         director = M3Directors(approved["m2_authority"]["deployment_authority"],
             approved["booster_authority"], tracker, fixture_decider=decider, run_id=run_id,
-            mode=mode, mailbox=mailbox)
+            mode=mode, mailbox=mailbox, visual_runtime=visual_runtime)
         goal = SplashdownGoal.from_dict(approved["booster_authority"]["splashdown_goal"])
     ascent = AscentSupervisor(approved["ascent_authority"], mode=mode,
         run_id=run_id if mode == "live" else "m3-prefix-fixture",
@@ -181,7 +192,9 @@ def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdow
         run = simulate_concurrent(profile, scenario="launch", duration_s=CHECKPOINT_TIME_S,
             mission_director=director, mission_case=approved["m2_authority"]["deployment_case"], return_sites=sites, splashdown_goal=goal,
             booster_policy="fixed_v1", development_booster_coast_control="fixed_v1",
-            on_tick=on_tick, deployment_permission=ascent.deployment_permission)
+            on_tick=on_tick, deployment_permission=ascent.deployment_permission,
+            visual_runtime=visual_runtime,
+            trouble_manifest=composition["prefix_faults"] if composition is not None else None)
     except Exception as error:
         if hasattr(error, "concurrent_execution"):
             write_verified_input(output/"partial-shared-clock.json", error.concurrent_execution)
@@ -199,8 +212,13 @@ def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdow
             raise ValueError("m3_prefix_deployment_not_ready")
         handoff = tracker.freeze(run["final_state"], digest(profile))
         tracker.require_current(handoff)
+        if composition is not None:
+            from .starship_visual_verifier import validate_visual_origin
+            validate_visual_origin(composition["visual_authority"], approved["m2_authority"],
+                                   handoff, run, trace=trace)
         handoff = write_verified_input(output/"handoff.json", handoff)
     except ValueError as error:
+        handoff = None
         handoff_error = str(error)  # Keep the actual prefix when no continuation is proved.
     if sources() != frozen:
         raise ValueError("m3_prefix_sources_changed_during_run")
@@ -216,6 +234,7 @@ def run_prefix(profile, case, output, *, mode="fixture", mailbox=None, splashdow
         "schema": "missionos.starship_m3_prefix_study.v1", "scope": SCOPE,
         **({"run_id": run_id} if splashdown else {}),
         "authority": approved, "approval_binding": binding, "profile": profile,
+        **({"unified_composition": composition} if composition is not None else {}),
         "prefix_run": run, "ascent": supervision, "ascent_witnesses": witnesses,
         "trace": trace, "handoff": handoff, "handoff_error": handoff_error,
         "source_sha256": frozen, "model_calls": model_calls, "forecasts": 0, **live_fields,
