@@ -3,7 +3,7 @@
   "date": "2026-10-29",
   "language": "en",
   "report": "docs/reports/missionos-control-layer.md",
-  "report_sha256": "3003a4a923d0408d2cb1c6d62599fcea37c63e927ee1e47571e3c27a9f422642",
+  "report_sha256": "c48a2a020530bd955f627118b21c0b5f07ee725b9b7c5c51b1aa6095377bbe18",
   "source_revision": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
   "source_reports": [
     {
@@ -75,6 +75,55 @@
       "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
       "blob_sha": "f0680e971465bdb2c6dc8a67c9962403858429d5",
       "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/go2-agent-delivery-20260925/provenance.json"
+    },
+    {
+      "name": "yokohama-map-delivery",
+      "repository_path": "docs/examples/yokohama-map-delivery/REPORT.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "b97de65d273c03124da101272ffb18103c67dd5e",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-map-delivery/REPORT.md"
+    },
+    {
+      "name": "starship-booster-recovery",
+      "repository_path": "docs/assets/starship-booster-recovery-decision-20261014/README.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "7afde5e866fbeb076f42518beb86dedafce6aa3f",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/starship-booster-recovery-decision-20261014/README.md"
+    },
+    {
+      "name": "yokohama-cargo-flight",
+      "repository_path": "docs/examples/yokohama-cargo-flight/REPORT-ja.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "e1fb940a511bf5614cf99c01b069e338767662d9",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-cargo-flight/REPORT-ja.md"
+    },
+    {
+      "name": "yokohama-native-flight",
+      "repository_path": "docs/examples/yokohama-native-flight/REPORT-ja.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "c14c7887aed9ec0805d31f65f9b91d2ea8048ce9",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-native-flight/REPORT-ja.md"
+    },
+    {
+      "name": "starship-mission-director",
+      "repository_path": "docs/agents/starship-mission-director.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "286fe0a370301dcbb688c404edc297e032e75934",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/agents/starship-mission-director.md"
+    },
+    {
+      "name": "starship-return-replanning",
+      "repository_path": "docs/examples/starship-return-replanning.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "d3a8378a9193f286dc203301628dcee19e3d8b92",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-return-replanning.md"
+    },
+    {
+      "name": "starship-mission-decisions",
+      "repository_path": "docs/examples/starship-mission-decisions.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "8507df8285765bb5639cf5f9ebcba8f0eaf5e462",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-mission-decisions.md"
     }
   ],
   "development_account": "https://astropomeai.com/research/building-missionos/",
@@ -96,26 +145,240 @@
     },
     {
       "number": 3,
+      "repository_path": "docs/assets/missionos-control-layer-report/yokohama-cargo-native.png",
+      "kind": "composite_of_saved_simulator_images",
+      "origin": "MissionOS Yokohama cargo delivery report; City of Yokohama / Project PLATEAU CC BY 4.0",
+      "sha256": "66902b11a97db4302ed01be9a188f0cc6dbbc86cb8b1a55d36c84499032689b7"
+    },
+    {
+      "number": 4,
+      "repository_path": "docs/assets/missionos-control-layer-report/yokohama-wam-rejection.png",
+      "kind": "composite_of_saved_simulator_images",
+      "origin": "MissionOS Yokohama native flight report; City of Yokohama / Project PLATEAU CC BY 4.0",
+      "sha256": "7b3f8eaacfc3eb3d750cd9159dcb0dfced36565b26dfacd152b3cdf9d9522ab7"
+    },
+    {
+      "number": 5,
       "repository_path": "docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg",
       "kind": "simulator_video_still",
       "origin": "MissionOS public revision 56013c8bd656b77e707a65e691be0f8c6f050ca5",
       "sha256": "170b87b5dcc1c890b456a7b61780178f9867eef698b9cbdd47542a9f31a2e0de"
     },
     {
-      "number": 4,
+      "number": 6,
+      "repository_path": "docs/assets/starship-booster-recovery-decision-20261014/mission-poster.jpg",
+      "kind": "saved_replay_still",
+      "origin": "MissionOS public revision 56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "sha256": "5bf513f9cb286475f5061d4518c0294e2f479a7007189ddda67555c62e3c5d67"
+    },
+    {
+      "number": 7,
       "repository_path": "docs/assets/missionos-control-layer-report/starship-thrust-matrix.png",
       "kind": "figure_from_saved_numerical_evidence",
       "origin": "https://astropomeai.com/assets/media/building-missionos-thrust-matrix.png",
       "sha256": "bc032bc750500f0d6a1a048e41b563649824b886f764264ee183df41a3c41779"
     },
     {
-      "number": 5,
+      "number": 8,
       "repository_path": "docs/assets/missionos-control-layer-report/figure-05-cognitive-bridge.png",
       "kind": "conceptual_diagram",
       "origin": "English Mermaid source embedded in the report",
       "sha256": "a894228f5f3b9c226aba5539953b3730df189e4dbdded6a72a9cfbad11fa62a1"
     }
   ],
+  "derived_figures": [
+    {
+      "sha256": "66902b11a97db4302ed01be9a188f0cc6dbbc86cb8b1a55d36c84499032689b7",
+      "bytes": 103154,
+      "dimensions_px": [
+        1414,
+        352
+      ],
+      "kind": "composite_of_published_saved_images",
+      "origins": [
+        {
+          "label": "a",
+          "repository_path": "docs/examples/yokohama-cargo-flight/images/cycle-2-observed.png",
+          "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+          "blob_sha": "866b5334c002556762e5eb6413c1095786cf4bb3",
+          "url": "https://raw.githubusercontent.com/pome223/missionos/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-cargo-flight/images/cycle-2-observed.png",
+          "sha256": "8fc0c367d872414986f0c59424c7f2a7b469e8c1e8f1c60647edc77b9e4aeca9",
+          "bytes": 13431,
+          "source_dimensions_px": [
+            640,
+            360
+          ],
+          "output_box_px": [
+            12,
+            12,
+            545,
+            312
+          ],
+          "output_dimensions_px": [
+            533,
+            300
+          ]
+        },
+        {
+          "label": "b",
+          "repository_path": "docs/examples/yokohama-cargo-flight/images/cycle-2-vla-prediction.png",
+          "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+          "blob_sha": "bd5966e0ee53950723c7aaf5b34376882a7c912a",
+          "url": "https://raw.githubusercontent.com/pome223/missionos/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-cargo-flight/images/cycle-2-vla-prediction.png",
+          "sha256": "7d8a12f55bf19e7040d2a2340d578b9414355a5e4cbbd280b0e63c8f36a0ec13",
+          "bytes": 31421,
+          "source_dimensions_px": [
+            224,
+            224
+          ],
+          "output_box_px": [
+            557,
+            12,
+            857,
+            312
+          ],
+          "output_dimensions_px": [
+            300,
+            300
+          ]
+        },
+        {
+          "label": "c",
+          "repository_path": "docs/examples/yokohama-cargo-flight/images/cargo-after-receipt.png",
+          "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+          "blob_sha": "6612e70891d924bd6ccac57b04616073c279c39d",
+          "url": "https://raw.githubusercontent.com/pome223/missionos/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-cargo-flight/images/cargo-after-receipt.png",
+          "sha256": "c3460fe4d010d318b3b9eb7ada5d63a42f6133b5d553b5902e43ab798e907c4b",
+          "bytes": 11653,
+          "source_dimensions_px": [
+            640,
+            360
+          ],
+          "output_box_px": [
+            869,
+            12,
+            1402,
+            312
+          ],
+          "output_dimensions_px": [
+            533,
+            300
+          ]
+        }
+      ],
+      "source_data_license": {
+        "source_data": "3D City Model of Yokohama, catalog fiscal year 2024",
+        "attribution": "Yokohama City / Project PLATEAU; modified by MissionOS",
+        "license": "CC BY 4.0",
+        "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "dataset_url": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+        "attribution_url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-urban-scene/ATTRIBUTION.md",
+        "scope": "Attribution for the source 3D city model and its derived scene geometry."
+      },
+      "transform": "Resize each source panel using LANCZOS, arrange on a white canvas, and add panel labels. Observed images are reduced from 640 x 360 to 533 x 300; prediction images are enlarged from 224 x 224 to 300 x 300.",
+      "verification": {
+        "resized_panel_pixels_equal": true,
+        "comparison": "Every RGB pixel inside each listed output box equals the resized pinned source image. Panel labels and canvas margins are outside the compared boxes."
+      },
+      "repository_path": "docs/assets/missionos-control-layer-report/yokohama-cargo-native.png"
+    },
+    {
+      "sha256": "7b3f8eaacfc3eb3d750cd9159dcb0dfced36565b26dfacd152b3cdf9d9522ab7",
+      "bytes": 150129,
+      "dimensions_px": [
+        869,
+        352
+      ],
+      "kind": "composite_of_published_saved_images",
+      "origins": [
+        {
+          "label": "a",
+          "repository_path": "docs/examples/yokohama-native-flight/images/cycle-1-observed.png",
+          "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+          "blob_sha": "a383dc1780178d64dfc80d3bc170a7013c04bb57",
+          "url": "https://raw.githubusercontent.com/pome223/missionos/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-native-flight/images/cycle-1-observed.png",
+          "sha256": "6f96291f0bd3d2bfbdcc90582058ee7b61f3ee890c3470d802d58bc633c6dfc9",
+          "bytes": 21159,
+          "source_dimensions_px": [
+            640,
+            360
+          ],
+          "output_box_px": [
+            12,
+            12,
+            545,
+            312
+          ],
+          "output_dimensions_px": [
+            533,
+            300
+          ]
+        },
+        {
+          "label": "b",
+          "repository_path": "docs/examples/yokohama-native-flight/images/cycle-1-hold-prediction.png",
+          "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+          "blob_sha": "1ec84e12b6c831aa506d9f824be24b28c569d1cc",
+          "url": "https://raw.githubusercontent.com/pome223/missionos/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-native-flight/images/cycle-1-hold-prediction.png",
+          "sha256": "bbace67e23fcffb45cce080561c2ebd577a3f6fec074591689c7f73df71d9e4b",
+          "bytes": 62079,
+          "source_dimensions_px": [
+            224,
+            224
+          ],
+          "output_box_px": [
+            557,
+            12,
+            857,
+            312
+          ],
+          "output_dimensions_px": [
+            300,
+            300
+          ]
+        }
+      ],
+      "source_data_license": {
+        "source_data": "3D City Model of Yokohama, catalog fiscal year 2024",
+        "attribution": "Yokohama City / Project PLATEAU; modified by MissionOS",
+        "license": "CC BY 4.0",
+        "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "dataset_url": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+        "attribution_url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-urban-scene/ATTRIBUTION.md",
+        "scope": "Attribution for the source 3D city model and its derived scene geometry."
+      },
+      "transform": "Resize each source panel using LANCZOS, arrange on a white canvas, and add panel labels. Observed images are reduced from 640 x 360 to 533 x 300; prediction images are enlarged from 224 x 224 to 300 x 300.",
+      "verification": {
+        "resized_panel_pixels_equal": true,
+        "comparison": "Every RGB pixel inside each listed output box equals the resized pinned source image. Panel labels and canvas margins are outside the compared boxes."
+      },
+      "repository_path": "docs/assets/missionos-control-layer-report/yokohama-wam-rejection.png"
+    }
+  ],
+  "starship_development_account": "https://astropomeai.com/research/starship-mission-simulation/",
+  "supplemental_sources": [
+    {
+      "url": "https://astropomeai.com/content/articles/starship-mission-simulation.json",
+      "sha256": "94db595adc0c91dcbcc910a174e03d3ca723a4e80d43fe962bfe77f770beb53d",
+      "bytes": 24213
+    },
+    {
+      "url": "https://astropomeai.com/content/evidence/starship-october-record-update.json",
+      "sha256": "0daf6d0cb0061d6b3aa8daeab56e76ed93c7b05917ec58e9065761a02916e4c7",
+      "bytes": 4926
+    },
+    {
+      "url": "https://astropomeai.com/content/evidence/starship-qualification-preflight-stop-20261023.json",
+      "sha256": "533afa238b3a91f6dd3f08b085d20ec637c8f5f8b0e774f833ef8258c7a3adf1",
+      "bytes": 1164
+    }
+  ],
+  "city_model_attribution": {
+    "author": "City of Yokohama / Project PLATEAU",
+    "source": "https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "adapted_by": "MissionOS"
+  },
   "historical_thrust_study": {
     "source_identifier": "2ced69d9",
     "source_kind": "retained_historical_study_identifier_not_a_public_revision_citation",

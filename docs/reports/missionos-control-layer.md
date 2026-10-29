@@ -7,7 +7,7 @@
 
 ## Abstract
 
-Turning the capabilities of AI-equipped drones and robots into capabilities that people can operate over time requires a mission-control layer connecting observation, judgment, authority management, and outcome verification. MissionOS places a mission-control AI agent between human objectives and execution systems, connecting AI judgment, human approval, deterministic execution constraints, vehicle and robot actions, and verification based on observations. This report presents a case study of that design and its existing simulation records. The cases cover drone obstacle avoidance, indoor navigation, waiting and replanning by a quadruped robot, continuation and stopping decisions in block stacking, repair attempts after manipulation failures, and a continuous space mission inspired by Starship. The work contributes three elements: common authority and evidence management across heterogeneous execution systems; repair evaluation that separates contact, condition satisfaction, and sustained stability; and mission control that uses diagnosis to incorporate capability estimates into execution plans. In a nine-point thrust-sensitivity study, all three conditions with matching assumed and actual thrust met the contact criteria, while all six mismatched conditions exceeded the speed limit. Building on this result, the project tested a structure that estimates capability from additional observations and incorporates that estimate into the return plan. The report also develops a design hypothesis: mission-control AI can translate complex metrics, large volumes of logs, images, and time-series changes into material for human decisions, with supporting evidence and uncertainty. Effects on the number of missions one person can supervise and on cognitive workload will be tested in future comparative studies with human participants.
+Turning the capabilities of AI-equipped drones and robots into capabilities that people can operate over time requires a mission-control layer connecting observation, judgment, authority management, and outcome verification. MissionOS places a mission-control AI agent between human objectives and execution systems, connecting AI judgment, human approval, deterministic execution constraints, vehicle and robot actions, and verification based on observations. This report presents a case study of that design and its existing simulation records. The cases cover drone obstacle avoidance and delivery in a 3D city model of Yokohama, indoor navigation, waiting and replanning by a quadruped robot, continuation and stopping decisions in block stacking, repair attempts after manipulation failures, and a continuous space mission inspired by Starship. The work contributes three elements: common authority and evidence management across heterogeneous execution systems; repair evaluation that separates contact, condition satisfaction, and sustained stability; and mission control that uses diagnosis to incorporate capability estimates into execution plans. In a nine-point thrust-sensitivity study, all three conditions with matching assumed and actual thrust met the contact criteria, while all six mismatched conditions exceeded the speed limit. Building on this result, the project tested a structure that estimates capability from additional observations and incorporates that estimate into the return plan. The report also develops a design hypothesis: mission-control AI can translate complex metrics, large volumes of logs, images, and time-series changes into material for human decisions, with supporting evidence and uncertainty. Effects on the number of missions one person can supervise and on cognitive workload will be tested in future comparative studies with human participants.
 
 **Keywords:** MissionOS, AI agents, physical AI, mission control, humans and automation, situation awareness, execution authority, outcome verification
 
@@ -77,7 +77,7 @@ flowchart TB
     class O,V evidence;
 ```
 
-*Figure 1. Authority and information flow in MissionOS. Proposals proceed to execution through recorded approval and Rules checks; observations and verification results return to inform the next judgment. This conceptual diagram represents the structure shared across the cases. [\[1\]][m-overview][\[2\]][m-roles]*  
+*Figure 1. Authority and information flow in MissionOS. Proposals proceed to execution through recorded approval and Rules checks; observations and verification results return to inform the next judgment. This conceptual diagram represents the structure shared across the cases. [\[1\]][m-overview][\[2\]][m-roles]*
 [PNG version of Figure 1](../assets/missionos-control-layer-report/figure-01-architecture.png)
 
 ### 3.2. Approval scope and continuing supervision
@@ -127,9 +127,25 @@ In PX4 / Gazebo SITL, two obstacles at approximately 50% and 75% of route progre
 
 *Figure 2. Observed responses to two obstacles in PX4 SITL. Blue and cyan show saved outbound and return telemetry; orange shows avoidance routes following individual proposals and approvals. Unobserved segments use a different line style. Basemap: © OpenStreetMap contributors. [\[1\]][m-overview]*
 
+In a 3D city model of Yokohama, actual VLA and WAM inference was connected to decisions in the urban area. In the cargo-delivery flight, a vehicle carrying a 50 g box took off from a ship and covered a one-kilometer outbound leg over the sea under autopilot control. At two urban locations, AeroVLA proposed short movements from fresh camera observations, and ANWM predicted images after those movements. The proposals were dispatched after passing independent Rules based on building geometry and image-consistency checks. Measured vehicle movements were 3.01 m and 2.73 m. The box released above the delivery pad contacted and came to rest 0.013 m from the pad center. After the simulated receiving station's receipt record was verified, the vehicle returned to the ship and landed on its deck. All three checks—flight, model judgment, and cargo receipt—passed. [\[15\]][m-ycargo]
+
+In this flight, model inference was triggered only at approved holding locations in the urban area; no model requests were made during the sea leg. VLA responses took approximately 17 seconds and WAM responses approximately 50 seconds, while the autopilot maintained position. This arrangement placed slower model judgments in defined segments of the mission and assigned the remaining segments to deterministic control.
+
+![Yokohama cargo delivery using actual VLA and WAM inference](../assets/missionos-control-layer-report/yokohama-cargo-native.png)
+
+*Figure 3. Yokohama cargo delivery using actual VLA and WAM inference. (a) The actual observation at urban location D2; (b) ANWM's predicted image (224 × 224) for the movement proposed by AeroVLA; (c) the box (blue) on the delivery pad after receipt. All are saved images from the same run. The 3D scene was adapted by MissionOS from City of Yokohama / Project PLATEAU, “3D City Model (Yokohama, fiscal-year 2024 public catalog),” licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [\[15\]][m-ycargo][\[13\]][m-plateau]*
+
+A separate trial stopped before movement because the WAM prediction was inconsistent with the actual observation. The observation showed a gray street, but even the predicted image for a candidate that stayed at the same position introduced water and tall buildings absent from that observation. Because the prediction failed image criteria fixed in advance, the VLA-proposed movement was not dispatched and no movement authority was issued. This record shows mission control stopping without moving when the prediction model could not be trusted under the specified criteria. [\[16\]][m-ywam]
+
+![Actual observation and WAM prediction from a trial stopped before movement](../assets/missionos-control-layer-report/yokohama-wam-rejection.png)
+
+*Figure 4. A trial stopped before movement because the WAM prediction was inconsistent with the actual observation. (a) The immediately preceding observation supplied to the WAM; (b) ANWM's predicted image for a candidate that remained at the same position. The prediction introduced water and tall buildings absent from the observation and failed the predefined criteria. The 3D scene was adapted from City of Yokohama / Project PLATEAU data under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [\[16\]][m-ywam][\[13\]][m-plateau]*
+
+Predeparture approval was examined in a separate flight whose destination was selected on a 3D map. The operator approves a plan bound to its destination, route, scene, and execution environment. Moving the marker invalidates the approval, and destination changes during flight are rejected. This flight delivered to a destination 10 m east of the original takeoff-and-landing site and completed the return. The city-model VLA and WAM were replaced with fixed responses, while Jev made one actual judgment. [\[12\]][m-yokohama]
+
 In TurtleBot3 / ROS2 Nav2, a chat request naming a room was connected to indoor navigation. The robot traversed three doorways from the front yard to the bedroom in a virtual house, with the approved route paired with the observed trajectory corrected by localization. [\[1\]][m-overview]
 
-These two cases applied a common operational structure—stating an objective, approving a proposal, acting, and observing the outcome—to different execution systems for outdoor flight and indoor navigation. They made the division of roles between vehicle-specific execution and mission supervision concrete.
+These cases applied a common operational structure—stating an objective, approving a proposal, acting, and observing the outcome—to different execution systems for outdoor flight and indoor navigation. They made the division of roles between vehicle-specific execution and mission supervision concrete. The Yokohama case incorporated actual VLA and WAM judgments into the same mission as autopilot operation over the sea, continuing through delivery and return. The trial with an inconsistent prediction stopped before movement. The map-delivery flight showed that approval was bound to the combination of destination, route, and scene, and became invalid when part of that combination changed. This is the most direct example of the approval-scope principle described in Section 3.2.
 
 ### 5.2. Waiting and replanning with Go2
 
@@ -137,7 +153,7 @@ In a Go2 / MuJoCo delivery case, a temporary passage closure led to two actual D
 
 ![Go2 delivery and mission-control display in MuJoCo](../assets/go2-agent-delivery-20260925/media/agent-poster.jpg)
 
-*Figure 3. Waiting for a judgment at simulation time 15 seconds in the Go2 delivery trial. The robot, blocked passage, mission state, and known map appear in the same view. Saved judgment records and observations link waiting and replanning to the subsequent receipt and return. [\[4\]][m-go2]*
+*Figure 5. Waiting for a judgment at simulation time 15 seconds in the Go2 delivery trial. The robot, blocked passage, mission state, and known map appear in the same view. Saved judgment records and observations link waiting and replanning to the subsequent receipt and return. [\[4\]][m-go2]*
 
 At decision time, a facility notice supplied an estimate of when the passage would reopen. The mission-control agent connected that notice and the current state to a waiting proposal, then proposed replanning after a fresh observation. The supervisory cycle—responding to a change by waiting, updating the information, and taking the next action—was followed through resumed movement and return.
 
@@ -171,11 +187,23 @@ In a space mission, earlier decisions change the conditions faced by later stage
 
 The underlying six-degree-of-freedom model connects translation, rotation, thrust, propellant consumption, mass properties, and control surfaces. States and retained-payload inventory carry over from one stage to the next, so the consequences of a decision affect return conditions.
 
-Before AI diagnosis was introduced, a sensitivity study separated the thrust assumed by the controller from the thrust actually available in the simulator. Across nine finite test points combining 100%, 80%, and 60%, the three matched conditions met the registered contact criteria, while all six mismatched conditions exceeded the five-meter-per-second contact-speed limit. Figure 4 shows contact speed for each combination. [\[10\]][m-development][\[11\]][m-provenance]
+The Ship return criteria required a contact speed no greater than 5 m/s, tilt no greater than 5°, body angular rate no greater than 0.02 rad/s, and at least 28 t of remaining propellant. A common deterministic return controller, operating without AI, met these criteria in all 39 conditions: 27 retained-payload counts from zero through 26, plus 12 conditions varying initial propellant by ±1,000 kg at retained-payload counts of 0, 14, 15, 16, 25, and 26. The observed maximum contact speed was 4.691 m/s, maximum tilt 2.755°, and minimum remaining propellant 45.231 t. This characterized the return controller over a finite set of conditions defined in advance; it was not a count of successful AI replans. [\[17\]][m-starship]
+
+In the 14 October record from the same research series, DeepSeek reviewed an approved catch-development report and the current Booster observation, then selected splashdown rather than tower capture. The catch controller was not connected, and there were zero demonstrated captures following a continuous trajectory from launch, leaving splashdown as the only executable option. The choice passed an independent execution check and was confirmed by a subsequent observation. In the same flight, Ship released 26 simulated payloads, but the Ship-side orbital-comparison conditions remained incomplete. [\[14\]][m-booster]
+
+![Record of the Booster recovery judgment on 14 October 2026](../assets/starship-booster-recovery-decision-20261014/mission-poster.jpg)
+
+*Figure 6. The Booster recovery judgment recorded on 14 October 2026, shown at 23 seconds in the replay. The right side displays DeepSeek's “SPLASHDOWN” judgment and the evidence supplied to it. The tower is an illustrative rendering of an option considered; no tower approach or capture was executed. This record is separate from the 23 October integrated trial in Table 2. [\[14\]][m-booster]*
+
+Selection of a return plan was tested under three conditions. All three released 26 simulated payloads and continued through return without human commands during flight. Under nominal conditions, contact occurred at the original return opportunity (4.608 m/s). With an update from the recovery operation, the planned recovery area was withdrawn, and the original contact location fell outside the available region and time specified by the new advisory. Jev selected another return opportunity approximately 90.85 minutes later, and that plan was executed (4.613 m/s). When the judgment system did not respond, a checked fallback procedure switched to the same later return opportunity (4.613 m/s). The judgment-system outage was a simulated fault, with zero Jev calls in that condition. The recovery areas were development targets calibrated from prior predictions, and the three scenarios were development cases fixed in advance. They were not a test of generalization to unseen conditions. They nevertheless showed that the same structure could handle both selecting a new overall plan after circumstances changed and continuing the mission through a checked procedure when the AI did not respond. [\[17\]][m-starship]
+
+Return timing also changed the outcome substantially. In a test without AI, shifting only the return-request time by 60 seconds delayed contact by approximately 40.7 seconds and moved the contact location by approximately 278 km, while leaving contact speed and tilt nearly unchanged. Return plans therefore need to be evaluated by where and when contact can occur as well as by the motion state at contact. [\[19\]][m-replan]
+
+Before AI diagnosis was introduced, a sensitivity study separated the thrust assumed by the controller from the thrust actually available in the simulator. Across nine finite test points combining 100%, 80%, and 60%, the three matched conditions met the registered contact criteria, while all six mismatched conditions exceeded the five-meter-per-second contact-speed limit. Figure 7 shows contact speed for each combination. [\[10\]][m-development][\[11\]][m-provenance]
 
 ![Contact speed across combinations of controller-assumed and actual thrust](../assets/missionos-control-layer-report/starship-thrust-matrix.png)
 
-*Figure 4. Nine physics-only continuations from the same saved initial state, without AI. Rows represent controller-assumed thrust, columns actual thrust, and values contact speed in m/s, rounded to two decimal places. Green indicates a speed within the 5 m/s limit; pale red indicates an exceedance. [\[11\]][m-provenance]*
+*Figure 7. Nine physics-only continuations from the same saved initial state, without AI. Rows represent controller-assumed thrust, columns actual thrust, and values contact speed in m/s, rounded to two decimal places. Green indicates a speed within the 5 m/s limit; pale red indicates an exceedance. [\[11\]][m-provenance]*
 
 Across these nine points, meeting or failing the contact criteria was separated by whether assumed and actual thrust matched. With actual thrust held at 80%, contact speed was 3.48 m/s when the controller also assumed 80%, 9.17 m/s when it assumed 100%, and 21.05 m/s when it assumed 60%. Even at 60% actual thrust, a matching estimate met the criteria; even at 100% actual thrust, a mismatched estimate exceeded the speed limit. Mission control during anomalies therefore has a role in understanding current vehicle capability and updating the assumptions used by planning and control.
 
@@ -197,11 +225,13 @@ The integrated trial on 23 October 2026 connected actual model calls, an injecte
 | Complete CLI | 2,140.761 seconds | Total wall-clock duration, including pre- and post-run saved-record checks |
 | Approval | Supplied by an authenticated test script | Approval-path test with a script acting as the approver |
 
-Source: [\[8\]][m-space]. The trial ran on historical development version `81c22072`.
+Source: [\[8\]][m-space]. The trial ran on historical development version `81c22072`; it was not a rerun of the same flight after migration to the public version.
 
-The trial history also retains the preceding day's result: the 22 October run took 2,143.796 seconds and exceeded its registered time limit. The 23 October run had a separately registered execution definition, with its measurement interval defined in advance, and was recorded separately from the preceding result. Changes to the execution definition were recorded so that each result remained bound to its original conditions.
+The trial history also retains the preceding day's result: the 22 October run took 2,143.796 seconds and exceeded its registered time limit. The 23 October run was registered separately from the preceding day's run and was recorded separately from that result. Changes to the execution definition were recorded so that each result remained bound to its original conditions. Both flights recorded Jev 10/10, DeepSeek 1/1, and 13 payloads released and 13 retained. At the precision of the published records, both contact speeds were approximately 3.46 m/s. The 23 October flight was a newly registered run with host-sleep prevention added; the 22 October timing overrun remains in the record. During initial preparation on 23 October, a separate return-qualification check of four saved records stopped before execution because the history size exceeded its limit. That checking task performed no flight. Subsequently, the full histories of all four records were reconstructed by comparing the histories in chunks, and the check passed in 996.768 seconds, within its 1,800-second limit. The subsequent verification of the ordinary authorization path, however, stopped before execution because free disk space fell below its minimum threshold. None of these records qualifies the public version. [\[8\]][m-space][\[17\]][m-starship]
 
 In the integrated trial, retained payload mass and the propulsion capability re-estimated after the anomaly were incorporated into the return plan, which was executed through contact. The mission-control agent identified missing information from the observed symptoms, requested additional observations, and used numerical assessments to choose the capability estimate to adopt. The contribution of this case is the incorporation of diagnosis into a stage that updates the assumptions of subsequent plans and follows their execution.
+
+The Starship research series also retains unsuccessful records. In the development record dated 6 October, a Jev response was judged invalid and a preapproved fallback procedure stopped deployment. That trial released one payload, retained 25, and ended in an impact at 619.78 m/s. A scripted trial without AI, supplied with an operational-abort advisory, also released one payload and ended in an impact at 619.78 m/s. Because the trial without AI produced the same outcome, the invalid AI response alone cannot explain the impact. The impact is recorded as the failure of the return controller at that time, before qualification, to complete a return with 25 payloads retained. [\[18\]][m-director][\[20\]][m-decisions] A test with a late engine shutdown ended in an impact at 22.735 m/s, while the insufficient-propellant condition remains unresolved with return still prohibited. In a separate Booster test continued for 60 seconds from a saved state derived from launch, the remaining 3.569 t of propellant fell below the 6.918 t reserve criterion, so the condition was not met. This failure showed the need to verify the fallback procedure and the feasibility of the return controller used afterward, in addition to validating AI responses. The contract was subsequently revised so that, as long as standing constraints permit, a rejected or missing AI response preserves the approved nominal deployment procedure and original return plan, without automatically stopping deployment or switching to different return guidance. [\[20\]][m-decisions]
 
 ### 5.6. Findings across the cases
 
@@ -210,12 +240,13 @@ In the integrated trial, retained payload mass and the propulsion capability re-
 | Case | Observed connection | Contribution to the mission-control layer |
 |---|---|---|
 | PX4 / Gazebo | Proposals, individual approvals, and observed avoidance for two obstacles | Preserved the sequence from changed conditions to avoidance outcomes as mission history |
+| Yokohama 3D city model | Actual VLA proposals, actual WAM predictions, Rules, sea-leg autopilot, cargo release and receipt, and return to the ship | Placed model judgments in bounded mission segments and stopped before movement when predictions were inconsistent |
 | TurtleBot3 / Nav2 | A room-name request, approved route, and observed navigation | Connected the user's objective to vehicle-specific navigation |
 | Go2 / MuJoCo | Actual model judgments to wait and replan, with receipt and return verification | Executed the supervisory cycle, including waiting and fresh observation, through its outcome |
 | Block stacking | Forecast evidence, actual model judgments, constrained actions, and checks after stopping | Distinguished prediction from action selection through agreement with a threshold policy |
 | Manipulation repair | Approved GR00T repair attempts and a separate diagnostic comparison | Identified the stage reached by repair through contact, condition satisfaction, and retention |
 | Parent mission | Three different execution systems connected under one lineage of approval and records | Managed stage order, authority, and outcomes through a common structure |
-| Starship-inspired model | Observation, judgment, simulated approval, change application, and contact verification within a continuous mission | Established sensitivity to capability estimates and incorporated additional observation and diagnosis into plan updates |
+| Starship-inspired model | Observation, judgment, simulated approval, change application, contact verification, and selection of a new return opportunity within a continuous mission | Established sensitivity to capability estimates and return timing, and incorporated diagnosis and return-opportunity reselection into plan updates |
 
 These cases make concrete the MissionOS design of connecting vehicle-specific execution capabilities to mission-level supervision. Beyond passing outputs between components, the common mission-control structure maintained the relationship between what was proposed, the scope under which it was executed, and what was observed.
 
@@ -237,7 +268,7 @@ MissionOS aims to have the mission-control AI perform this interpretation and co
 
 For example, during a propulsion anomaly, reduced measured acceleration alone may not readily distinguish degraded propulsion from sensor error. The mission-control AI organizes the competing explanations and the observations that could test each one. A decision returned to the person should include the estimate to be adopted, its evidence, its implications for the plan, and any changes to approval scope. The role of this layer is to organize complex information into units on which a person can make a mission decision.
 
-When decision evidence is insufficient, the agent also proposes acquiring additional observations. The Starship-inspired trial's request for independent tracking after symptoms of reduced propulsion capability makes this information-acquisition process concrete. [\[8\]][m-space] This report treats the function of translating a complex system into material for human judgment as a design hypothesis associated with RQ3. Figure 5 shows the information flow.
+When decision evidence is insufficient, the agent also proposes acquiring additional observations. The Starship-inspired trial's request for independent tracking after symptoms of reduced propulsion capability makes this information-acquisition process concrete. [\[8\]][m-space] This report treats the function of translating a complex system into material for human judgment as a design hypothesis associated with RQ3. Figure 8 shows the information flow.
 
 ```mermaid
 flowchart TB
@@ -261,8 +292,8 @@ flowchart TB
     class H human;
 ```
 
-*Figure 5. The information-presentation design hypothesis associated with RQ3. Mission-control AI organizes observations, obtains additional information when needed, and connects options and their future implications to human decisions.*  
-[PNG version of Figure 5](../assets/missionos-control-layer-report/figure-05-cognitive-bridge.png)
+*Figure 8. The information-presentation design hypothesis associated with RQ3. Mission-control AI organizes observations, obtains additional information when needed, and connects options and their future implications to human decisions.*
+[PNG version of Figure 8](../assets/missionos-control-layer-report/figure-05-cognitive-bridge.png)
 
 Information presentation must combine readability with traceability to evidence. This report defines a design requirement: connect explanations to the relevant time, observation source, estimate uncertainty, and conflicting observations so that a person can inspect errors in summaries or interpretations. The comparative evaluation in Section 7.2 will measure the ability to detect and correct misleading presentations alongside changes in workload.
 
@@ -271,6 +302,8 @@ Information presentation must combine readability with traceability to evidence.
 The contrast between block stacking and Starship provides a basis for deciding where to place mission-control AI. In the neural ACWM cases in Section 5.3, all 15 forecast-informed judgments matched a threshold policy. Where a choice could be determined from forecast values and stopping conditions, existing rules could make the same decision.
 
 In the propulsion anomaly in Section 5.5, the same symptoms admitted multiple explanations—reduced propulsion capability and sensor error—and independent tracking supplied decision evidence. The focus for evaluating the value of mission-control AI lies in organizing such competing explanations, choosing what to observe next, and updating planning assumptions from the results.
+
+The Starship replanning experiments illustrate another aspect of this policy. When withdrawal of a recovery area changed a planning assumption, the mission-control AI selected a different return opportunity. When the judgment system did not respond, a checked fallback procedure continued the return using the same set of options. Assigning reselection after changed assumptions to AI and continuity when AI is unavailable to a deterministic procedure allowed the mission to continue in both cases. The 619.78 m/s impact record, however, shows that a judgment passing Rules or a checked fallback procedure does not necessarily make the subsequent return controller feasible. Decision validity and execution feasibility are separate subjects of verification, and the mission-control layer must check both.
 
 This contrast suggests a design policy: assign decisions under known conditions to rules, and assign judgments involving missing observations or changing assumptions to mission-control AI. The distinction between contact, condition satisfaction, and sustained stability in the repair tests also relates to this policy. The Verifier determines the stage reached; the mission-control AI addresses what to investigate and which correction to propose for the remaining failure.
 
@@ -342,10 +375,19 @@ Codex and Claude served as the primary agents for implementing MissionOS and wri
 9. MissionOS Project. *A coupled six-degree-of-freedom spacecraft model*. [Same revision][m-sixdof].
 10. Astropome AI. (2026-10-28). *Building MissionOS: AI Mission Control, Tested from the Physics Up*. [Published development account][m-development].
 11. Astropome AI. (2026-10-28). *Publication provenance and saved evidence for the MissionOS development story*. [Figure provenance and saved numerical evidence][m-provenance].
+12. MissionOS Project. *Yokohama 3D map delivery*. [Same revision][m-yokohama].
+13. City of Yokohama / Project PLATEAU. *3D City Model (Yokohama, fiscal-year 2024 public catalog)*. [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). [G Spatial Information Center][m-plateau].
+14. MissionOS Project. *Recorded booster recovery judgment*. 2026-10-14. [Same revision][m-booster].
+15. MissionOS Project. *Carrying cargo, delivering it, and returning to the ship (Yokohama, actual VLA + WAM)*. [Same revision][m-ycargo].
+16. MissionOS Project. *Running actual VLA + WAM in a Yokohama city block: stopping on an inconsistent predicted image*. [Same revision][m-ywam].
+17. Astropome AI. (2026-10-22, updated 2026-10-28). *Mission-Level Replanning in a Starship-Inspired Simulator*. [Published research article][m-starship].
+18. MissionOS Project. *Starship mission director: recorded development results, 2026-10-06*. [Same revision][m-director].
+19. MissionOS Project. *Starship return replanning*. [Same revision][m-replan].
+20. MissionOS Project. *Starship mission decisions*. [Same revision][m-decisions].
 
 ## Appendix A. Source and Figure Provenance
 
-The text is saved in Markdown, with Figures 1 and 5 as editable Mermaid diagrams. PNG reading copies are also included. Figures 2 and 3 are unmodified copies of images from the pinned public repository; Figure 4 is an unmodified copy from the published development account. The generated conceptual diagrams are not presented as experimental footage.
+The text is saved in Markdown, with Figures 1 and 8 as editable Mermaid diagrams. PNG reading copies are also included. Figures 2, 5, and 6 are unmodified copies of images from the pinned public repository. Figures 3 and 4 arrange resized saved images from that repository into panels labeled (a)–(c). Figure 7 is an unmodified copy from the published development account. The generated conceptual diagrams are not presented as experimental footage.
 
 **Table 5. Figure types and provenance.**
 
@@ -353,13 +395,16 @@ The text is saved in Markdown, with Figures 1 and 5 as editable Mermaid diagrams
 |---|---|---|
 | Figure 1 | Conceptual diagram created for this report | Authority and information flow, abstracted from Sources 1, 2, and 3 |
 | Figure 2 | Visualization of saved observations | The two-obstacle avoidance map published in the MissionOS README |
-| Figure 3 | Still image from simulator footage | Go2 delivery trial involving agent judgments; Source 4 |
-| Figure 4 | Existing figure based on saved numerical results | Nine-point thrust-sensitivity study without AI; Sources 10 and 11 |
-| Figure 5 | Conceptual diagram created for this report | Design hypothesis connecting information to human judgment |
+| Figure 3 | Composite of saved images | Yokohama cargo delivery with actual VLA and WAM inference; Sources 13 and 15 |
+| Figure 4 | Composite of saved images | Trial stopped before movement because of an inconsistent WAM prediction; Sources 13 and 16 |
+| Figure 5 | Still image from simulator footage | Go2 delivery trial involving agent judgments; Source 4 |
+| Figure 6 | Replay image from a saved record | Booster recovery judgment on 14 October 2026; Source 14 |
+| Figure 7 | Existing figure based on saved numerical results | Nine-point thrust-sensitivity study without AI; Sources 10 and 11 |
+| Figure 8 | Conceptual diagram created for this report | Design hypothesis connecting information to human judgment |
 
-The [publication provenance record](../assets/missionos-control-layer-report/provenance.json) identifies the pinned source reports and their Git blob identifiers, figure origins and SHA-256 hashes, and the nine saved numerical results behind Figure 4. Each linked project report provides the individual trial conditions and references to the original experimental records.
+The [publication provenance record](../assets/missionos-control-layer-report/provenance.json) identifies the pinned source reports and their Git blob identifiers, figure origins and SHA-256 hashes, and the nine saved numerical results behind Figure 7. Each linked project report provides the individual trial conditions and references to the original experimental records.
 
-Figure 4's SHA-256 was checked against the publisher's provenance record and confirmed to match. The basemap attribution for Figure 2 remains in the original image. See [OpenStreetMap's copyright and license information](https://www.openstreetmap.org/copyright) for the map data's terms of use.
+Figure 7's SHA-256 was checked against the publisher's provenance record and confirmed to match. The basemap attribution for Figure 2 remains in the original image. The 3D city model in Figures 3 and 4 was adapted from City of Yokohama / Project PLATEAU data under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), with attribution in the captions and Source 13. See [OpenStreetMap's copyright and license information](https://www.openstreetmap.org/copyright) for the map data's terms of use.
 
 [m-overview]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/README.md
 [m-roles]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/concepts/agent-roles.md
@@ -372,3 +417,12 @@ Figure 4's SHA-256 was checked against the publisher's provenance record and con
 [m-sixdof]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-sixdof.md
 [m-development]: https://astropomeai.com/research/building-missionos/
 [m-provenance]: https://astropomeai.com/content/evidence/building-missionos-publication.json
+[m-yokohama]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-map-delivery/REPORT.md
+[m-plateau]: https://www.geospatial.jp/ckan/dataset/plateau-14100-yokohama-shi-2024
+[m-booster]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/starship-booster-recovery-decision-20261014/README.md
+[m-ycargo]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-cargo-flight/REPORT-ja.md
+[m-ywam]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/yokohama-native-flight/REPORT-ja.md
+[m-starship]: https://astropomeai.com/research/starship-mission-simulation/
+[m-director]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/agents/starship-mission-director.md
+[m-replan]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-return-replanning.md
+[m-decisions]: https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-mission-decisions.md
