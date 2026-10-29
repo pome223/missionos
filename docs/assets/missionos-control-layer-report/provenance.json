@@ -1,0 +1,155 @@
+{
+  "schema": "missionos.control_layer_report_publication.v1",
+  "date": "2026-10-29",
+  "language": "en",
+  "report": "docs/reports/missionos-control-layer.md",
+  "report_sha256": "3003a4a923d0408d2cb1c6d62599fcea37c63e927ee1e47571e3c27a9f422642",
+  "source_revision": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+  "source_reports": [
+    {
+      "name": "overview",
+      "repository_path": "README.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "cc41633d51c82b82207e3d454eeadfc3296a01d9",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/README.md"
+    },
+    {
+      "name": "go2",
+      "repository_path": "docs/assets/go2-agent-delivery-20260925/report-en.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "de540166bdf56eab4233333ee800cb3a52a8eb13",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/go2-agent-delivery-20260925/report-en.md"
+    },
+    {
+      "name": "stacking",
+      "repository_path": "docs/agents/stacking-mission-e2e.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "fa444d31d5a17a36e4c126d6ea188c88ecacc1a4",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/agents/stacking-mission-e2e.md"
+    },
+    {
+      "name": "acwm",
+      "repository_path": "docs/assets/acwm-governed-stacking-20260921/REPORT.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "b7a531ec04f62106e82b519571ba6ae7afc58fb6",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/acwm-governed-stacking-20260921/REPORT.md"
+    },
+    {
+      "name": "vla-repair",
+      "repository_path": "docs/concepts/vla-repair-progress.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "6ebfc99a3152596a8ca505985ab15859f81df41a",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/concepts/vla-repair-progress.md"
+    },
+    {
+      "name": "parent-mission",
+      "repository_path": "docs/concepts/parent-mission-control.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "394df9296ab780b1e07ac00e36135e707110fc11",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/concepts/parent-mission-control.md"
+    },
+    {
+      "name": "starship-final",
+      "repository_path": "docs/examples/starship-final-mission.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "4f5f610338a6d360566575d69b09bbf0fa029fcf",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-final-mission.md"
+    },
+    {
+      "name": "agent-roles",
+      "repository_path": "docs/concepts/agent-roles.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "26c7fe32cbd86e82ac38e87b805a329a890f2abc",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/concepts/agent-roles.md"
+    },
+    {
+      "name": "starship-sixdof",
+      "repository_path": "docs/examples/starship-sixdof.md",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "4c3135876f4567cf959669048c3528d268db89f7",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/examples/starship-sixdof.md"
+    },
+    {
+      "name": "go2-provenance",
+      "repository_path": "docs/assets/go2-agent-delivery-20260925/provenance.json",
+      "ref": "56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "blob_sha": "f0680e971465bdb2c6dc8a67c9962403858429d5",
+      "url": "https://github.com/pome223/missionos/blob/56013c8bd656b77e707a65e691be0f8c6f050ca5/docs/assets/go2-agent-delivery-20260925/provenance.json"
+    }
+  ],
+  "development_account": "https://astropomeai.com/research/building-missionos/",
+  "development_account_provenance": "https://astropomeai.com/content/evidence/building-missionos-publication.json",
+  "figures": [
+    {
+      "number": 1,
+      "repository_path": "docs/assets/missionos-control-layer-report/figure-01-architecture.png",
+      "kind": "conceptual_diagram",
+      "origin": "English Mermaid source embedded in the report",
+      "sha256": "54e81922209782cba72ce4694c9397122eb643156b3efd4fefe727db0bf0d710"
+    },
+    {
+      "number": 2,
+      "repository_path": "docs/examples/assets/missionos-two-obstacle-recovery-map.png",
+      "kind": "saved_observation_visualization",
+      "origin": "MissionOS public revision 56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "sha256": "69fa1d9a5609bb586b1b18e2ec0a1308b0ed7f61fba0bc153366693d1bea2a2f"
+    },
+    {
+      "number": 3,
+      "repository_path": "docs/assets/go2-agent-delivery-20260925/media/agent-poster.jpg",
+      "kind": "simulator_video_still",
+      "origin": "MissionOS public revision 56013c8bd656b77e707a65e691be0f8c6f050ca5",
+      "sha256": "170b87b5dcc1c890b456a7b61780178f9867eef698b9cbdd47542a9f31a2e0de"
+    },
+    {
+      "number": 4,
+      "repository_path": "docs/assets/missionos-control-layer-report/starship-thrust-matrix.png",
+      "kind": "figure_from_saved_numerical_evidence",
+      "origin": "https://astropomeai.com/assets/media/building-missionos-thrust-matrix.png",
+      "sha256": "bc032bc750500f0d6a1a048e41b563649824b886f764264ee183df41a3c41779"
+    },
+    {
+      "number": 5,
+      "repository_path": "docs/assets/missionos-control-layer-report/figure-05-cognitive-bridge.png",
+      "kind": "conceptual_diagram",
+      "origin": "English Mermaid source embedded in the report",
+      "sha256": "a894228f5f3b9c226aba5539953b3730df189e4dbdded6a72a9cfbad11fa62a1"
+    }
+  ],
+  "historical_thrust_study": {
+    "source_identifier": "2ced69d9",
+    "source_kind": "retained_historical_study_identifier_not_a_public_revision_citation",
+    "assumed_rows": [
+      1,
+      0.8,
+      0.6
+    ],
+    "actual_columns": [
+      1,
+      0.8,
+      0.6
+    ],
+    "contact_speed_m_s": [
+      [
+        4.608255,
+        9.165753,
+        29.805763
+      ],
+      [
+        18.932889,
+        3.481417,
+        11.733618
+      ],
+      [
+        26.400974,
+        21.05442,
+        3.259772
+      ]
+    ],
+    "scope": "Nine physics-only continuations from one saved state; finite samples, not a continuous operating envelope."
+  },
+  "publication_work": {
+    "new_simulation_runs": 0,
+    "new_experimental_model_calls": 0
+  }
+}

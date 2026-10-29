@@ -42,6 +42,14 @@ ACK is not success. Observed progress is not mission completion.
 > LLM judges. Human approves. Rules constrain. Executor acts. Verifier checks.
 > Repair loops.
 
+**Technical report:** [MissionOS: A Mission-Control Layer Connecting AI Agents and Physical AI to Human Judgment](docs/reports/missionos-control-layer.md)
+
+The report brings together the design and simulator results: shared authority
+and evidence management across different executors, repair evaluated through
+contact and sustained completion, and diagnosis that updates a mission's
+operating assumptions. It explains how a supervisory AI can bridge complex
+observations and the decisions a human needs to make.
+
 ## What MissionOS Can Supervise
 
 MissionOS assigns missions, monitors progress, handles exceptions, and checks
